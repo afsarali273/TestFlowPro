@@ -18,9 +18,11 @@ import {
   Download,
   Upload,
   Settings,
+  BarChart3,
 } from "lucide-react"
 import { TestSuiteEditor } from "@/components/test-suite-editor"
 import { TestSuiteRunner } from "@/components/test-suite-runner"
+import { TestResultsDashboard } from "@/components/test-results-dashboard"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -55,9 +57,10 @@ export default function APITestFramework() {
   const [isPathConfigOpen, setIsPathConfigOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Add new state for framework configuration
+  // Add new state for framework configuration and results dashboard
   const [frameworkPath, setFrameworkPath] = useState<string>("")
   const [isFrameworkConfigOpen, setIsFrameworkConfigOpen] = useState(false)
+  const [showResultsDashboard, setShowResultsDashboard] = useState(false)
 
   // Load sample data on mount
   useEffect(() => {
@@ -243,6 +246,10 @@ export default function APITestFramework() {
       ),
   )
 
+  if (showResultsDashboard) {
+    return <TestResultsDashboard onClose={() => setShowResultsDashboard(false)} />
+  }
+
   if (isPathConfigOpen) {
     return (
       <PathConfigModal
@@ -294,6 +301,10 @@ export default function APITestFramework() {
             </div>
           </div>
           <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setShowResultsDashboard(true)}>
+              <BarChart3 className="h-4 w-4 mr-2" />
+              View Results
+            </Button>
             <Button variant="outline" onClick={() => setIsFrameworkConfigOpen(true)}>
               <Settings className="h-4 w-4 mr-2" />
               Framework Path

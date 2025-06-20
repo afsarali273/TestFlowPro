@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, Play, Square, CheckCircle, XCircle, Clock, Terminal } from "lucide-react"
+import { ArrowLeft, Play, Square, CheckCircle, XCircle, Clock, Terminal, Eye } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { TestResultsViewer } from "@/components/test-results-viewer"
 
 interface TestSuiteRunnerProps {
   suite: any
@@ -38,9 +39,11 @@ export function TestSuiteRunner({ suite, onClose }: TestSuiteRunnerProps) {
   const [progress, setProgress] = useState(0)
   const [logs, setLogs] = useState<string[]>([])
 
-  // Add state for real execution
+  // Add state for real execution and results viewing
   const [isRealExecution, setIsRealExecution] = useState(false)
   const [executionOutput, setExecutionOutput] = useState<string>("")
+  const [showResults, setShowResults] = useState(false)
+  const [executionCompleted, setExecutionCompleted] = useState(false)
 
   const totalTests = suite.testCases.reduce((acc: number, testCase: any) => acc + (testCase.testData?.length || 0), 0)
 
@@ -88,6 +91,7 @@ export function TestSuiteRunner({ suite, onClose }: TestSuiteRunnerProps) {
     setResults([])
     setProgress(0)
     setLogs([])
+    setExecutionCompleted(false)
 
     addLog(`Starting test suite: ${suite.suiteName}`)
 
@@ -134,6 +138,7 @@ export function TestSuiteRunner({ suite, onClose }: TestSuiteRunnerProps) {
 
     setIsRunning(false)
     setCurrentTest("")
+    setExecutionCompleted(true)
     addLog("Test suite execution completed")
   }
 
@@ -163,6 +168,7 @@ export function TestSuiteRunner({ suite, onClose }: TestSuiteRunnerProps) {
     setIsRealExecution(true)
     setIsRunning(true)
     setExecutionOutput("")
+    setExecutionCompleted(false)
 
     addLog(`🚀 Starting real test execution...`)
     addLog(`📁 Framework Path: ${frameworkPath}`)
@@ -217,6 +223,7 @@ export function TestSuiteRunner({ suite, onClose }: TestSuiteRunnerProps) {
                 case "exit":
                   if (data.success) {
                     addLog(`✅ Test execution completed successfully (exit code: ${data.exitCode})`)
+                    setExecutionCompleted(true)
                   } else {
                     addLog(`❌ Test execution failed (exit code: ${data.exitCode})`)
                   }
@@ -243,6 +250,10 @@ export function TestSuiteRunner({ suite, onClose }: TestSuiteRunnerProps) {
     setIsRunning(false)
     setCurrentTest("")
     addLog("Test execution stopped by user")
+  }
+
+  const viewResults = () => {
+    setShowResults(true)
   }
 
   const getStatusIcon = (status: string) => {
@@ -275,6 +286,11 @@ export function TestSuiteRunner({ suite, onClose }: TestSuiteRunnerProps) {
   const failedTests = results.filter((r) => r.status === "failed").length
   const runningTests = results.filter((r) => r.status === "running").length
 
+  // Show results viewer if requested
+  if (showResults) {
+    return <TestResultsViewer suite={suite} onClose={() => setShowResults(false)} />
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -290,6 +306,12 @@ export function TestSuiteRunner({ suite, onClose }: TestSuiteRunnerProps) {
             </div>
           </div>
           <div className="flex gap-2">
+            {executionCompleted && (
+              <Button variant="outline" onClick={viewResults}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Results
+              </Button>
+            )}
             {!isRunning ? (
               <>
                 <Button onClick={runTests} disabled={totalTests === 0} variant="outline">
