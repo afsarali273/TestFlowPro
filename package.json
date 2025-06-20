@@ -1,0 +1,26 @@
+{
+  "name": "api-framework",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Afsar",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^24.0.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^9.8.0",
+    "ajv": "^8.17.1",
+    "axios": "^1.10.0",
+    "dotenv": "^16.5.0",
+    "jsonpath-plus": "^10.3.0",
+    "minimist": "^1.2.8",
+    "p-limit": "^6.2.0"
+  }
+}
