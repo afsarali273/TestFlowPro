@@ -1,9 +1,14 @@
 {
-  "suiteName": "User API Suite",
+  "suiteName": "User API Suite Demo",
   "status": "Not Started",
   "tags": [
-    { "serviceName": "@UserService" },
-    { "suiteType": "@smoke" }],
+    {
+      "serviceName": "@UserService"
+    },
+    {
+      "suiteType": "@smoke"
+    }
+  ],
   "testCases": [
     {
       "name": "Get Single User",
@@ -17,16 +22,27 @@
             "Content-Type": "application/json"
           },
           "assertions": [
-            { "type": "equals", "jsonPath": "$.[0].name", "expected": "Apple iPhone 12 Pro Max" },
-            { "type": "equals", "jsonPath": "$.[1].data.price", "expected": 689.99 }
+            {
+              "type": "equals",
+              "jsonPath": "$.[0].name",
+              "expected": "Apple iPhone 12 Pro Max"
+            },
+            {
+              "type": "equals",
+              "jsonPath": "$.[1].data.price",
+              "expected": 689.99
+            }
           ],
-
           "responseSchema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["id", "name", "data"],
+              "required": [
+                "id",
+                "name",
+                "data"
+              ],
               "properties": {
                 "id": {
                   "type": "string"
@@ -37,11 +53,21 @@
                 "data": {
                   "type": "object",
                   "properties": {
-                    "color": { "type": "string" },
-                    "capacity GB": { "type": "number" },
-                    "price": { "type": "number" },
-                    "Capacity": { "type": "string" },
-                    "Screen size": { "type": "number" }
+                    "color": {
+                      "type": "string"
+                    },
+                    "capacity GB": {
+                      "type": "number"
+                    },
+                    "price": {
+                      "type": "number"
+                    },
+                    "Capacity": {
+                      "type": "string"
+                    },
+                    "Screen size": {
+                      "type": "number"
+                    }
                   },
                   "additionalProperties": false
                 }
@@ -49,7 +75,6 @@
               "additionalProperties": false
             }
           },
-
           "store": {
             "userName": "$.[0].name"
           }
@@ -68,9 +93,20 @@
             "Content-Type": "application/json"
           },
           "assertions": [
-            { "type": "equals", "jsonPath": "$.[0].name", "expected": "Apple iPhone 12 Pro Max" },
-            { "type": "size", "jsonPath": "$.", "expected": 5 },
-            {"type": "statusCode", "expected": 200 }
+            {
+              "type": "equals",
+              "jsonPath": "$.[0].name",
+              "expected": "Apple iPhone 12 Pro Max"
+            },
+            {
+              "type": "size",
+              "jsonPath": "$.",
+              "expected": 5
+            },
+            {
+              "type": "statusCode",
+              "expected": 200
+            }
           ],
           "store": {
             "userName": "$.[0].name"
@@ -90,10 +126,22 @@
             "Content-Type": "application/json"
           },
           "preProcess": [
-            { "var": "randomEmail", "function": "faker.email" },
-            { "var": "encryptedPassword", "function": "encrypt", "args": ["P@ss1234"] },
-            { "var": "authToken", "function": "authToken" }
-            ],
+            {
+              "var": "randomEmail",
+              "function": "faker.email"
+            },
+            {
+              "var": "encryptedPassword",
+              "function": "encrypt",
+              "args": [
+                "P@ss1234"
+              ]
+            },
+            {
+              "var": "authToken",
+              "function": "authToken"
+            }
+          ],
           "body": {
             "name": "Apple MacBook Pro 16",
             "data": {
@@ -104,9 +152,19 @@
             }
           },
           "assertions": [
-            { "type": "exists", "jsonPath": "$.id" },
-            { "type": "equals", "jsonPath": "$.name", "expected": "Apple MacBook Pro 16" },
-            {"type": "statusCode", "expected": 200 }
+            {
+              "type": "exists",
+              "jsonPath": "$.id"
+            },
+            {
+              "type": "equals",
+              "jsonPath": "$.name",
+              "expected": "Apple MacBook Pro 16"
+            },
+            {
+              "type": "statusCode",
+              "expected": 200
+            }
           ],
           "store": {
             "newObjectID": "$.id"
@@ -114,5 +172,9 @@
         }
       ]
     }
-  ]
+  ],
+  "id": "L1VzZXJzL2Fmc2Fy",
+  "filePath": "/Users/afsarali/Repository/api-framework/testData/sampleSuite.json",
+  "fileName": "sampleSuite.json",
+  "lastModified": "2025-06-20T20:11:33.174Z"
 }
