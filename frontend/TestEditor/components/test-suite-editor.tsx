@@ -9,12 +9,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Trash2, Save, X, ArrowLeft } from "lucide-react"
+import { Plus, Trash2, Save, X, ArrowLeft, Globe } from "lucide-react"
 import { TestCaseEditor } from "@/components/test-case-editor"
 
 interface TestSuite {
   id: string
   suiteName: string
+  baseUrl?: string
   status: string
   tags: Array<{ serviceName?: string; suiteType?: string }>
   testCases: Array<any>
@@ -141,22 +142,27 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="max-w-6xl mx-auto p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={onCancel}>
+            <Button variant="ghost" onClick={onCancel} className="hover:bg-white/80">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
-            <h1 className="text-2xl font-bold">Edit Test Suite</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              Edit Test Suite
+            </h1>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onCancel}>
+            <Button variant="outline" onClick={onCancel} className="hover:bg-white/80">
               <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
-            <Button onClick={handleSave}>
+            <Button
+              onClick={handleSave}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+            >
               <Save className="h-4 w-4 mr-2" />
               Save Suite
             </Button>
@@ -164,33 +170,41 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList>
+          <TabsList className="bg-white/80 backdrop-blur-sm shadow-sm">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="testcases">Test Cases ({editedSuite.testCases.length})</TabsTrigger>
             <TabsTrigger value="json">JSON View</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general">
-            <Card>
+            <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
               <CardHeader>
-                <CardTitle>Suite Information</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-blue-600" />
+                  Suite Information
+                </CardTitle>
                 <CardDescription>Configure the basic information for your test suite</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="suiteName">Suite Name</Label>
+                    <Label htmlFor="suiteName" className="text-sm font-medium text-gray-700">
+                      Suite Name
+                    </Label>
                     <Input
                       id="suiteName"
                       value={editedSuite.suiteName}
                       onChange={(e) => handleSuiteChange("suiteName", e.target.value)}
                       placeholder="Enter suite name"
+                      className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
+                    <Label htmlFor="status" className="text-sm font-medium text-gray-700">
+                      Status
+                    </Label>
                     <Select value={editedSuite.status} onValueChange={(value) => handleSuiteChange("status", value)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -203,34 +217,72 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
                   </div>
                 </div>
 
+                {/* Base URL Section */}
+                <div className="space-y-2">
+                  <Label htmlFor="baseUrl" className="text-sm font-medium text-gray-700">
+                    Base URL
+                  </Label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="baseUrl"
+                      value={editedSuite.baseUrl || ""}
+                      onChange={(e) => handleSuiteChange("baseUrl", e.target.value)}
+                      placeholder="https://api.example.com"
+                      className="h-11 pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    The base URL will be prepended to all endpoint paths in this test suite
+                  </p>
+                </div>
+
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <Label>Tags</Label>
-                    <Button size="sm" onClick={handleAddTag}>
+                    <Label className="text-sm font-medium text-gray-700">Tags</Label>
+                    <Button
+                      size="sm"
+                      onClick={handleAddTag}
+                      className="h-8 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                    >
                       <Plus className="h-3 w-3 mr-1" />
                       Add Tag
                     </Button>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {editedSuite.tags.map((tag, index) => (
-                      <div key={index} className="flex items-center gap-2 p-3 border rounded-lg">
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50/50"
+                      >
                         <Input
                           placeholder="Service Name (e.g., @UserService)"
                           value={tag.serviceName || ""}
                           onChange={(e) => handleTagChange(index, "serviceName", e.target.value)}
-                          className="flex-1"
+                          className="flex-1 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                         />
                         <Input
                           placeholder="Suite Type (e.g., @smoke)"
                           value={tag.suiteType || ""}
                           onChange={(e) => handleTagChange(index, "suiteType", e.target.value)}
-                          className="flex-1"
+                          className="flex-1 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                         />
-                        <Button size="sm" variant="destructive" onClick={() => handleRemoveTag(index)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRemoveTag(index)}
+                          className="h-10 px-3 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     ))}
+                    {editedSuite.tags.length === 0 && (
+                      <div className="text-center py-8 text-gray-500 bg-gray-50/50 rounded-lg border-2 border-dashed border-gray-200">
+                        <p className="text-sm">No tags defined yet</p>
+                        <p className="text-xs mt-1">Tags help organize and filter your test suites</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -240,8 +292,11 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
           <TabsContent value="testcases">
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Test Cases</h3>
-                <Button onClick={handleAddTestCase}>
+                <h3 className="text-lg font-semibold text-gray-900">Test Cases</h3>
+                <Button
+                  onClick={handleAddTestCase}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Test Case
                 </Button>
@@ -249,21 +304,36 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
 
               <div className="grid gap-4">
                 {editedSuite.testCases.map((testCase, index) => (
-                  <Card key={index}>
+                  <Card
+                    key={index}
+                    className="bg-white/80 backdrop-blur-sm shadow-md border-0 hover:shadow-lg transition-shadow duration-200"
+                  >
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div>
-                          <CardTitle className="text-base">{testCase.name}</CardTitle>
+                          <CardTitle className="text-base text-gray-900">{testCase.name}</CardTitle>
                           <CardDescription>
                             {testCase.testData?.length || 0} test data item{testCase.testData?.length !== 1 ? "s" : ""}
                           </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="secondary">{testCase.status}</Badge>
-                          <Button size="sm" variant="outline" onClick={() => handleEditTestCase(testCase, index)}>
+                          <Badge variant="secondary" className="bg-gray-100 text-gray-700">
+                            {testCase.status}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditTestCase(testCase, index)}
+                            className="hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700"
+                          >
                             Edit
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteTestCase(index)}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteTestCase(index)}
+                            className="hover:bg-red-50 hover:border-red-400 hover:text-red-700"
+                          >
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -273,10 +343,17 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
                 ))}
 
                 {editedSuite.testCases.length === 0 && (
-                  <Card>
-                    <CardContent className="text-center py-8">
-                      <p className="text-gray-500 mb-4">No test cases defined yet</p>
-                      <Button onClick={handleAddTestCase}>
+                  <Card className="bg-white/80 backdrop-blur-sm shadow-md border-0">
+                    <CardContent className="text-center py-12">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl mb-4">
+                        <Plus className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <p className="text-gray-500 mb-4 font-medium">No test cases defined yet</p>
+                      <p className="text-sm text-gray-400 mb-6">Create your first test case to get started</p>
+                      <Button
+                        onClick={handleAddTestCase}
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                      >
                         <Plus className="h-4 w-4 mr-2" />
                         Add Your First Test Case
                       </Button>
@@ -288,7 +365,7 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
           </TabsContent>
 
           <TabsContent value="json">
-            <Card>
+            <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
               <CardHeader>
                 <CardTitle>JSON View</CardTitle>
                 <CardDescription>View and edit the raw JSON structure</CardDescription>
@@ -304,7 +381,7 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
                       // Invalid JSON, don't update
                     }
                   }}
-                  className="font-mono text-sm min-h-[400px]"
+                  className="font-mono text-sm min-h-[400px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </CardContent>
             </Card>
