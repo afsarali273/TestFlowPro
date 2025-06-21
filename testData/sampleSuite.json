@@ -1,6 +1,7 @@
 {
   "suiteName": "User API Suite Demo",
   "status": "Not Started",
+  "baseUrl": "RESTFUL_API_URL",
   "tags": [
     {
       "serviceName": "@UserService"
