@@ -57,7 +57,7 @@ export interface Tag {
 export interface TestSuite {
     suiteName: string;
     tags?: Tag[];
-    baseUrl?: string;
+    baseUrl: string;
     testCases: TestCase[];
 }
 

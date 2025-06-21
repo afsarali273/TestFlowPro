@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx ts-node src/runner.ts",
+    "test:smoke": "npx ts-node src/runner.ts --serviceName=@UserService --suiteType=smoke",
+    "generate:swagger": "npx ts-node src/swaggerSuiteGenerator.ts /Users/afsarali/Repository/POC/swagger.json",
+    "report:html": "npx ts-node src/generateHtmlReport.ts"
   },
   "author": "Afsar",
   "license": "ISC",
@@ -21,6 +24,7 @@
     "dotenv": "^16.5.0",
     "jsonpath-plus": "^10.3.0",
     "minimist": "^1.2.8",
-    "p-limit": "^6.2.0"
+    "p-limit": "^6.2.0",
+    "uuid": "^11.1.0"
   }
 }

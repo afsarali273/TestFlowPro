@@ -14,7 +14,8 @@ const ajv = new Ajv();
 const schemaCache = new Map<string, object>();
 
 export async function executeSuite(suite: TestSuite, reporter: Reporter) {
-    const { baseUrl } = loadEnvironment();
+    const env = loadEnvironment();
+
     console.log(`Running Suite: ${suite.suiteName}`);
 
     for (const testCase of suite.testCases) {
@@ -23,7 +24,14 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
         for (const data of testCase.testData) {
             let responseData: any = null;
             const start = Date.now();
-            const fullUrl = injectVariables((baseUrl || suite.baseUrl || '') + data.endpoint);
+            let resolvedBaseUrl = suite.baseUrl || env.BASE_URL || '';
+            if (env[suite.baseUrl]) {
+                resolvedBaseUrl = env[suite.baseUrl];
+            }
+            const fullUrl = injectVariables(resolvedBaseUrl + data.endpoint);
+
+
+            // Prepare request headers from headerFile or header inline
             const headers = data.headers;
             const method = data.method.toLowerCase();
 

@@ -1,6 +1,7 @@
 {
   "id": "1750497449999_L1VzZXJzL2Fmc2FyYWxpL1JlcG9zaXRvcnkvYXBpLWZyYW1ld29yay90ZXN0RGF0YS9HZXRfU2luZ2xlX29iamVjdC5qc29u_6m36nysab",
   "suiteName": "Get Single object",
+  "baseUrl": "RESTFUL_API_URL",
   "status": "Not Started",
   "tags": [],
   "testCases": [
