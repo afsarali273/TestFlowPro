@@ -1,8 +1,29 @@
-export interface Assertion {
-    type: 'equals' | 'notEquals' | 'contains' | 'size' | 'statusCode' | 'type' | 'exists' | 'regex';
-    jsonPath?: string;
+export type Assertion = {
+    type:
+        | 'equals'
+        | 'notEquals'
+        | 'contains'
+        | 'startsWith'
+        | 'endsWith'
+        | 'greaterThan'
+        | 'lessThan'
+        | 'in'
+        | 'notIn'
+        | 'includesAll'
+        | 'length'
+        | 'size'
+        | 'statusCode'
+        | 'type'
+        | 'exists'
+        | 'regex'
+        | 'arrayObjectMatch';
+    jsonPath: string;
     expected?: any;
-}
+    matchField?: string;
+    matchValue?: string;
+    assertField?: string;
+};
+
 
 
 export interface StoreMap {

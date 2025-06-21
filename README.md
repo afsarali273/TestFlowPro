@@ -122,12 +122,54 @@ project-root/
 
 ## 🛡 Assertions
 
+| `type`             | Description                                                                |
+| ------------------ | -------------------------------------------------------------------------- |
+| `equals`           | Value is equal to expected                                                 |
+| `notEquals`        | Value is not equal to expected                                             |
+| `contains`         | Result contains substring or value                                         |
+| `startsWith`       | Result string starts with expected value                                   |
+| `endsWith`         | Result string ends with expected value                                     |
+| `greaterThan`      | Result is greater than expected (numeric)                                  |
+| `lessThan`         | Result is less than expected (numeric)                                     |
+| `in`               | Result exists in an array of expected values                               |
+| `notIn`            | Result does not exist in an array of expected values                       |
+| `includesAll`      | Array result must include all specified values                             |
+| `length`           | Checks length of array or string                                           |
+| `size`             | Checks number of keys (if object) or elements (if array)                   |
+| `type`             | Type of result matches (e.g., `"string"`, `"number"`)                      |
+| `exists`           | Path exists                                                                |
+| `regex`            | Regex pattern matches result                                               |
+| `statusCode`       | Validates HTTP status code                                                 |
+| `arrayObjectMatch` | Search array of objects for a field/value match and assert a sibling field |
+
+
 ````
 "assertions": [
-{ "statusCode": 200 },
-{ "jsonPath": "$.user.email", "expectedValue": "${randomEmail}" },
-{ "jsonPath": "$.data.items", "expectedType": "array" }
+  { "type": "statusCode", "jsonPath": "$.", "expected": 200 },
+  { "type": "equals", "jsonPath": "$.data.id", "expected": "abc123" },
+  { "type": "notEquals", "jsonPath": "$.data.status", "expected": "error" },
+  { "type": "contains", "jsonPath": "$.message", "expected": "success" },
+  { "type": "startsWith", "jsonPath": "$.user.email", "expected": "test" },
+  { "type": "greaterThan", "jsonPath": "$.data.age", "expected": 18 },
+  { "type": "lessThan", "jsonPath": "$.data.age", "expected": 60 },
+  { "type": "in", "jsonPath": "$.status", "expected": ["active", "pending"] },
+  { "type": "includesAll", "jsonPath": "$.roles", "expected": ["admin", "editor"] },
+  { "type": "length", "jsonPath": "$.items", "expected": 5 },
+  { "type": "regex", "jsonPath": "$.email", "expected": "^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}$" },
+  {
+    "type": "arrayObjectMatch",
+    "jsonPath": "$.data",
+    "matchField": "name",
+    "matchValue": "Company",
+    "assertField": "value",
+    "expected": "MBS"
+  }
 ]
+
+-------------------------
+arrayObjectMatch is ideal when:
+The array contains { name: "X", value: "Y" } objects
+Element order is dynamic
 ````
 
 - statusCode: Validate HTTP status 
@@ -152,6 +194,21 @@ project-root/
 "userId": "$.id"
 }
 ```
+- Array Object Match (for unordered arrays)
+```html
+  "store": [
+  {
+  "type": "arrayObjectMatch",
+  "jsonPath": "$.data",
+  "matchField": "name",
+  "matchValue": "Company",
+  "extractField": "value",
+  "variableName": "companyName"
+  }
+  ]
+  ```
+Use stored variables in later requests as {{variableName}}.
+
 
 ## ⚙️ Environment Configuration (.env)
 
@@ -167,7 +224,7 @@ PARALLEL_THREADS=4
 
 ```shell
 Install dependencies
-npm install
+npm install 
 # Run tests in parallel mode
 npx ts-node src/runner.ts 
 

@@ -1,0 +1,45 @@
+{
+  "id": "1750491933750",
+  "suiteName": "Get Single object",
+  "status": "Not Started",
+  "tags": [],
+  "testCases": [
+    {
+      "name": "Single object from list",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Get Single Test data",
+          "method": "GET",
+          "endpoint": "/objects/7",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "assertions": [
+            {
+              "type": "equals",
+              "jsonPath": "$.id",
+              "expected": "7"
+            },
+            {
+              "type": "exists",
+              "jsonPath": "$.data",
+              "expected": ""
+            },
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": "200"
+            },
+            {
+              "type": "equals",
+              "jsonPath": "$.data['CPU model']",
+              "expected": "Intel Core i9"
+            }
+          ],
+          "store": {}
+        }
+      ]
+    }
+  ]
+}

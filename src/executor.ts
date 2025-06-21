@@ -3,8 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import Ajv from 'ajv';
 import { TestSuite, Assertion } from './types';
-import { injectVariables, setVariable } from './utils/variableStore';
-import { JSONPath } from 'jsonpath-plus';
+import { injectVariables } from './utils/variableStore';
+import { storeResponseVariables } from './utils/variableStore';
 import { loadEnvironment } from './utils/envManager';
 import { Reporter } from './reporter';
 import { assertJson } from './utils/assertUtils';
@@ -57,7 +57,7 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
                 body = JSON.parse(injectVariables(JSON.stringify(data.body)));
             }
 
-            // Prepare JSON Schema for validation (external file or inline)
+            // Prepare JSON Schema for validation
             let schema: object | undefined;
             if (data.responseSchemaFile) {
                 try {
@@ -96,7 +96,7 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
                 const res = await axios({ url: fullUrl, method, headers, data: body });
                 responseData = res.data;
 
-                // Validate response schema if available
+                // Schema validation
                 if (schema) {
                     const validate = ajv.compile(schema);
                     const valid = validate(res.data);
@@ -107,7 +107,7 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
                     }
                 }
 
-                // Run assertions
+                // Assertions
                 if (data.assertions) {
                     for (const a of data.assertions as Assertion[]) {
                         try {
@@ -122,9 +122,11 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
 
                 // Store variables from response
                 if (data.store) {
-                    for (const [varName, jsonPath] of Object.entries(data.store)) {
-                        const value = JSONPath({ path: jsonPath, json: res.data })[0];
-                        setVariable(varName, value);
+                    try {
+                        storeResponseVariables(res.data, data.store);
+                    } catch (err: any) {
+                        failed++;
+                        allErrors.push(`Variable store failed: ${err.message}`);
                     }
                 }
 
