@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Plus, FileText, Play, Edit, Trash2, BarChart3, Eye, Settings, Upload, Zap } from "lucide-react"
+import { Plus, FileText, Play, Edit, Trash2, BarChart3, Eye, Settings, Upload, Zap, Globe } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,6 +20,7 @@ import { FrameworkConfigModal } from "@/components/framework-config-modal"
 interface TestSuite {
   id: string
   suiteName: string
+  baseUrl?: string
   status: string
   tags: Array<{ serviceName?: string; suiteType?: string }>
   testCases: Array<any>
@@ -151,6 +152,7 @@ export default function APITestFramework() {
     setSelectedSuite({
       id: newId,
       suiteName: "New Suite",
+      baseUrl: "",
       status: "Not Started",
       tags: [],
       testCases: [],
@@ -348,6 +350,12 @@ export default function APITestFramework() {
                           {suite.testCases.length} test case{suite.testCases.length !== 1 ? "s" : ""}
                           {suite.fileName && (
                             <span className="block text-xs text-gray-500 mt-1">📄 {suite.fileName}</span>
+                          )}
+                          {suite.baseUrl && (
+                            <span className="flex items-center text-xs text-blue-600 mt-1">
+                              <Globe className="h-3 w-3 mr-1" />
+                              {suite.baseUrl}
+                            </span>
                           )}
                         </CardDescription>
                       </div>

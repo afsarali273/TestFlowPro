@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { X, FileText, Database, CheckCircle, XCircle, Clock } from "lucide-react"
+import { X, FileText, Database, CheckCircle, XCircle, Clock, Code, Upload } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface TestCasesModalProps {
@@ -59,7 +59,7 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh]">
+      <DialogContent className="max-w-6xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -104,6 +104,33 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                   </div>
                                 </div>
 
+                                {/* File References */}
+                                {(testData.bodyFile || testData.responseSchemaFile) && (
+                                  <div>
+                                    <h6 className="text-xs font-medium text-gray-600 mb-1">File References:</h6>
+                                    <div className="space-y-1">
+                                      {testData.bodyFile && (
+                                        <div className="flex items-center gap-2 text-xs">
+                                          <Upload className="h-3 w-3 text-blue-500" />
+                                          <span className="font-medium text-gray-700">Body File:</span>
+                                          <code className="bg-blue-100 px-1 rounded text-blue-700">
+                                            {testData.bodyFile}
+                                          </code>
+                                        </div>
+                                      )}
+                                      {testData.responseSchemaFile && (
+                                        <div className="flex items-center gap-2 text-xs">
+                                          <Code className="h-3 w-3 text-green-500" />
+                                          <span className="font-medium text-gray-700">Schema File:</span>
+                                          <code className="bg-green-100 px-1 rounded text-green-700">
+                                            {testData.responseSchemaFile}
+                                          </code>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
                                 {/* Headers */}
                                 {testData.headers && Object.keys(testData.headers).length > 0 && (
                                   <div>
@@ -119,15 +146,27 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                   </div>
                                 )}
 
-                                {/* Body */}
-                                {testData.body && Object.keys(testData.body).length > 0 && (
+                                {/* Body (only show if no bodyFile) */}
+                                {!testData.bodyFile && testData.body && Object.keys(testData.body).length > 0 && (
                                   <div>
                                     <h6 className="text-xs font-medium text-gray-600 mb-1">Request Body:</h6>
-                                    <pre className="text-xs bg-gray-200 p-2 rounded overflow-x-auto">
+                                    <pre className="text-xs bg-gray-200 p-2 rounded overflow-x-auto max-h-32">
                                       {JSON.stringify(testData.body, null, 2)}
                                     </pre>
                                   </div>
                                 )}
+
+                                {/* Response Schema (only show if no responseSchemaFile) */}
+                                {!testData.responseSchemaFile &&
+                                  testData.responseSchema &&
+                                  Object.keys(testData.responseSchema).length > 0 && (
+                                    <div>
+                                      <h6 className="text-xs font-medium text-gray-600 mb-1">Response Schema:</h6>
+                                      <pre className="text-xs bg-green-50 p-2 rounded overflow-x-auto max-h-32 border border-green-200">
+                                        {JSON.stringify(testData.responseSchema, null, 2)}
+                                      </pre>
+                                    </div>
+                                  )}
 
                                 {/* Assertions */}
                                 {testData.assertions && testData.assertions.length > 0 && (
