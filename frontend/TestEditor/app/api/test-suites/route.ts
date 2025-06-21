@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
 
 async function loadTestSuitesFromDirectory(dirPath: string): Promise<any[]> {
   const testSuites: any[] = []
+  const processedPaths = new Set<string>() // Track processed file paths to avoid duplicates
 
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true })
@@ -41,12 +42,24 @@ async function loadTestSuitesFromDirectory(dirPath: string): Promise<any[]> {
         const subSuites = await loadTestSuitesFromDirectory(fullPath)
         testSuites.push(...subSuites)
       } else if (entry.isFile() && entry.name.endsWith(".json")) {
+        // Skip if we've already processed this file path
+        if (processedPaths.has(fullPath)) {
+          continue
+        }
+        processedPaths.add(fullPath)
+
         try {
           const fileContent = await fs.readFile(fullPath, "utf-8")
           const testSuite = JSON.parse(fileContent)
 
+          // Generate a more unique ID using timestamp + path hash
+          const pathHash = Buffer.from(fullPath)
+            .toString("base64")
+            .replace(/[^a-zA-Z0-9]/g, "")
+          const uniqueId = `${Date.now()}_${pathHash}_${Math.random().toString(36).substr(2, 9)}`
+
           // Add metadata
-          testSuite.id = generateIdFromPath(fullPath)
+          testSuite.id = uniqueId
           testSuite.filePath = fullPath
           testSuite.fileName = entry.name
           testSuite.lastModified = (await fs.stat(fullPath)).mtime
@@ -66,7 +79,12 @@ async function loadTestSuitesFromDirectory(dirPath: string): Promise<any[]> {
     console.error(`Error reading directory ${dirPath}:`, error)
   }
 
-  return testSuites
+  // Remove any potential duplicates based on file path
+  const uniqueSuites = testSuites.filter(
+    (suite, index, self) => index === self.findIndex((s) => s.filePath === suite.filePath),
+  )
+
+  return uniqueSuites
 }
 
 function generateIdFromPath(filePath: string): string {

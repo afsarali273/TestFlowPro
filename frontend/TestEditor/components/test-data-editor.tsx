@@ -57,6 +57,9 @@ export function TestDataEditor({ testData, onSave, onCancel }: TestDataEditorPro
       type: "equals",
       jsonPath: "$.",
       expected: "",
+      matchField: "",
+      matchValue: "",
+      assertField: "",
     }
     setEditedTestData((prev: any) => ({
       ...prev,
@@ -295,23 +298,72 @@ export function TestDataEditor({ testData, onSave, onCancel }: TestDataEditorPro
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="equals">Equals</SelectItem>
-                            <SelectItem value="exists">Exists</SelectItem>
+                            <SelectItem value="notEquals">Not Equals</SelectItem>
+                            <SelectItem value="contains">Contains</SelectItem>
+                            <SelectItem value="startsWith">Starts With</SelectItem>
+                            <SelectItem value="endsWith">Ends With</SelectItem>
+                            <SelectItem value="greaterThan">Greater Than</SelectItem>
+                            <SelectItem value="lessThan">Less Than</SelectItem>
+                            <SelectItem value="in">In Array</SelectItem>
+                            <SelectItem value="notIn">Not In Array</SelectItem>
+                            <SelectItem value="includesAll">Includes All</SelectItem>
+                            <SelectItem value="length">Length</SelectItem>
                             <SelectItem value="size">Size</SelectItem>
                             <SelectItem value="statusCode">Status Code</SelectItem>
-                            <SelectItem value="contains">Contains</SelectItem>
+                            <SelectItem value="type">Type</SelectItem>
+                            <SelectItem value="exists">Exists</SelectItem>
+                            <SelectItem value="regex">Regex</SelectItem>
+                            <SelectItem value="arrayObjectMatch">Array Object Match</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Input
-                          placeholder="JSON Path"
-                          value={assertion.jsonPath || ""}
-                          onChange={(e) => handleUpdateAssertion(index, "jsonPath", e.target.value)}
-                        />
-                        <Input
-                          placeholder="Expected Value"
-                          value={assertion.expected || ""}
-                          onChange={(e) => handleUpdateAssertion(index, "expected", e.target.value)}
-                        />
+
+                        {assertion.type !== "exists" && assertion.type !== "statusCode" && (
+                          <Input
+                            placeholder="JSON Path"
+                            value={assertion.jsonPath || ""}
+                            onChange={(e) => handleUpdateAssertion(index, "jsonPath", e.target.value)}
+                          />
+                        )}
+
+                        {assertion.type === "statusCode" ? (
+                          <Input
+                            type="number"
+                            placeholder="Status Code (e.g., 200)"
+                            value={assertion.expected || ""}
+                            onChange={(e) =>
+                              handleUpdateAssertion(index, "expected", Number.parseInt(e.target.value) || "")
+                            }
+                          />
+                        ) : assertion.type !== "exists" ? (
+                          <Input
+                            placeholder="Expected Value"
+                            value={assertion.expected || ""}
+                            onChange={(e) => handleUpdateAssertion(index, "expected", e.target.value)}
+                          />
+                        ) : (
+                          <div></div>
+                        )}
                       </div>
+
+                      {assertion.type === "arrayObjectMatch" && (
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                          <Input
+                            placeholder="Match Field"
+                            value={assertion.matchField || ""}
+                            onChange={(e) => handleUpdateAssertion(index, "matchField", e.target.value)}
+                          />
+                          <Input
+                            placeholder="Match Value"
+                            value={assertion.matchValue || ""}
+                            onChange={(e) => handleUpdateAssertion(index, "matchValue", e.target.value)}
+                          />
+                          <Input
+                            placeholder="Assert Field"
+                            value={assertion.assertField || ""}
+                            onChange={(e) => handleUpdateAssertion(index, "assertField", e.target.value)}
+                          />
+                        </div>
+                      )}
                       <Button size="sm" variant="destructive" onClick={() => handleRemoveAssertion(index)}>
                         <Trash2 className="h-3 w-3 mr-1" />
                         Remove
