@@ -9,6 +9,8 @@ import { loadEnvironment } from './utils/envManager';
 import { Reporter } from './reporter';
 import { assertJson } from './utils/assertUtils';
 import { runPreProcessors } from './preProcessor';
+import { sendSoapRequest, parseXmlToJson } from './utils/soapUtils';
+
 
 const ajv = new Ajv();
 const schemaCache = new Map<string, object>();
@@ -99,15 +101,23 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
             let passed = 0,
                 failed = 0;
             let allErrors: string[] = [];
+            let rawResponse;
 
             try {
-                const res = await axios({ url: fullUrl, method, headers, data: body });
-                responseData = res.data;
+                if (data.protocol === 'SOAP') {
+                    rawResponse = await sendSoapRequest(fullUrl, body, headers || {});
+                    responseData = parseXmlToJson(rawResponse);
+                } else {
+                    const res = await axios({ url: fullUrl, method, headers, data: body });
+                    rawResponse = res;
+                    responseData = res.data;
+                }
+
 
                 // Schema validation
                 if (schema) {
                     const validate = ajv.compile(schema);
-                    const valid = validate(res.data);
+                    const valid = validate(responseData);
                     if (!valid) {
                         failed++;
                         const errors = validate.errors?.map(e => `${e.instancePath} ${e.message}`).join('; ');
@@ -119,7 +129,7 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
                 if (data.assertions) {
                     for (const a of data.assertions as Assertion[]) {
                         try {
-                            assertJson(res.data, res.status, [a]);
+                            assertJson(responseData, rawResponse.status, [a]);
                             passed++;
                         } catch (err: any) {
                             failed++;
@@ -131,7 +141,7 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
                 // Store variables from response
                 if (data.store) {
                     try {
-                        storeResponseVariables(res.data, data.store);
+                        storeResponseVariables(responseData.data, data.store);
                     } catch (err: any) {
                         failed++;
                         allErrors.push(`Variable store failed: ${err.message}`);
@@ -154,7 +164,7 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
                     assertionsPassed: passed,
                     assertionsFailed: failed,
                     responseTimeMs: end - start,
-                    responseBody: status === 'FAIL' ? responseData : undefined,
+                    responseBody: status === 'FAIL' ? rawResponse : undefined,
                 });
             }
         }

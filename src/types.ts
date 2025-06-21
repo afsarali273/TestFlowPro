@@ -32,6 +32,7 @@ export interface StoreMap {
 
 export interface TestData {
     name: string;
+    protocol?: 'REST' | 'SOAP';
     method: string;
     endpoint: string;
     headers?: Record<string, string>;

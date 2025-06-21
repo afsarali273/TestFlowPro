@@ -1,5 +1,6 @@
 import { JSONPath } from 'jsonpath-plus';
 import { Assertion } from '../types';
+import xpath from "xpath";
 
 export function assertJson(response: any, statusCode: number, assertions: Assertion[]) {
     for (const a of assertions) {
@@ -129,3 +130,12 @@ export function assertJson(response: any, statusCode: number, assertions: Assert
         }
     }
 }
+
+
+// export function assertXmlWithXPath(xmlString: string, xPath: string, expected: string) {
+//     const doc = new DOMParser().parseFromString(xmlString);
+//     const actual = xpath.select1(xPath, doc);
+//     if (!actual || actual.textContent !== expected) {
+//         throw new Error(`XPath assertion failed: Expected ${expected}, got ${actual?.textContent}`);
+//     }
+// }
