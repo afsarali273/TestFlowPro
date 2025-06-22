@@ -3,6 +3,12 @@
 A powerful, flexible, and pluggable **API automation framework** built in **TypeScript**, using **Axios** and **JSON-driven test configuration**.  
 Designed for **REST API testing**, it supports dynamic data, pre-processing, assertions, schema validation, and multi-suite execution.
 
+TODO:
+- SOAP API
+- GraphQL
+- Kafka Integration
+- Database integration
+
 ---
 
 ## 🚀 Features
