@@ -1,5 +1,5 @@
 {
-  "name": "api-framework",
+  "name": "api-testflow",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "author": "Afsar",
   "license": "ISC",
-  "description": "",
+  "description": "API Test Flow Framework",
   "devDependencies": {
     "@types/minimist": "^1.2.5",
     "@types/node": "^24.0.3",
