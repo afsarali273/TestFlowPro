@@ -58,53 +58,150 @@ project-root/
 
 ```json
 {
-  "suiteName": "UserService Login Tests",
+  "suiteName": "Bookstore API Suite",
+  "status": "Not Started",
+  "baseUrl": "https://api.bookstore.com",
   "tags": [
-    { "serviceName": "@UserService" },
-    { "suiteType": "@smoke" }
+    {
+      "serviceName": "@BookService"
+    },
+    {
+      "suiteType": "@regression"
+    }
   ],
-  "baseUrl": "https://api.example.com",
   "testCases": [
     {
-      "name": "Login and Get Profile",
+      "name": "Get Book Details",
+      "status": "Not Started",
       "testData": [
         {
-          "name": "Valid Credentials",
-          "method": "POST",
-          "endpoint": "/login",
+          "name": "Fetch book with ID 101",
+          "method": "GET",
+          "endpoint": "/books/101",
           "headers": {
             "Content-Type": "application/json"
           },
-          "body": {
-            "username": "admin",
-            "password": "admin123"
+          "assertions": [
+            {
+              "type": "equals",
+              "jsonPath": "$.title",
+              "expected": "The Pragmatic Programmer"
+            },
+            {
+              "type": "equals",
+              "jsonPath": "$.author",
+              "expected": "Andrew Hunt"
+            },
+            {
+              "type": "statusCode",
+              "expected": 200
+            }
+          ],
+          "responseSchema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "required": ["id", "title", "author", "price"],
+            "properties": {
+              "id": { "type": "number" },
+              "title": { "type": "string" },
+              "author": { "type": "string" },
+              "price": { "type": "number" }
+            }
           },
           "store": {
-            "authToken": "$.token"
-          },
-          "assertions": [
-            { "statusCode": 200 },
-            { "jsonPath": "$.token", "expectedType": "string" }
-          ]
-        },
+            "bookTitle": "$.title",
+            "bookPrice": "$.price"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create New Book",
+      "status": "Not Started",
+      "testData": [
         {
-          "name": "Fetch Profile with Token",
-          "method": "GET",
-          "endpoint": "/me",
+          "name": "Add new book to catalog",
+          "method": "POST",
+          "endpoint": "/books",
           "headers": {
-            "Authorization": "Bearer ${authToken}"
+            "Content-Type": "application/json"
+          },
+          "preProcess": [
+            {
+              "var": "randomISBN",
+              "function": "faker.isbn"
+            },
+            {
+              "var": "authToken",
+              "function": "authToken"
+            }
+          ],
+          "body": {
+            "title": "Clean Code",
+            "author": "Robert C. Martin",
+            "isbn": "{{randomISBN}}",
+            "price": 499.99
           },
           "assertions": [
-            { "statusCode": 200 },
-            { "jsonPath": "$.user", "expectedValue": "admin" }
+            {
+              "type": "statusCode",
+              "expected": 201
+            },
+            {
+              "type": "exists",
+              "jsonPath": "$.id"
+            }
           ],
-          "responseSchemaFile": "./schemas/user-details-schema.json"
+          "store": {
+            "newBookId": "$.id"
+          }
+        }
+      ]
+    },
+    {
+      "name": "List All Books",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Get all books",
+          "method": "GET",
+          "endpoint": "/books",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "assertions": [
+            {
+              "type": "size",
+              "jsonPath": "$",
+              "expected": 10
+            },
+            {
+              "type": "contains",
+              "jsonPath": "$[*].title",
+              "expected": "Clean Code"
+            },
+            {
+              "type": "statusCode",
+              "expected": 200
+            }
+          ]
         }
       ]
     }
   ]
 }
-```
+````
+
+### 🔍 What This Sample Demonstrates:
+
+| Feature                    | Usage Example                                        |
+| -------------------------- | ---------------------------------------------------- |
+| **Base URL & Tags**        | `baseUrl`, `@BookService`, `@regression` tags        |
+| **Pre-processing**         | Dynamic values like `faker.isbn`, `authToken`        |
+| **Assertions**             | `equals`, `contains`, `statusCode`, `size`, `exists` |
+| **JSON Schema Validation** | Validates book object format                         |
+| **Variable Storage**       | Saves values like book ID, title for future use      |
+
 # 🧰 PreProcess Functions
 
 ````
@@ -229,14 +326,17 @@ PARALLEL_THREADS=4
 🚀 Running Tests
 
 ```shell
-Install dependencies
-npm install 
+#Install dependencies
+npm install
 # Run tests in parallel mode
 npx ts-node src/runner.ts 
 
 # Run tests with CLI tag filters
 npx ts-node src/runner.ts --serviceName=@UserService --suiteType=@smoke
 
+# Run Frontend APP
+npm install --legacy-peer-deps
+npm run dev
 ```
 
 ## ✅ Test Case Use Cases Covered

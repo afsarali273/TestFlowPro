@@ -77,6 +77,81 @@
             }
           },
           "store": {
+            "userName": "$.[0].name",
+            "variable2": "$.[1].id"
+          },
+          "preProcess": [
+            {
+              "var": "Variable1",
+              "function": "getEncryptedSecrets",
+              "args": [
+                "myPasswword"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Fetch User with ID 2",
+          "method": "GET",
+          "endpoint": "/objects?id=3&id=5&id=10",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "assertions": [
+            {
+              "type": "equals",
+              "jsonPath": "$.[0].name",
+              "expected": "Apple iPhone 12 Pro Max"
+            },
+            {
+              "type": "equals",
+              "jsonPath": "$.[1].data.price",
+              "expected": 689.99
+            }
+          ],
+          "responseSchema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "data"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "color": {
+                      "type": "string"
+                    },
+                    "capacity GB": {
+                      "type": "number"
+                    },
+                    "price": {
+                      "type": "number"
+                    },
+                    "Capacity": {
+                      "type": "string"
+                    },
+                    "Screen size": {
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "store": {
             "userName": "$.[0].name"
           }
         }
@@ -174,8 +249,8 @@
       ]
     }
   ],
-  "id": "L1VzZXJzL2Fmc",
+  "id": "1750603193700_L1VzZXJzL2Fmc2FyYWxpL1JlcG9zaXRvcnkvYXBpLWZyYW1ld29yay90ZXN0RGF0YS9zYW1wbGVTdWl0ZS5qc29u_ejrvfe36m",
   "filePath": "/Users/afsarali/Repository/api-framework/testData/sampleSuite.json",
   "fileName": "sampleSuite.json",
-  "lastModified": "2025-06-20T20:11:33.174Z"
+  "lastModified": "2025-06-22T14:30:51.209Z"
 }
