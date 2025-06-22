@@ -354,3 +354,7 @@ npm run dev
 | Suite-level metadata and CLI filters   | ✅         |
 | Response body stored in report (fail)  | ✅         |
 | Parallel suite execution               | ✅         |
+
+### Test Designer
+![landing](./frontend/img/landing-page.png)
+![result-page](./frontend/img/result-page.png)
