@@ -3,8 +3,8 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'TestFlow Pro',
-  description: 'This is API Automation Tool',
-  generator: 'Afsar',
+  description: 'Advanced API Test Automation Generator',
+  generator: '',
 }
 
 export default function RootLayout({

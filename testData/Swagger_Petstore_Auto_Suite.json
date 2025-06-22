@@ -1,0 +1,453 @@
+{
+  "suiteName": "Swagger Petstore Auto Suite",
+  "status": "Not Started",
+  "tags": [
+    {
+      "swaggerVersion": "2.0"
+    },
+    {
+      "suiteType": "@generated"
+    }
+  ],
+  "baseUrl": "https://petstore.swagger.io/v2",
+  "testCases": [
+    {
+      "name": "Test /pet/{petId}/uploadImage",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "uploads an image",
+          "method": "POST",
+          "endpoint": "/pet/{{petId}}/uploadImage",
+          "headers": {
+            "Content-Type": "multipart/form-data"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        }
+      ]
+    },
+    {
+      "name": "Test /pet",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Add a new pet to the store",
+          "method": "POST",
+          "endpoint": "/pet",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        },
+        {
+          "name": "Update an existing pet",
+          "method": "PUT",
+          "endpoint": "/pet",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        }
+      ]
+    },
+    {
+      "name": "Test /pet/findByStatus",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Finds Pets by status",
+          "method": "GET",
+          "endpoint": "/pet/findByStatus",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        }
+      ]
+    },
+    {
+      "name": "Test /pet/findByTags",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Finds Pets by tags",
+          "method": "GET",
+          "endpoint": "/pet/findByTags",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        }
+      ]
+    },
+    {
+      "name": "Test /pet/{petId}",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Find pet by ID",
+          "method": "GET",
+          "endpoint": "/pet/{{petId}}",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        },
+        {
+          "name": "Updates a pet in the store with form data",
+          "method": "POST",
+          "endpoint": "/pet/{{petId}}",
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        },
+        {
+          "name": "Deletes a pet",
+          "method": "DELETE",
+          "endpoint": "/pet/{{petId}}",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        }
+      ]
+    },
+    {
+      "name": "Test /store/inventory",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Returns pet inventories by status",
+          "method": "GET",
+          "endpoint": "/store/inventory",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        }
+      ]
+    },
+    {
+      "name": "Test /store/order",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Place an order for a pet",
+          "method": "POST",
+          "endpoint": "/store/order",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        }
+      ]
+    },
+    {
+      "name": "Test /store/order/{orderId}",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Find purchase order by ID",
+          "method": "GET",
+          "endpoint": "/store/order/{{orderId}}",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        },
+        {
+          "name": "Delete purchase order by ID",
+          "method": "DELETE",
+          "endpoint": "/store/order/{{orderId}}",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        }
+      ]
+    },
+    {
+      "name": "Test /user/createWithList",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Creates list of users with given input array",
+          "method": "POST",
+          "endpoint": "/user/createWithList",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        },
+        {
+          "name": "New Test Data",
+          "method": "GET",
+          "endpoint": "/",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "assertions": [],
+          "store": {}
+        }
+      ]
+    },
+    {
+      "name": "Test /user/{username}",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Get user by user name",
+          "method": "GET",
+          "endpoint": "/user/{{username}}",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        },
+        {
+          "name": "Updated user",
+          "method": "PUT",
+          "endpoint": "/user/{{username}}",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        },
+        {
+          "name": "Delete user",
+          "method": "DELETE",
+          "endpoint": "/user/{{username}}",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        }
+      ]
+    },
+    {
+      "name": "Test /user/login",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Logs user into the system",
+          "method": "GET",
+          "endpoint": "/user/login",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        }
+      ]
+    },
+    {
+      "name": "Test /user/logout",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Logs out current logged in user session",
+          "method": "GET",
+          "endpoint": "/user/logout",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        }
+      ]
+    },
+    {
+      "name": "Test /user/createWithArray",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Creates list of users with given input array",
+          "method": "POST",
+          "endpoint": "/user/createWithArray",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        }
+      ]
+    },
+    {
+      "name": "Test /user",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Create user",
+          "method": "POST",
+          "endpoint": "/user",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "preProcess": [],
+          "assertions": [
+            {
+              "type": "statusCode",
+              "jsonPath": "$.",
+              "expected": 200
+            }
+          ],
+          "store": {}
+        }
+      ]
+    }
+  ],
+  "id": "Swagger_Petstore_Auto_Suite_L1VzZXJz",
+  "fileName": "Swagger_Petstore_Auto_Suite.json",
+  "filePath": "/Users/afsarali/Repository/api-framework/testData/Swagger_Petstore_Auto_Suite.json",
+  "lastModified": "2025-06-22T15:00:12.456Z"
+}
