@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Trash2, Save, X, ArrowLeft, Globe } from "lucide-react"
+import { Plus, Trash2, Save, X, ArrowLeft, Globe, Download } from "lucide-react"
 import { TestCaseEditor } from "@/components/test-case-editor"
 
 interface TestSuite {
@@ -62,7 +62,9 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
   }
 
   const handleAddTestCase = () => {
+    const timestamp = Date.now()
     const newTestCase = {
+      id: `testcase_${timestamp}`,
       name: "New Test Case",
       status: "Not Started",
       testData: [],
@@ -155,6 +157,40 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
             </h1>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                try {
+                  // Clean the suite data for export (remove UI-specific fields)
+                  const exportData = {
+                    ...editedSuite,
+                    testCases: editedSuite.testCases.map((tc) => {
+                      const { index, ...cleanTestCase } = tc
+                      return cleanTestCase
+                    }),
+                  }
+
+                  // Create and download the file
+                  const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+                    type: "application/json",
+                  })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement("a")
+                  a.href = url
+                  a.download = `${editedSuite.suiteName.replace(/[^a-zA-Z0-9]/g, "_")}.json`
+                  document.body.appendChild(a)
+                  a.click()
+                  document.body.removeChild(a)
+                  URL.revokeObjectURL(url)
+                } catch (error) {
+                  console.error("Error exporting test suite:", error)
+                }
+              }}
+              className="hover:bg-white/80"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
             <Button variant="outline" onClick={onCancel} className="hover:bg-white/80">
               <X className="h-4 w-4 mr-2" />
               Cancel

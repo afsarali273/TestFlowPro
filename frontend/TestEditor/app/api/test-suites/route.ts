@@ -52,11 +52,13 @@ async function loadTestSuitesFromDirectory(dirPath: string): Promise<any[]> {
           const fileContent = await fs.readFile(fullPath, "utf-8")
           const testSuite = JSON.parse(fileContent)
 
-          // Generate a more unique ID using timestamp + path hash
+          // Generate a deterministic ID based on file path and suite name
           const pathHash = Buffer.from(fullPath)
             .toString("base64")
             .replace(/[^a-zA-Z0-9]/g, "")
-          const uniqueId = `${Date.now()}_${pathHash}_${Math.random().toString(36).substr(2, 9)}`
+            .substring(0, 8)
+          const suiteName = testSuite.suiteName ? testSuite.suiteName.replace(/[^a-zA-Z0-9]/g, "_") : "unnamed"
+          const uniqueId = `${suiteName}_${pathHash}`
 
           // Add metadata
           testSuite.id = uniqueId

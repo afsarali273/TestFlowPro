@@ -55,7 +55,10 @@ export default function APITestFramework() {
       setTestSuitePath(savedPath)
       loadTestSuitesFromPath(savedPath)
     } else {
-      setIsPathConfigOpen(true)
+      // Only show path config modal on client side
+      if (typeof window !== "undefined") {
+        setIsPathConfigOpen(true)
+      }
     }
 
     if (savedFrameworkPath) {
@@ -63,7 +66,7 @@ export default function APITestFramework() {
     }
   }, [])
 
-  // Add loadTestSuitesFromPath function
+  // Update the loadTestSuitesFromPath function to handle IDs more consistently
   const loadTestSuitesFromPath = async (path: string) => {
     setIsLoading(true)
     try {
@@ -71,10 +74,10 @@ export default function APITestFramework() {
       if (response.ok) {
         const suites = await response.json()
 
-        // Ensure all suites have unique IDs
+        // Ensure all suites have unique IDs using a more deterministic approach
         const uniqueSuites = suites.map((suite: TestSuite, index: number) => ({
           ...suite,
-          id: suite.id || `suite_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`,
+          id: suite.id || `suite_${suite.suiteName.replace(/[^a-zA-Z0-9]/g, "_")}_${index}`,
         }))
 
         setTestSuites(uniqueSuites)
@@ -110,6 +113,7 @@ export default function APITestFramework() {
     setIsFrameworkConfigOpen(false)
   }
 
+  // Update the handleImportSuite function
   const handleImportSuite = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -117,8 +121,9 @@ export default function APITestFramework() {
       reader.onload = (e) => {
         try {
           const importedSuite = JSON.parse(e.target?.result as string)
-          // Generate unique ID for imported suite
-          importedSuite.id = `imported_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          // Generate deterministic ID for imported suite
+          const timestamp = Date.now()
+          importedSuite.id = `imported_${importedSuite.suiteName.replace(/[^a-zA-Z0-9]/g, "_")}_${timestamp}`
           setTestSuites((prev) => [...prev, importedSuite])
           toast({
             title: "Test Suite Imported",
@@ -147,8 +152,10 @@ export default function APITestFramework() {
   }
 
   /* --------------------------- handlers ----------------------------- */
+  // Update the handleCreateSuite function to use a more deterministic ID
   const handleCreateSuite = () => {
-    const newId = `new_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const timestamp = Date.now()
+    const newId = `new_suite_${timestamp}`
     setSelectedSuite({
       id: newId,
       suiteName: "New Suite",
@@ -182,6 +189,8 @@ export default function APITestFramework() {
       })
     }
   }
+
+  // Add this function after the handleDeleteSuite function
 
   // Filter suites with unique check
   const filteredSuites = testSuites
