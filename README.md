@@ -4,7 +4,7 @@ A powerful, flexible, and pluggable **API automation framework** built in **Type
 Designed for **REST API testing**, it supports dynamic data, pre-processing, assertions, schema validation, and multi-suite execution.
 
 TODO:
-- SOAP API
+- SOAP API (Done)
 - GraphQL
 - Kafka Integration
 - Database integration
