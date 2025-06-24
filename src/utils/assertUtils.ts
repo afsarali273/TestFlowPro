@@ -1,5 +1,7 @@
 import { JSONPath } from 'jsonpath-plus';
 import { Assertion } from '../types';
+import { DOMParser } from 'xmldom';
+import * as xpath from 'xpath';
 
 export function assertJson(response: any, statusCode: number, assertions: Assertion[]) {
     for (const a of assertions) {
@@ -127,5 +129,32 @@ export function assertJson(response: any, statusCode: number, assertions: Assert
             default:
                 throw new Error(`Unsupported assertion type: ${type}`);
         }
+    }
+}
+
+export function assertXPath(xmlString: string, assertion: Assertion): void {
+    const doc = new DOMParser().parseFromString(xmlString, 'text/xml');
+    const nodes = xpath.select(assertion.jsonPath, doc) as any[];
+
+    if (!nodes || nodes.length === 0) {
+        throw new Error(`XPath '${assertion.jsonPath}' did not match any nodes`);
+    }
+
+    let actualValue = nodes[0]?.textContent || nodes[0]?.data || nodes[0]?.toString();
+    const expectedValue = assertion.expected;
+
+    switch (assertion.type) {
+        case 'equals':
+            if (actualValue !== expectedValue) {
+                throw new Error(`Expected '${expectedValue}', got '${actualValue}'`);
+            }
+            break;
+        case 'contains':
+            if (!actualValue.includes(expectedValue)) {
+                throw new Error(`Expected '${actualValue}' to contain '${expectedValue}'`);
+            }
+            break;
+        default:
+            throw new Error(`Unsupported assertion type '${assertion.type}' for SOAP`);
     }
 }

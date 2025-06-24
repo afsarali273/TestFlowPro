@@ -1,20 +1,29 @@
 import axios from 'axios';
-import fs from 'fs';
-import path from 'path';
-import Ajv from 'ajv';
-import { TestSuite, Assertion } from './types';
-import { injectVariables } from './utils/variableStore';
-import { storeResponseVariables } from './utils/variableStore';
-import { loadEnvironment } from './utils/envManager';
-import { Reporter } from './reporter';
-import { assertJson } from './utils/assertUtils';
-import { runPreProcessors } from './preProcessor';
+import { Ajv } from 'ajv';
+import {Reporter} from "./reporter";
+import {assertJson, assertXPath} from "./utils/assertUtils";
+import {loadRequestBody} from "./utils/loadRequestBody";
+import {TestSuite} from "./types";
+import {loadEnvironment} from "./utils/envManager";
+import {injectVariables, storeResponseVariables} from "./utils/variableStore";
+import {runPreProcessors} from "./preProcessor";
+import {loadSchema} from "./utils/loadSchema";
 
 const ajv = new Ajv();
-const schemaCache = new Map<string, object>();
+
+ function isSoapRequest(headers?: Record<string, string>): boolean {
+    const ct = headers?.['Content-Type']?.toLowerCase();
+    return (
+        ct?.includes('text/xml') ||
+        ct?.includes('application/soap+xml') ||
+        !!headers?.['SOAPAction']
+    );
+}
+
 
 export async function executeSuite(suite: TestSuite, reporter: Reporter) {
     const env = loadEnvironment();
+    const resolvedBaseUrl = env[suite.baseUrl] || suite.baseUrl || env.BASE_URL || '';
 
     console.log(`Running Suite: ${suite.suiteName}`);
 
@@ -22,69 +31,40 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
         console.log(`  TestCase: ${testCase.name}`);
 
         for (const data of testCase.testData) {
-            let responseData: any = null;
             const start = Date.now();
-            let resolvedBaseUrl = suite.baseUrl || env.BASE_URL || '';
-            if (env[suite.baseUrl]) {
-                resolvedBaseUrl = env[suite.baseUrl];
-            }
+            let responseData: any = null;
             const fullUrl = injectVariables(resolvedBaseUrl + data.endpoint);
-
-
-            // Prepare request headers from headerFile or header inline
             const headers = data.headers;
-            const method = data.method.toLowerCase();
+            const soap = isSoapRequest(headers);
 
-            // Run pre-processors if any
-            if (data.preProcess) {
-                await runPreProcessors(data.preProcess);
+            if (data.preProcess) await runPreProcessors(data.preProcess);
+
+            let body: any;
+            try {
+                body = loadRequestBody(data.bodyFile, data.body, soap);
+            } catch (err: any) {
+                reporter.add({
+                    testCase: testCase.name,
+                    dataSet: data.name,
+                    status: 'FAIL',
+                    error: `Failed to load body: ${err.message}`,
+                    responseTimeMs: 0,
+                    assertionsPassed: 0,
+                    assertionsFailed: 0,
+                });
+                continue;
             }
 
-            // Prepare request body from bodyFile or body inline, with variable injection
-            let body: any = undefined;
-            if (data.bodyFile) {
-                try {
-                    const bodyFilePath = path.resolve(__dirname, '../', data.bodyFile);
-                    const raw = fs.readFileSync(bodyFilePath, 'utf-8');
-                    body = JSON.parse(injectVariables(raw));
-                } catch (err) {
-                    const message = err instanceof Error ? err.message : String(err);
-                    console.error(`❌ Failed to read or parse bodyFile: ${data.bodyFile}`, err);
-                    reporter.add({
-                        testCase: testCase.name,
-                        dataSet: data.name,
-                        status: 'FAIL',
-                        error: `Failed to load bodyFile: ${message}`,
-                        responseTimeMs: 0,
-                        assertionsPassed: 0,
-                        assertionsFailed: 0,
-                    });
-                    continue;
-                }
-            } else if (data.body) {
-                body = JSON.parse(injectVariables(JSON.stringify(data.body)));
-            }
-
-            // Prepare JSON Schema for validation
             let schema: object | undefined;
-            if (data.responseSchemaFile) {
+            if (!soap && data.responseSchemaFile) {
                 try {
-                    const schemaPath = path.resolve(__dirname, '../', data.responseSchemaFile);
-                    if (schemaCache.has(schemaPath)) {
-                        schema = schemaCache.get(schemaPath);
-                    } else {
-                        const rawSchema = fs.readFileSync(schemaPath, 'utf-8');
-                        schema = JSON.parse(rawSchema);
-                        schemaCache.set(schemaPath, schema as any);
-                    }
-                } catch (err) {
-                    const message = err instanceof Error ? err.message : String(err);
-                    console.error(`❌ Failed to read or parse responseSchemaFile: ${data.responseSchemaFile}`, err);
+                    schema = loadSchema(data.responseSchemaFile);
+                } catch (err: any) {
                     reporter.add({
                         testCase: testCase.name,
                         dataSet: data.name,
                         status: 'FAIL',
-                        error: `Failed to load responseSchemaFile: ${message}`,
+                        error: `Failed to load schema: ${err.message}`,
                         responseTimeMs: 0,
                         assertionsPassed: 0,
                         assertionsFailed: 0,
@@ -95,40 +75,44 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
                 schema = data.responseSchema;
             }
 
+            let passed = 0, failed = 0;
             let status: 'PASS' | 'FAIL' = 'PASS';
-            let passed = 0,
-                failed = 0;
-            let allErrors: string[] = [];
+            const allErrors: string[] = [];
 
             try {
-                const res = await axios({ url: fullUrl, method, headers, data: body });
+                const res = await axios({ url: fullUrl, method: data.method.toLowerCase(), headers, data: body });
                 responseData = res.data;
 
-                // Schema validation
-                if (schema) {
-                    const validate = ajv.compile(schema);
-                    const valid = validate(res.data);
-                    if (!valid) {
-                        failed++;
-                        const errors = validate.errors?.map(e => `${e.instancePath} ${e.message}`).join('; ');
-                        allErrors.push(`Schema validation failed: ${errors}`);
-                    }
-                }
-
-                // Assertions
-                if (data.assertions) {
-                    for (const a of data.assertions as Assertion[]) {
-                        try {
-                            assertJson(res.data, res.status, [a]);
-                            passed++;
-                        } catch (err: any) {
+                if (!soap) {
+                    if (schema) {
+                        const validate = ajv.compile(schema);
+                        if (!validate(res.data)) {
                             failed++;
-                            allErrors.push(err.message);
+                            allErrors.push(`Schema validation failed: ${validate.errors?.map(e => `${e.instancePath} ${e.message}`).join('; ')}`);
+                        }
+                    }
+
+                    for (const assertion of data.assertions || []) {
+                        try {
+                            assertJson(res.data, res.status, [assertion]);
+                            passed++;
+                        } catch (e: any) {
+                            failed++;
+                            allErrors.push(e.message);
+                        }
+                    }
+                } else {
+                    for (const assertion of data.assertions || []) {
+                        try {
+                            assertXPath(res.data, assertion);
+                            passed++;
+                        } catch (e: any) {
+                            failed++;
+                            allErrors.push(e.message);
                         }
                     }
                 }
 
-                // Store variables from response
                 if (data.store) {
                     try {
                         storeResponseVariables(res.data, data.store);
@@ -138,19 +122,17 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
                     }
                 }
 
-                if (allErrors.length > 0) {
-                    status = 'FAIL';
-                }
-            } catch (e: any) {
+                if (failed > 0) status = 'FAIL';
+            } catch (err: any) {
                 status = 'FAIL';
-                allErrors.push(`Request error: ${e.message}`);
+                allErrors.push(`Request error: ${err.message}`);
             } finally {
                 const end = Date.now();
                 reporter.add({
                     testCase: testCase.name,
                     dataSet: data.name,
                     status,
-                    error: allErrors.length > 0 ? allErrors.join(' | ') : undefined,
+                    error: allErrors.length ? allErrors.join(' | ') : undefined,
                     assertionsPassed: passed,
                     assertionsFailed: failed,
                     responseTimeMs: end - start,

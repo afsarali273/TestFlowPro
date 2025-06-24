@@ -1,0 +1,63 @@
+{
+  "suiteName": "SOAP Number Conversion Suite",
+  "status": "Not Started",
+  "baseUrl": "https://www.dataaccess.com/webservicesserver/numberconversion.wso",
+  "tags": [
+    {
+      "serviceName": "@NumberService"
+    },
+    {
+      "suiteType": "@soap"
+    }
+  ],
+  "testCases": [
+    {
+      "name": "Number to Words",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Convert 100 to Words",
+          "method": "POST",
+          "endpoint": "",
+          "headers": {
+            "Content-Type": "text/xml; charset=utf-8",
+            "SOAPAction": ""
+          },
+          "body": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"http://www.dataaccess.com/webservicesserver/\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <web:NumberToWords>\n         <web:ubiNum>100</web:ubiNum>\n      </web:NumberToWords>\n   </soapenv:Body>\n</soapenv:Envelope>",
+          "assertions": [
+            {
+              "type": "equals",
+              "jsonPath": "//*[local-name()='NumberToWordsResult']/text()",
+              "expected": "one hundred "
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Number to Dollars",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Convert 123.45 to Dollars",
+          "method": "POST",
+          "endpoint": "",
+          "headers": {
+            "Content-Type": "text/xml; charset=utf-8",
+            "SOAPAction": ""
+          },
+          "body": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"http://www.dataaccess.com/webservicesserver/\">\n   <soapenv:Header/>\n   <soapenv:Body>\n      <web:NumberToDollars>\n         <web:dNum>123.45</web:dNum>\n      </web:NumberToDollars>\n   </soapenv:Body>\n</soapenv:Envelope>",
+          "assertions": [
+            {
+              "type": "equals",
+              "jsonPath": "//*[local-name()='NumberToDollarsResult']/text()",
+              "expected": "one hundred twenty three dollars and forty five cents"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "id": "1750603193700_SOAP_Number_Conversion_Suite",
+  "lastModified": "2025-06-25T17:45:00.000Z"
+}
