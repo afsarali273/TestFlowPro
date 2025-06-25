@@ -27,31 +27,14 @@ TODO:
 - ✅ **.env support** for environment management
 - ✅ **Command-line filters** (by tag)
 - ✅ **JSON reports** with summary and optional response bodies
+- ✅ **Test Suite Run** We can run Suites from UI
+- ✅ **Test Suite Results** We can see Test Run results summary in Ananlysis Section
 
 ---
 
-## 🏗 Project Structure
-
-````
-project-root/
-├── src/
-│ ├── executor.ts
-│ ├── preProcessor.ts
-│ ├── utils/
-│ │ ├── variableStore.ts
-│ │ ├── envManager.ts
-│ │ └── assertUtils.ts
-│ ├── reporter.ts
-│ └── types.ts
-├── test-suites/
-│ └── my-suite.json
-├── schemas/
-│ └── user-details-schema.json
-├── .env
-├── report.json
-└── index.ts
-````
-
+### Test Designer
+![landing](./frontend/img/landing-page.png)
+![result-page](./frontend/img/result-page.png)
 
 ---
 
@@ -340,22 +323,4 @@ npm install --legacy-peer-deps
 npm run dev
 ```
 
-## ✅ Test Case Use Cases Covered
 
-| Scenario                               | Supported |
-| -------------------------------------- | --------- |
-| Basic GET/POST with assertions         | ✅         |
-| Request body from external JSON file   | ✅         |
-| Token chaining between tests           | ✅         |
-| Dynamic variable generation (faker)    | ✅         |
-| AES encryption before API call         | ✅         |
-| Custom function for auth token         | ✅         |
-| JSONPath assertions with expected type | ✅         |
-| Schema validation (inline + external)  | ✅         |
-| Suite-level metadata and CLI filters   | ✅         |
-| Response body stored in report (fail)  | ✅         |
-| Parallel suite execution               | ✅         |
-
-### Test Designer
-![landing](./frontend/img/landing-page.png)
-![result-page](./frontend/img/result-page.png)
