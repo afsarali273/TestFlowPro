@@ -16,6 +16,7 @@ import { TestResultsDashboard } from "@/components/test-results-dashboard"
 import { TestCasesModal } from "@/components/test-cases-modal"
 import { PathConfigModal } from "@/components/path-config-modal"
 import { FrameworkConfigModal } from "@/components/framework-config-modal"
+import { SuiteRunnerModal } from "@/components/suite-runner-modal"
 
 interface TestSuite {
   id: string
@@ -36,6 +37,7 @@ export default function APITestFramework() {
   const [searchTerm, setSearchTerm] = useState("")
   const [showResultsDashboard, setShowResultsDashboard] = useState(false)
   const [showTestCasesModal, setShowTestCasesModal] = useState(false)
+  const [showSuiteRunnerModal, setShowSuiteRunnerModal] = useState(false)
 
   // Add path configuration states
   const [testSuitePath, setTestSuitePath] = useState<string>("")
@@ -198,6 +200,11 @@ export default function APITestFramework() {
         description: "The test suite has been successfully deleted.",
       })
     }
+  }
+
+  const handleRunSuite = (suite: TestSuite) => {
+    setSelectedSuite(suite)
+    setShowSuiteRunnerModal(true)
   }
 
   // Filter suites with unique check
@@ -430,10 +437,16 @@ export default function APITestFramework() {
                       <div className="flex items-center space-x-2">
                         <Button
                           size="sm"
-                          variant="outline"
-                          disabled
-                          className="h-8 px-3 border-gray-300 text-gray-500"
-                          title="Run feature coming soon"
+                          onClick={() => handleRunSuite(suite)}
+                          disabled={!frameworkPath || !suite.filePath}
+                          className="h-8 px-3 bg-green-600 hover:bg-green-700 text-white transition-all duration-200"
+                          title={
+                            !frameworkPath
+                              ? "Configure framework path first"
+                              : !suite.filePath
+                                ? "Save the suite first"
+                                : "Run test suite"
+                          }
                         >
                           <Play className="h-3 w-3 mr-1" />
                           Run
@@ -499,6 +512,18 @@ export default function APITestFramework() {
           isOpen={showTestCasesModal}
           onClose={() => {
             setShowTestCasesModal(false)
+            setSelectedSuite(null)
+          }}
+        />
+      )}
+
+      {/* ------------ Suite Runner Modal ------------- */}
+      {selectedSuite && (
+        <SuiteRunnerModal
+          suite={selectedSuite}
+          isOpen={showSuiteRunnerModal}
+          onClose={() => {
+            setShowSuiteRunnerModal(false)
             setSelectedSuite(null)
           }}
         />

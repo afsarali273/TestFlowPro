@@ -3,10 +3,12 @@ import path from 'path';
 
 
 export function loadEnvironment() {
-    dotenv.config(); // loads `.env`
-    const envName = process.env.ENV || 'qa';
+    dotenv.config({
+        path: path.resolve(__dirname, '../../.env')
+    });
 
-    dotenv.config({ path: path.resolve(process.cwd(), `.env.${envName}`) });
+    const envName = process.env.ENV || 'qa';
+    dotenv.config({ path: path.resolve(__dirname, `../../.env.${envName}`) });
 
     return { ...process.env } as Record<string, string>;
 }
