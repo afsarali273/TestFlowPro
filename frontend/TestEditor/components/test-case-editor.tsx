@@ -35,7 +35,7 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
       method: "GET",
       endpoint: "/",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": editedTestCase.type === "SOAP" ? "text/xml; charset=utf-8" : "application/json",
       },
       assertions: [],
       store: {},
@@ -84,6 +84,7 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
     return (
       <TestDataEditor
         testData={selectedTestData}
+        testCaseType={editedTestCase.type || "REST"}
         onSave={handleSaveTestData}
         onCancel={() => {
           setIsEditingTestData(false)
@@ -157,6 +158,23 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                {/* Add API Type Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="type">API Type</Label>
+                  <Select
+                    value={editedTestCase.type || "REST"}
+                    onValueChange={(value) => handleTestCaseChange("type", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="REST">REST API</SelectItem>
+                      <SelectItem value="SOAP">SOAP API</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>

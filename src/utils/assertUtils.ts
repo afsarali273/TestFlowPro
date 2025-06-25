@@ -134,10 +134,10 @@ export function assertJson(response: any, statusCode: number, assertions: Assert
 
 export function assertXPath(xmlString: string, assertion: Assertion): void {
     const doc = new DOMParser().parseFromString(xmlString, 'text/xml');
-    const nodes = xpath.select(assertion.jsonPath, doc) as any[];
+    const nodes = xpath.select(<string>assertion.xpathExpression, doc) as any[];
 
     if (!nodes || nodes.length === 0) {
-        throw new Error(`XPath '${assertion.jsonPath}' did not match any nodes`);
+        throw new Error(`XPath '${assertion.xpathExpression}' did not match any nodes`);
     }
 
     let actualValue = nodes[0]?.textContent || nodes[0]?.data || nodes[0]?.toString();

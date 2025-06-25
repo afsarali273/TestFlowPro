@@ -18,6 +18,7 @@ export type Assertion = {
         | 'regex'
         | 'arrayObjectMatch';
     jsonPath: string;
+    xpathExpression?: string;
     expected?: any;
     matchField?: string;
     matchValue?: string;
@@ -47,6 +48,7 @@ export interface TestData {
 export interface TestCase {
     name: string;
     status?: string;
+    "type": "SOAP" | "REST";
     testData: TestData[];
 }
 

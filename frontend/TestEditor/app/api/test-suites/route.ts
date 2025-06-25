@@ -105,10 +105,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "File path is required" }, { status: 400 })
     }
 
-    // Write the test suite back to the file
+    // Ensure the directory exists
+    const dirPath = path.dirname(filePath)
+    try {
+      await fs.mkdir(dirPath, { recursive: true })
+    } catch (error) {
+      console.error("Error creating directory:", error)
+      return NextResponse.json({ error: "Failed to create directory" }, { status: 500 })
+    }
+
+    // Check if file already exists
+    let fileExists = false
+    try {
+      await fs.access(filePath)
+      fileExists = true
+    } catch {
+      // File doesn't exist, which is fine for new files
+    }
+
+    // Write the test suite to the file
     await fs.writeFile(filePath, JSON.stringify(testSuite, null, 2), "utf-8")
 
-    return NextResponse.json({ success: true, message: "Test suite saved successfully" })
+    return NextResponse.json({
+      success: true,
+      message: fileExists ? "Test suite updated successfully" : "Test suite created successfully",
+      filePath: filePath,
+    })
   } catch (error) {
     console.error("Error saving test suite:", error)
     return NextResponse.json({ error: "Failed to save test suite" }, { status: 500 })

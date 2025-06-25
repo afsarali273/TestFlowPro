@@ -105,28 +105,61 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
 
   const handleSave = async () => {
     try {
-      if (editedSuite.filePath) {
-        // Save to existing file
-        const response = await fetch("/api/test-suites", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            testSuite: editedSuite,
-            filePath: editedSuite.filePath,
-          }),
-        })
+      const suitePath = localStorage.getItem("testSuitePath")
 
-        if (!response.ok) {
-          throw new Error("Failed to save test suite")
-        }
+      if (!suitePath) {
+        // If no suite path is configured, just update in memory
+        onSave(editedSuite)
+        return
       }
 
-      onSave(editedSuite)
-    } catch (error) {
+      // Clean the suite data for saving (remove UI-specific fields)
+      const cleanSuite = {
+        ...editedSuite,
+        testCases: editedSuite.testCases.map((tc) => {
+          const { index, ...cleanTestCase } = tc
+          return cleanTestCase
+        }),
+      }
+
+      // Generate filename from suite name if not editing existing file
+      let targetFilePath = editedSuite.filePath
+      if (!targetFilePath) {
+        const fileName = `${editedSuite.suiteName.replace(/[^a-zA-Z0-9]/g, "_")}.json`
+        targetFilePath = `${suitePath}/${fileName}`
+      }
+
+      // Save to file system
+      const response = await fetch("/api/test-suites", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          testSuite: cleanSuite,
+          filePath: targetFilePath,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to save test suite")
+      }
+
+      // Update the suite with the file path for future saves
+      const updatedSuite = {
+        ...editedSuite,
+        filePath: targetFilePath,
+        fileName: targetFilePath.split("/").pop() || `${editedSuite.suiteName}.json`,
+      }
+
+      onSave(updatedSuite)
+
+      // Show success message
+      console.log(`Test suite saved to: ${targetFilePath}`)
+    } catch (error: any) {
       console.error("Error saving test suite:", error)
-      // You might want to show a toast notification here
+      alert(`Failed to save test suite: ${error.message}`)
     }
   }
 

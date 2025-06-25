@@ -16,9 +16,10 @@ interface TestDataEditorProps {
   testData: any
   onSave: (testData: any) => void
   onCancel: () => void
+  testCaseType?: string // Add this to know if it's SOAP or REST
 }
 
-export function TestDataEditor({ testData, onSave, onCancel }: TestDataEditorProps) {
+export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "REST" }: TestDataEditorProps) {
   const [editedTestData, setEditedTestData] = useState(JSON.parse(JSON.stringify(testData)))
 
   const handleChange = (field: string, value: any) => {
@@ -58,11 +59,8 @@ export function TestDataEditor({ testData, onSave, onCancel }: TestDataEditorPro
     const newAssertion = {
       id: `assertion_${Date.now()}`,
       type: "equals",
-      jsonPath: "$.",
+      ...(testCaseType === "SOAP" ? { xpathExpression: "//*[local-name()='']" } : { jsonPath: "$." }),
       expected: "",
-      matchField: "",
-      matchValue: "",
-      assertField: "",
     }
     setEditedTestData((prev: any) => ({
       ...prev,
@@ -117,7 +115,7 @@ export function TestDataEditor({ testData, onSave, onCancel }: TestDataEditorPro
 
   const handleAddStoreVariable = () => {
     const key = prompt("Enter variable name:")
-    const value = prompt("Enter JSON path:")
+    const value = prompt(testCaseType === "SOAP" ? "Enter XPath expression:" : "Enter JSON path:")
     if (key && value) {
       handleNestedChange("store", key, value)
     }
@@ -140,8 +138,52 @@ export function TestDataEditor({ testData, onSave, onCancel }: TestDataEditorPro
     }
   }
 
+  // Function to clean assertion data based on type
+  const cleanAssertionData = (assertion: any) => {
+    const baseAssertion = {
+      id: assertion.id,
+      type: assertion.type,
+    }
+
+    // Add path field based on test case type and assertion type
+    if (assertion.type !== "statusCode") {
+      if (testCaseType === "SOAP") {
+        baseAssertion.xpathExpression = assertion.xpathExpression || "//*[local-name()='']"
+      } else {
+        baseAssertion.jsonPath = assertion.jsonPath || "$."
+      }
+    }
+
+    // Add expected field for most assertion types
+    if (assertion.type !== "exists") {
+      if (assertion.type === "statusCode") {
+        baseAssertion.expected = Number(assertion.expected) || 200
+      } else {
+        baseAssertion.expected = assertion.expected || ""
+      }
+    }
+
+    // Add special fields for arrayObjectMatch
+    if (assertion.type === "arrayObjectMatch") {
+      baseAssertion.matchField = assertion.matchField || ""
+      baseAssertion.matchValue = assertion.matchValue || ""
+      baseAssertion.assertField = assertion.assertField || ""
+    }
+
+    return baseAssertion
+  }
+
   const handleSave = () => {
-    onSave(editedTestData)
+    // Clean the test data before saving
+    const cleanedTestData = {
+      ...editedTestData,
+      // Clean assertions to remove unnecessary fields
+      assertions: (editedTestData.assertions || []).map(cleanAssertionData),
+      // Clean preProcess to remove empty entries
+      preProcess: (editedTestData.preProcess || []).filter((process: any) => process.var && process.function),
+    }
+
+    onSave(cleanedTestData)
   }
 
   return (
@@ -154,7 +196,7 @@ export function TestDataEditor({ testData, onSave, onCancel }: TestDataEditorPro
               Back
             </Button>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Edit Test Data
+              Edit Test Data ({testCaseType})
             </h1>
           </div>
           <div className="flex gap-2">
@@ -176,7 +218,7 @@ export function TestDataEditor({ testData, onSave, onCancel }: TestDataEditorPro
           <TabsList className="grid w-full grid-cols-8 bg-white/80 backdrop-blur-sm shadow-sm">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="headers">Headers</TabsTrigger>
-            <TabsTrigger value="body">Body</TabsTrigger>
+            <TabsTrigger value="body">{testCaseType === "SOAP" ? "XML Body" : "JSON Body"}</TabsTrigger>
             <TabsTrigger value="assertions">Assertions</TabsTrigger>
             <TabsTrigger value="preprocess">Pre-Process</TabsTrigger>
             <TabsTrigger value="store">Store</TabsTrigger>
@@ -300,7 +342,10 @@ export function TestDataEditor({ testData, onSave, onCancel }: TestDataEditorPro
                   <FileText className="h-5 w-5 text-blue-600" />
                   Request Body
                 </CardTitle>
-                <CardDescription>Configure the request body (JSON format) or upload from file</CardDescription>
+                <CardDescription>
+                  Configure the request body ({testCaseType === "SOAP" ? "XML format" : "JSON format"}) or upload from
+                  file
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Body File Upload */}
@@ -313,13 +358,13 @@ export function TestDataEditor({ testData, onSave, onCancel }: TestDataEditorPro
                       id="bodyFile"
                       value={editedTestData.bodyFile || ""}
                       onChange={(e) => handleChange("bodyFile", e.target.value)}
-                      placeholder="Path to body file (e.g., ./data/request-body.json)"
+                      placeholder={`Path to body file (e.g., ./data/request-body.${testCaseType === "SOAP" ? "xml" : "json"})`}
                       className="flex-1 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />
                     <div className="relative">
                       <Input
                         type="file"
-                        accept=".json,.txt"
+                        accept={testCaseType === "SOAP" ? ".xml,.txt" : ".json,.txt"}
                         onChange={(e) => handleFileUpload("bodyFile", e)}
                         className="hidden"
                         id="body-file-upload"
@@ -341,22 +386,43 @@ export function TestDataEditor({ testData, onSave, onCancel }: TestDataEditorPro
 
                 {/* Inline Body */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Inline Body (JSON)</Label>
-                  <Textarea
-                    value={JSON.stringify(editedTestData.body || {}, null, 2)}
-                    onChange={(e) => {
-                      try {
-                        const parsed = JSON.parse(e.target.value)
-                        handleChange("body", parsed)
-                      } catch (error) {
-                        // Invalid JSON, don't update
-                      }
-                    }}
-                    className="font-mono text-sm min-h-[200px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    placeholder="Enter JSON body"
-                  />
+                  <Label className="text-sm font-medium text-gray-700">
+                    Inline Body ({testCaseType === "SOAP" ? "XML" : "JSON"})
+                  </Label>
+                  {testCaseType === "SOAP" ? (
+                    <Textarea
+                      value={editedTestData.body || ""}
+                      onChange={(e) => handleChange("body", e.target.value)}
+                      className="font-mono text-sm min-h-[200px] border-gray-300 focus:border-blue-500 focus:ring-blue-500 whitespace-pre-wrap"
+                      placeholder={`Enter XML body
+Example:
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <NumberToWords xmlns="http://www.dataaccess.com/webservicesserver/">
+      <ubiNum>100</ubiNum>
+    </NumberToWords>
+  </soap:Body>
+</soap:Envelope>`}
+                    />
+                  ) : (
+                    <Textarea
+                      value={JSON.stringify(editedTestData.body || {}, null, 2)}
+                      onChange={(e) => {
+                        try {
+                          const parsed = JSON.parse(e.target.value)
+                          handleChange("body", parsed)
+                        } catch (error) {
+                          // Invalid JSON, don't update
+                        }
+                      }}
+                      className="font-mono text-sm min-h-[200px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      placeholder="Enter JSON body"
+                    />
+                  )}
                   <p className="text-xs text-gray-500">
-                    Enter the request body in JSON format. This will be ignored if a body file is specified.
+                    Enter the request body in {testCaseType === "SOAP" ? "XML" : "JSON"} format. This will be ignored if
+                    a body file is specified.
                   </p>
                 </div>
               </CardContent>
@@ -415,9 +481,15 @@ export function TestDataEditor({ testData, onSave, onCancel }: TestDataEditorPro
 
                         {assertion.type !== "statusCode" && (
                           <Input
-                            placeholder="JSON Path"
-                            value={assertion.jsonPath || ""}
-                            onChange={(e) => handleUpdateAssertion(index, "jsonPath", e.target.value)}
+                            placeholder={testCaseType === "SOAP" ? "XPath Expression" : "JSON Path"}
+                            value={assertion.xpathExpression || assertion.jsonPath || ""}
+                            onChange={(e) =>
+                              handleUpdateAssertion(
+                                index,
+                                testCaseType === "SOAP" ? "xpathExpression" : "jsonPath",
+                                e.target.value,
+                              )
+                            }
                             className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                           />
                         )}
@@ -582,7 +654,7 @@ export function TestDataEditor({ testData, onSave, onCancel }: TestDataEditorPro
                         value={value as string}
                         onChange={(e) => handleNestedChange("store", key, e.target.value)}
                         className="flex-1 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                        placeholder="JSON Path"
+                        placeholder={testCaseType === "SOAP" ? "XPath Expression" : "JSON Path"}
                       />
                       <Button
                         size="sm"

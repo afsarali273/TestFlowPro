@@ -167,16 +167,26 @@ export default function APITestFramework() {
     setIsEditing(true)
   }
 
-  const handleSaveSuite = (suite: TestSuite) => {
+  const handleSaveSuite = async (suite: TestSuite) => {
+    // Update the local state
     setTestSuites((prev) => {
       const exists = prev.find((s) => s.id === suite.id)
       return exists ? prev.map((s) => (s.id === suite.id ? suite : s)) : [...prev, suite]
     })
+
     setIsEditing(false)
     setSelectedSuite(null)
+
+    // Refresh the test suites from the file system to ensure consistency
+    if (testSuitePath) {
+      await loadTestSuitesFromPath(testSuitePath)
+    }
+
     toast({
       title: "Test Suite Saved",
-      description: "The test suite has been successfully saved.",
+      description: suite.filePath
+        ? `Test suite saved to ${suite.fileName || "file"}`
+        : "Test suite has been successfully saved.",
     })
   }
 
@@ -189,8 +199,6 @@ export default function APITestFramework() {
       })
     }
   }
-
-  // Add this function after the handleDeleteSuite function
 
   // Filter suites with unique check
   const filteredSuites = testSuites
@@ -351,7 +359,7 @@ export default function APITestFramework() {
                       <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg shadow-sm group-hover:shadow-md transition-shadow duration-300">
                         <FileText className="h-5 w-5 text-white" />
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200">
                           {suite.suiteName}
                         </CardTitle>
@@ -362,14 +370,16 @@ export default function APITestFramework() {
                           )}
                           {suite.baseUrl && (
                             <span className="flex items-center text-xs text-blue-600 mt-1">
-                              <Globe className="h-3 w-3 mr-1" />
-                              {suite.baseUrl}
+                              <Globe className="h-3 w-3 mr-1 flex-shrink-0" />
+                              <span className="break-all">{suite.baseUrl}</span>
                             </span>
                           )}
                         </CardDescription>
                       </div>
                     </div>
-                    <Badge className={`${getStatusBadge(suite.status)} font-medium px-3 py-1`}>{suite.status}</Badge>
+                    <Badge className={`${getStatusBadge(suite.status)} font-medium px-3 py-1 flex-shrink-0`}>
+                      {suite.status}
+                    </Badge>
                   </div>
                 </CardHeader>
 

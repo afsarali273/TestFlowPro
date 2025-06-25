@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { X, FileText, Database, CheckCircle, XCircle, Clock, Code, Upload } from "lucide-react"
+import { X, FileText, Database, CheckCircle, XCircle, Clock, Code, Upload, Globe } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface TestCasesModalProps {
@@ -66,6 +66,12 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
             Test Cases - {suite.suiteName}
           </DialogTitle>
           <DialogDescription>View all test cases and their test data for this suite</DialogDescription>
+          {suite.baseUrl && (
+            <div className="flex items-center gap-2 mt-2">
+              <Globe className="h-4 w-4 text-blue-500" />
+              <span className="text-sm text-blue-600 break-all">{suite.baseUrl}</span>
+            </div>
+          )}
         </DialogHeader>
 
         <ScrollArea className="max-h-[60vh]">
@@ -79,6 +85,11 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                         <CardTitle className="text-lg flex items-center gap-2">
                           {getStatusIcon(testCase.status)}
                           {testCase.name}
+                          {testCase.type && (
+                            <Badge variant="outline" className="ml-2">
+                              {testCase.type}
+                            </Badge>
+                          )}
                         </CardTitle>
                         <CardDescription>
                           {testCase.testData?.length || 0} test data item{testCase.testData?.length !== 1 ? "s" : ""}
@@ -100,7 +111,9 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                   <h5 className="font-medium text-sm">{testData.name}</h5>
                                   <div className="flex items-center gap-2">
                                     <Badge className={getMethodColor(testData.method)}>{testData.method}</Badge>
-                                    <code className="text-xs bg-gray-200 px-2 py-1 rounded">{testData.endpoint}</code>
+                                    <code className="text-xs bg-gray-200 px-2 py-1 rounded break-all max-w-xs">
+                                      {testData.endpoint}
+                                    </code>
                                   </div>
                                 </div>
 
@@ -113,7 +126,7 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                         <div className="flex items-center gap-2 text-xs">
                                           <Upload className="h-3 w-3 text-blue-500" />
                                           <span className="font-medium text-gray-700">Body File:</span>
-                                          <code className="bg-blue-100 px-1 rounded text-blue-700">
+                                          <code className="bg-blue-100 px-1 rounded text-blue-700 break-all">
                                             {testData.bodyFile}
                                           </code>
                                         </div>
@@ -122,7 +135,7 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                         <div className="flex items-center gap-2 text-xs">
                                           <Code className="h-3 w-3 text-green-500" />
                                           <span className="font-medium text-gray-700">Schema File:</span>
-                                          <code className="bg-green-100 px-1 rounded text-green-700">
+                                          <code className="bg-green-100 px-1 rounded text-green-700 break-all">
                                             {testData.responseSchemaFile}
                                           </code>
                                         </div>
@@ -135,11 +148,11 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                 {testData.headers && Object.keys(testData.headers).length > 0 && (
                                   <div>
                                     <h6 className="text-xs font-medium text-gray-600 mb-1">Headers:</h6>
-                                    <div className="grid grid-cols-2 gap-1 text-xs">
+                                    <div className="grid grid-cols-1 gap-1 text-xs">
                                       {Object.entries(testData.headers).map(([key, value]) => (
-                                        <div key={key} className="flex">
-                                          <span className="font-medium text-gray-700">{key}:</span>
-                                          <span className="ml-1 text-gray-600">{value as string}</span>
+                                        <div key={key} className="flex flex-wrap">
+                                          <span className="font-medium text-gray-700 mr-1">{key}:</span>
+                                          <span className="text-gray-600 break-all">{value as string}</span>
                                         </div>
                                       ))}
                                     </div>
@@ -147,12 +160,20 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                 )}
 
                                 {/* Body (only show if no bodyFile) */}
-                                {!testData.bodyFile && testData.body && Object.keys(testData.body).length > 0 && (
+                                {!testData.bodyFile && testData.body && (
                                   <div>
                                     <h6 className="text-xs font-medium text-gray-600 mb-1">Request Body:</h6>
-                                    <pre className="text-xs bg-gray-200 p-2 rounded overflow-x-auto max-h-32">
-                                      {JSON.stringify(testData.body, null, 2)}
-                                    </pre>
+                                    {testCase.type === "SOAP" ? (
+                                      <pre className="text-xs bg-gray-200 p-2 rounded overflow-x-auto max-h-32 whitespace-pre-wrap break-words">
+                                        {testData.body}
+                                      </pre>
+                                    ) : (
+                                      <pre className="text-xs bg-gray-200 p-2 rounded overflow-x-auto max-h-32">
+                                        {typeof testData.body === "string"
+                                          ? testData.body
+                                          : JSON.stringify(testData.body, null, 2)}
+                                      </pre>
+                                    )}
                                   </div>
                                 )}
 
@@ -178,21 +199,23 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                       {testData.assertions.map((assertion: any, assertionIndex: number) => (
                                         <div
                                           key={assertionIndex}
-                                          className="text-xs bg-white p-2 rounded border flex items-center gap-2"
+                                          className="text-xs bg-white p-2 rounded border flex items-center gap-2 flex-wrap"
                                         >
                                           <Badge variant="outline" className="text-xs">
                                             {assertion.type}
                                           </Badge>
-                                          {assertion.jsonPath && (
-                                            <code className="bg-gray-100 px-1 rounded">{assertion.jsonPath}</code>
+                                          {(assertion.jsonPath || assertion.xpathExpression) && (
+                                            <code className="bg-gray-100 px-1 rounded break-all">
+                                              {assertion.jsonPath || assertion.xpathExpression}
+                                            </code>
                                           )}
                                           {assertion.expected !== undefined && (
-                                            <span className="text-gray-600">
+                                            <span className="text-gray-600 break-all">
                                               = <strong>{JSON.stringify(assertion.expected)}</strong>
                                             </span>
                                           )}
                                           {assertion.type === "arrayObjectMatch" && (
-                                            <span className="text-gray-600 text-xs">
+                                            <span className="text-gray-600 text-xs break-all">
                                               [{assertion.matchField}={assertion.matchValue} → {assertion.assertField}]
                                             </span>
                                           )}
@@ -209,7 +232,7 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                     <div className="space-y-1">
                                       {testData.preProcess.map((process: any, processIndex: number) => (
                                         <div key={processIndex} className="text-xs bg-blue-50 p-2 rounded">
-                                          <code>
+                                          <code className="break-all">
                                             {process.var} = {process.function}({process.args?.join(", ")})
                                           </code>
                                         </div>
@@ -222,11 +245,11 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                 {testData.store && Object.keys(testData.store).length > 0 && (
                                   <div>
                                     <h6 className="text-xs font-medium text-gray-600 mb-1">Store Variables:</h6>
-                                    <div className="grid grid-cols-2 gap-1 text-xs">
+                                    <div className="grid grid-cols-1 gap-1 text-xs">
                                       {Object.entries(testData.store).map(([key, value]) => (
-                                        <div key={key} className="flex">
-                                          <span className="font-medium text-gray-700">{key}:</span>
-                                          <code className="ml-1 text-gray-600 bg-gray-100 px-1 rounded">
+                                        <div key={key} className="flex flex-wrap">
+                                          <span className="font-medium text-gray-700 mr-1">{key}:</span>
+                                          <code className="text-gray-600 bg-gray-100 px-1 rounded break-all">
                                             {value as string}
                                           </code>
                                         </div>
