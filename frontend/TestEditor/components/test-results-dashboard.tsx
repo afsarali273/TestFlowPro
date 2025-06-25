@@ -59,6 +59,42 @@ interface TestResultsDashboardProps {
   onClose: () => void
 }
 
+// Helper function to format XML content
+const formatXmlContent = (xmlString: string): string => {
+  try {
+    // Simple XML formatting - add proper indentation
+    const formatted = xmlString.replace(/></g, ">\n<")
+    let indent = 0
+    const lines = formatted.split("\n")
+
+    return lines
+      .map((line) => {
+        const trimmed = line.trim()
+        if (trimmed.startsWith("</")) {
+          indent = Math.max(0, indent - 1)
+        }
+
+        const indentedLine = "  ".repeat(indent) + trimmed
+
+        if (trimmed.startsWith("<") && !trimmed.startsWith("</") && !trimmed.endsWith("/>")) {
+          indent++
+        }
+
+        return indentedLine
+      })
+      .join("\n")
+  } catch (error) {
+    return xmlString // Return original if formatting fails
+  }
+}
+
+// Helper function to detect if content is XML
+const isXmlContent = (content: string): boolean => {
+  if (typeof content !== "string") return false
+  const trimmed = content.trim()
+  return trimmed.startsWith("<?xml") || (trimmed.startsWith("<") && trimmed.includes("</"))
+}
+
 export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
   const [allResults, setAllResults] = useState<TestResultsData[]>([])
   const [selectedResult, setSelectedResult] = useState<TestResultsData | null>(null)
@@ -504,8 +540,18 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
                               <div className="mt-4">
                                 <h4 className="font-medium mb-2 text-red-800">Response Body (Failed Test):</h4>
                                 <ScrollArea className="h-64 w-full border rounded-lg">
-                                  <pre className="p-4 text-xs bg-gray-900 text-green-400 font-mono">
-                                    {JSON.stringify(result.responseBody, null, 2)}
+                                  <pre className="p-4 text-xs font-mono whitespace-pre-wrap break-words">
+                                    {typeof result.responseBody === "string" && isXmlContent(result.responseBody) ? (
+                                      <code className="text-blue-800 bg-blue-50 block p-2 rounded">
+                                        {formatXmlContent(result.responseBody)}
+                                      </code>
+                                    ) : (
+                                      <code className="text-green-400 bg-gray-900 block p-2 rounded">
+                                        {typeof result.responseBody === "string"
+                                          ? result.responseBody
+                                          : JSON.stringify(result.responseBody, null, 2)}
+                                      </code>
+                                    )}
                                   </pre>
                                 </ScrollArea>
                               </div>

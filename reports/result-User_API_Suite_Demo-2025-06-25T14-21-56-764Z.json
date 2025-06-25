@@ -11,7 +11,7 @@
     "failed": 1,
     "totalAssertionsPassed": 8,
     "totalAssertionsFailed": 2,
-    "executionTimeMs": 787
+    "executionTimeMs": 802
   },
   "results": [
     {
@@ -20,7 +20,7 @@
       "status": "PASS",
       "assertionsPassed": 2,
       "assertionsFailed": 0,
-      "responseTimeMs": 375
+      "responseTimeMs": 382
     },
     {
       "testCase": "Get Single User",
@@ -28,7 +28,7 @@
       "status": "PASS",
       "assertionsPassed": 2,
       "assertionsFailed": 0,
-      "responseTimeMs": 162
+      "responseTimeMs": 119
     },
     {
       "testCase": "List of all objects",
@@ -37,7 +37,7 @@
       "error": "Assertion failed: $.[0].name expected Apple iPhone 12 Pro Max, got Google Pixel 6 Pro | Assertion failed: $. size expected 5, got 13",
       "assertionsPassed": 1,
       "assertionsFailed": 2,
-      "responseTimeMs": 113,
+      "responseTimeMs": 162,
       "responseBody": [
         {
           "id": "1",

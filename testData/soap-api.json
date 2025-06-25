@@ -27,16 +27,18 @@
           "assertions": [
             {
               "type": "equals",
-              "jsonPath": "//*[local-name()='NumberToWordsResult']/text()",
+              "xpathExpression": "//*[local-name()='NumberToWordsResult']/text()",
               "expected": "one hundred "
             }
           ]
         }
-      ]
+      ],
+      "type": "SOAP"
     },
     {
       "name": "Number to Dollars",
       "status": "Not Started",
+      "type": "SOAP",
       "testData": [
         {
           "name": "Convert 123.45 to Dollars",
@@ -50,7 +52,7 @@
           "assertions": [
             {
               "type": "equals",
-              "jsonPath": "//*[local-name()='NumberToDollarsResult']/text()",
+              "xpathExpression": "//*[local-name()='NumberToDollarsResult']/text()",
               "expected": "one hundred twenty three dollars and forty five cents"
             }
           ]
@@ -58,6 +60,8 @@
       ]
     }
   ],
-  "id": "1750603193700_SOAP_Number_Conversion_Suite",
-  "lastModified": "2025-06-25T17:45:00.000Z"
+  "id": "SOAP_Number_Conversion_Suite_L1VzZXJz",
+  "lastModified": "2025-06-25T12:02:31.085Z",
+  "filePath": "/Users/afsarali/Repository/api-framework/testData/soap-api.json",
+  "fileName": "soap-api.json"
 }

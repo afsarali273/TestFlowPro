@@ -14,6 +14,7 @@
     {
       "name": "Get Single User",
       "status": "Not Started",
+      "type":  "REST",
       "testData": [
         {
           "name": "Fetch User with ID 2",
@@ -153,6 +154,7 @@
     {
       "name": "List of all objects",
       "status": "Not Started",
+      "type":  "REST",
       "testData": [
         {
           "name": "Listing All Objects Using the endpoint",
@@ -186,6 +188,7 @@
     {
       "name": "Add Object",
       "status": "Not Started",
+      "type":  "REST",
       "testData": [
         {
           "name": "Adding a new Single Object",
@@ -205,10 +208,6 @@
               "args": [
                 "P@ss1234"
               ]
-            },
-            {
-              "var": "authToken",
-              "function": "authToken"
             }
           ],
           "body": {
