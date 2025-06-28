@@ -197,15 +197,41 @@ TODO:
 ````
 
 ## ✅ Supported Pre-Processing Functions:
+| Function           | Output Description                                                                 |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| `faker.email`      | Generates a random email                                                           |
+| `faker.uuid`       | Generates UUID                                                                     |
+| `faker.username`   | Generates a fake username                                                          |
+| `date.now`         | Current timestamp                                                                  |
+| `encrypt`          | AES-256 encryption of a string                                                     |
+| `custom.authToken` | Generates token via custom logic                                                   |
+| **`dbQuery`**      | Executes SQL query on configured DB; returns first row                             |
+|                    | Supports `var` (single column) or `mapTo` (multiple columns) for storing variables |
+### 🔧 Example dbQuery usage in preProcess:
+```json
+{
+  "function": "dbQuery",
+  "args": ["SELECT id, email FROM users WHERE id = 1"],
+  "db": "userDb",
+  "mapTo": {
+    "userId": "id",
+    "userEmail": "email"
+  }
+}
 
-| Function           | Output Description               |
-| ------------------ | -------------------------------- |
-| `faker.email`      | Generates a random email         |
-| `faker.uuid`       | Generates UUID                   |
-| `faker.username`   | Generates a fake username        |
-| `date.now`         | Current timestamp                |
-| `encrypt`          | AES-256 encryption of string     |
-| `custom.authToken` | Generates token via custom logic |
+```
+For Storing multiple variables from a fucntion 
+```json
+{
+  "function": "generateUser",
+  "args": ["any,number,of,args"],
+  "mapTo": {
+    "userNameVar": "username",
+    "userEmailVar": "email",
+    "userUUIDVar": "uuid"
+  }
+}
+```
 
 ## 🛡 Assertions
 
