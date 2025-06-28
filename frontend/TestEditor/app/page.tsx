@@ -270,17 +270,6 @@ export default function APITestFramework() {
                   Analytics
                 </Button>
 
-                <Button
-                  variant="outline"
-                  onClick={() => setShowRunAllSuitesModal(true)}
-                  disabled={!frameworkPath}
-                  className="h-10 px-4 border-gray-300 hover:border-green-400 hover:bg-green-50 transition-all duration-200"
-                  title={!frameworkPath ? "Configure framework path first" : "Run all test suites"}
-                >
-                  <PlayCircle className="h-4 w-4 mr-2" />
-                  Run All Suites
-                </Button>
-
                 <div className="flex items-center space-x-2 bg-gray-50 rounded-lg p-1">
                   <Button
                     variant="ghost"
@@ -354,6 +343,18 @@ export default function APITestFramework() {
                 </div>
               )}
             </div>
+
+            {/* Run All Suites Button - Moved here */}
+            <Button
+              variant="outline"
+              onClick={() => setShowRunAllSuitesModal(true)}
+              disabled={!frameworkPath}
+              className="h-11 px-6 border-gray-300 hover:border-green-400 hover:bg-green-50 transition-all duration-200 shadow-sm"
+              title={!frameworkPath ? "Configure framework path first" : "Run all test suites"}
+            >
+              <PlayCircle className="h-4 w-4 mr-2" />
+              Run All Suites
+            </Button>
           </div>
 
           {/* Loading state */}
