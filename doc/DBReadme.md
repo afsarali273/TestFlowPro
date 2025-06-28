@@ -41,7 +41,7 @@ DB_CUSTOMERDB_CONNSTRING=DSN=MyDB2DSN
 
 ---
 
-## 🧩 PreProcessStep Format 
+## 🧩 PreProcessStep Format
 
 ```ts
 interface PreProcessStep {
@@ -93,6 +93,27 @@ Stores:
 
 ---
 
+### ✅ 3. Dynamic Args Using Variable Injection
+
+TestFlow Pro supports using `{{variable}}` placeholders in `args`, which are automatically replaced using `injectVariables`.
+
+```json
+{
+  "function": "dbQuery",
+  "args": ["SELECT email FROM users WHERE id = {{adminId}}"],
+  "db": "userDb",
+  "var": "adminEmail"
+}
+```
+
+If `adminId` was set to `42` earlier, the final query becomes:
+
+```sql
+SELECT email FROM users WHERE id = 42
+```
+
+---
+
 ## 🧠 Notes & Best Practices
 
 * Only the **first row** of the result set is used.
@@ -101,6 +122,7 @@ Stores:
 * `var` is simpler when you need just one field (like an ID or name).
 * If neither `mapTo` nor `var` is specified, the entire first row is stored under the function name.
 * DB connections are initialized **lazily** — only when `dbQuery` is used.
+* Variable placeholders like `{{userId}}` in `args` are supported and resolved automatically.
 
 ---
 
@@ -125,6 +147,12 @@ Stores:
       "userId": "id",
       "userEmailFromDb": "email"
     }
+  },
+  {
+    "function": "dbQuery",
+    "args": ["SELECT email FROM users WHERE id = {{userId}}"],
+    "db": "userDb",
+    "var": "reFetchedEmail"
   }
 ]
 ```
@@ -139,6 +167,7 @@ Stores:
 | ODBC errors or connection | Check DSN config and connection string syntax              |
 | Empty result              | Verify your query and ensure it returns at least one row   |
 | Missing fields in mapTo   | Double-check column names in query match keys in `mapTo`   |
+| Placeholder not replaced  | Ensure the variable used in `{{var}}` was set beforehand   |
 
 ---
 

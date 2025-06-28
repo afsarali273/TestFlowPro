@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { setVariable } from './utils/variableStore';
+import {injectVariables, setVariable} from './utils/variableStore';
 import crypto from 'crypto';
 import {runQuery} from "./db/dbClient";
 
@@ -15,21 +15,29 @@ export async function runPreProcessors(steps: PreProcessStep[]) {
     for (const step of steps) {
         let value: any;
 
+        const injectedArgs = (step.args || []).map(arg =>
+            typeof arg === 'string' ? injectVariables(arg) : arg
+        );
+
         switch (step.function) {
             case 'faker.email':
                 value = faker.internet.email();
                 break;
+
             case 'faker.username':
                 value = faker.internet.userName();
                 break;
+
             case 'faker.uuid':
-                //value = faker.datatype.uuid();
+                // value = faker.datatype.uuid(); // Uncomment if needed
                 break;
+
             case 'date.now':
                 value = Date.now().toString();
                 break;
+
             case 'encrypt':
-                const [text] = step.args || [];
+                const [text] = injectedArgs;
                 const cipher = crypto.createCipheriv(
                     'aes-256-ctr',
                     'My32charPassword1234567890abcdef',
@@ -38,24 +46,15 @@ export async function runPreProcessors(steps: PreProcessStep[]) {
                 value = cipher.update(text, 'utf8', 'hex') + cipher.final('hex');
                 break;
 
-            //    // Example usage
-            //     {
-            //   "function": "generateUser",
-            //   "mapTo": {
-            //     "userEmail": "email",
-            //     "userName": "username"
-            //   }
-            // }
             case 'generateUser':
                 value = {
                     username: faker.internet.userName(),
-                    email: faker.internet.email(),
-                    //uuid: faker.datatype.uuid()
+                    email: faker.internet.email()
                 };
                 break;
 
             case 'dbQuery':
-                const [query] = step.args || [];
+                const [query] = injectedArgs;
                 const dbName = step.db;
                 if (!dbName) throw new Error(`Missing 'db' field for dbQuery preProcess`);
 
@@ -95,3 +94,4 @@ export async function runPreProcessors(steps: PreProcessStep[]) {
         }
     }
 }
+
