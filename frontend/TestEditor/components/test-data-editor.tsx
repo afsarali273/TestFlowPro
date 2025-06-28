@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Trash2, Save, X, ArrowLeft, FileText, Upload, Code } from "lucide-react"
+import { Plus, Trash2, Save, X, ArrowLeft, FileText, Upload, Code, Database } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 interface TestDataEditorProps {
@@ -24,6 +24,7 @@ interface PreProcessStep {
   var?: string // Legacy single variable
   function: string
   args?: any[]
+  db?: string // Database name for dbQuery
   mapTo?: Record<string, string> // New multi-variable mapping
 }
 
@@ -263,9 +264,14 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
           function: process.function,
         }
 
-        // Add args if they exist
-        if (process.args && process.args.length > 0) {
-          cleanProcess.args = process.args
+        // Add args if they exist and are not empty
+        if (process.args && process.args.length > 0 && process.args.some(arg => arg.trim() !== "")) {
+          cleanProcess.args = process.args.filter(arg => arg.trim() !== "")
+        }
+
+        // Add database name for dbQuery function
+        if (process.function === "dbQuery" && process.db) {
+          cleanProcess.db = process.db
         }
 
         // Handle single variable mode
@@ -280,6 +286,11 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
 
         return cleanProcess
       })
+  }
+
+  // Check if function is dbQuery
+  const isDbQueryFunction = (functionName: string) => {
+    return functionName === "dbQuery"
   }
 
   const handleSave = () => {
@@ -674,7 +685,10 @@ Example:
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Pre-Process</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <Database className="h-5 w-5 text-purple-600" />
+                      Pre-Process
+                    </CardTitle>
                     <CardDescription>Define variables and functions to execute before the request</CardDescription>
                   </div>
                   <Button
@@ -691,45 +705,100 @@ Example:
                   {(editedTestData.preProcess || []).map((process: PreProcessStep, index: number) => {
                     const isMultipleMode = !!process.mapTo
                     const isSingleMode = !!process.var || !process.mapTo
+                    const isDbQuery = isDbQueryFunction(process.function)
 
                     return (
                       <div key={index} className="p-6 border border-gray-200 rounded-lg space-y-4 bg-gray-50/50">
                         {/* Function Input */}
                         <div className="space-y-2">
                           <Label className="text-sm font-medium text-gray-700">Function</Label>
-                          <Input
-                            placeholder="Function name (e.g., faker.email, generateUser)"
+                          <Select
                             value={process.function || ""}
-                            onChange={(e) => handleUpdatePreProcess(index, "function", e.target.value)}
-                            className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                          />
+                            onValueChange={(value) => handleUpdatePreProcess(index, "function", value)}
+                          >
+                            <SelectTrigger className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                              <SelectValue placeholder="Select function type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="faker.email">faker.email</SelectItem>
+                              <SelectItem value="faker.uuid">faker.uuid</SelectItem>
+                              <SelectItem value="faker.username">faker.username</SelectItem>
+                              <SelectItem value="date.now">date.now</SelectItem>
+                              <SelectItem value="encrypt">encrypt</SelectItem>
+                              <SelectItem value="authToken">authToken</SelectItem>
+                              <SelectItem value="generateUser">generateUser</SelectItem>
+                              <SelectItem value="dbQuery">dbQuery (Database Query)</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
 
-                        {/* Mode Selection */}
-                        <div className="space-y-3">
-                          <Label className="text-sm font-medium text-gray-700">Variable Mode</Label>
-                          <RadioGroup
-                            value={isMultipleMode ? "multiple" : "single"}
-                            onValueChange={(value) => handlePreProcessModeChange(index, value as "single" | "multiple")}
-                            className="flex gap-6"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="single" id={`single-${index}`} />
-                              <Label htmlFor={`single-${index}`} className="text-sm">
-                                Single Variable
-                              </Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="multiple" id={`multiple-${index}`} />
-                              <Label htmlFor={`multiple-${index}`} className="text-sm">
-                                Multiple Variables (mapTo)
-                              </Label>
-                            </div>
-                          </RadioGroup>
+                        {/* Database Name - Only for dbQuery */}
+                        {isDbQuery && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                              <Database className="h-4 w-4 text-blue-600" />
+                              Database Name
+                            </Label>
+                            <Input
+                              placeholder="Database name (e.g., userDb, productDb)"
+                              value={process.db || ""}
+                              onChange={(e) => handleUpdatePreProcess(index, "db", e.target.value)}
+                              className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                          </div>
+                        )}
+
+                        {/* Arguments - Special handling for dbQuery */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">
+                            {isDbQuery ? "SQL Query" : "Arguments (Optional)"}
+                          </Label>
+                          {isDbQuery ? (
+                            <Textarea
+                              placeholder="SELECT id, email FROM users WHERE id = 1"
+                              value={Array.isArray(process.args) ? process.args[0] || "" : ""}
+                              onChange={(e) => handleUpdatePreProcess(index, "args", [e.target.value])}
+                              className="font-mono text-sm min-h-[100px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                          ) : (
+                            <Input
+                              placeholder="Arguments (comma separated)"
+                              value={Array.isArray(process.args) ? process.args.join(", ") : ""}
+                              onChange={(e) =>
+                                handleUpdatePreProcess(index, "args", e.target.value.split(", ").filter(Boolean))
+                              }
+                              className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                          )}
                         </div>
+
+                        {/* Mode Selection - Only show for functions that support multiple variables */}
+                        {(process.function === "generateUser" || isDbQuery) && (
+                          <div className="space-y-3">
+                            <Label className="text-sm font-medium text-gray-700">Variable Mode</Label>
+                            <RadioGroup
+                              value={isMultipleMode ? "multiple" : "single"}
+                              onValueChange={(value) => handlePreProcessModeChange(index, value as "single" | "multiple")}
+                              className="flex gap-6"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="single" id={`single-${index}`} />
+                                <Label htmlFor={`single-${index}`} className="text-sm">
+                                  Single Variable
+                                </Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="multiple" id={`multiple-${index}`} />
+                                <Label htmlFor={`multiple-${index}`} className="text-sm">
+                                  Multiple Variables (mapTo)
+                                </Label>
+                              </div>
+                            </RadioGroup>
+                          </div>
+                        )}
 
                         {/* Single Variable Mode */}
-                        {isSingleMode && !isMultipleMode && (
+                        {(isSingleMode && !isMultipleMode) && (
                           <div className="space-y-2">
                             <Label className="text-sm font-medium text-gray-700">Variable Name</Label>
                             <Input
@@ -770,12 +839,14 @@ Example:
                                     />
                                   </div>
                                   <div className="flex-1 space-y-1">
-                                    <Label className="text-xs text-gray-500">Property Name</Label>
+                                    <Label className="text-xs text-gray-500">
+                                      {isDbQuery ? "Column Name" : "Property Name"}
+                                    </Label>
                                     <Input
                                       value={propertyName}
                                       onChange={(e) => handleUpdateMapToEntry(index, varName, varName, e.target.value)}
                                       className="h-8 text-sm"
-                                      placeholder="Property from function result"
+                                      placeholder={isDbQuery ? "Column from query result" : "Property from function result"}
                                     />
                                   </div>
                                   <Button
@@ -792,25 +863,14 @@ Example:
                               {(!process.mapTo || Object.keys(process.mapTo).length === 0) && (
                                 <div className="text-center py-4 text-gray-500 bg-white rounded border-2 border-dashed">
                                   <p className="text-sm">No variable mappings defined</p>
-                                  <p className="text-xs mt-1">Add mappings to store multiple variables from function result</p>
+                                  <p className="text-xs mt-1">
+                                    Add mappings to store multiple {isDbQuery ? "columns" : "variables"} from {isDbQuery ? "query" : "function"} result
+                                  </p>
                                 </div>
                               )}
                             </div>
                           </div>
                         )}
-
-                        {/* Arguments */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">Arguments (Optional)</Label>
-                          <Input
-                            placeholder="Arguments (comma separated)"
-                            value={Array.isArray(process.args) ? process.args.join(", ") : ""}
-                            onChange={(e) =>
-                              handleUpdatePreProcess(index, "args", e.target.value.split(", ").filter(Boolean))
-                            }
-                            className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                          />
-                        </div>
 
                         {/* Remove Button */}
                         <div className="flex justify-end pt-2 border-t">
@@ -839,17 +899,23 @@ Example:
                 {/* Info Section */}
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="font-medium mb-2 text-blue-800">Pre-Process Examples</h4>
-                  <div className="space-y-2 text-sm text-blue-700">
+                  <div className="space-y-3 text-sm text-blue-700">
                     <div>
                       <strong>Single Variable:</strong>
-                      <code className="ml-2 bg-blue-100 px-2 py-1 rounded text-xs">
+                      <code className="ml-2 bg-blue-100 px-2 py-1 rounded text-xs block mt-1">
                         {"{ \"var\": \"randomEmail\", \"function\": \"faker.email\" }"}
                       </code>
                     </div>
                     <div>
                       <strong>Multiple Variables:</strong>
-                      <code className="ml-2 bg-blue-100 px-2 py-1 rounded text-xs">
+                      <code className="ml-2 bg-blue-100 px-2 py-1 rounded text-xs block mt-1">
                         {"{ \"function\": \"generateUser\", \"mapTo\": { \"userNameVar\": \"username\", \"userEmailVar\": \"email\" } }"}
+                      </code>
+                    </div>
+                    <div>
+                      <strong>Database Query:</strong>
+                      <code className="ml-2 bg-blue-100 px-2 py-1 rounded text-xs block mt-1">
+                        {"{ \"function\": \"dbQuery\", \"args\": [\"SELECT id, email FROM users WHERE id = 1\"], \"db\": \"userDb\", \"mapTo\": { \"userId\": \"id\", \"userEmail\": \"email\" } }"}
                       </code>
                     </div>
                   </div>
