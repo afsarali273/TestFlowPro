@@ -12,20 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Trash2, Save, X, ArrowLeft, FileText, Upload, Code, Database } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface TestDataEditorProps {
   testData: any
   onSave: (testData: any) => void
   onCancel: () => void
   testCaseType?: string // Add this to know if it's SOAP or REST
-}
-
-interface PreProcessStep {
-  var?: string // Legacy single variable
-  function: string
-  args?: any[]
-  db?: string // Database name for dbQuery
-  mapTo?: Record<string, string> // New multi-variable mapping
 }
 
 export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "REST" }: TestDataEditorProps) {
@@ -94,10 +87,15 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
   }
 
   const handleAddPreProcess = () => {
-    const newPreProcess: PreProcessStep = {
-      var: "",
+    const newPreProcess = {
+      id: `preprocess_${Date.now()}`,
       function: "",
+      var: "",
+      variableMode: "single", // single or multiple
+      isDbQuery: false,
+      db: "",
       args: [],
+      mapTo: {},
     }
     setEditedTestData((prev: any) => ({
       ...prev,
@@ -108,90 +106,74 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
   const handleUpdatePreProcess = (index: number, field: string, value: any) => {
     setEditedTestData((prev: any) => ({
       ...prev,
+      preProcess: prev.preProcess.map((process: any, i: number) => {
+        if (i === index) {
+          const updated = { ...process, [field]: value }
+          
+          // Reset relevant fields when changing modes
+          if (field === "variableMode") {
+            if (value === "single") {
+              updated.mapTo = {}
+            } else {
+              updated.var = ""
+            }
+          }
+          
+          // Reset DB-related fields when unchecking DB query
+          if (field === "isDbQuery" && !value) {
+            updated.db = ""
+          }
+          
+          return updated
+        }
+        return process
+      }),
+    }))
+  }
+
+  const handleUpdatePreProcessMapTo = (index: number, key: string, value: string) => {
+    setEditedTestData((prev: any) => ({
+      ...prev,
       preProcess: prev.preProcess.map((process: any, i: number) =>
-        i === index ? { ...process, [field]: value } : process,
+        i === index
+          ? {
+              ...process,
+              mapTo: {
+                ...process.mapTo,
+                [key]: value,
+              },
+            }
+          : process,
       ),
     }))
+  }
+
+  const handleRemovePreProcessMapTo = (index: number, key: string) => {
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      preProcess: prev.preProcess.map((process: any, i: number) => {
+        if (i === index) {
+          const newMapTo = { ...process.mapTo }
+          delete newMapTo[key]
+          return { ...process, mapTo: newMapTo }
+        }
+        return process
+      }),
+    }))
+  }
+
+  const handleAddPreProcessMapTo = (index: number) => {
+    const key = prompt("Enter variable name:")
+    const value = prompt("Enter property/column name:")
+    if (key && value) {
+      handleUpdatePreProcessMapTo(index, key, value)
+    }
   }
 
   const handleRemovePreProcess = (index: number) => {
     setEditedTestData((prev: any) => ({
       ...prev,
       preProcess: prev.preProcess.filter((_: any, i: number) => i !== index),
-    }))
-  }
-
-  // New handlers for mapTo functionality
-  const handlePreProcessModeChange = (index: number, mode: "single" | "multiple") => {
-    setEditedTestData((prev: any) => ({
-      ...prev,
-      preProcess: prev.preProcess.map((process: any, i: number) => {
-        if (i === index) {
-          if (mode === "single") {
-            // Convert to single variable mode
-            const { mapTo, ...rest } = process
-            return { ...rest, var: "" }
-          } else {
-            // Convert to multiple variable mode
-            const { var: singleVar, ...rest } = process
-            return { ...rest, mapTo: {} }
-          }
-        }
-        return process
-      }),
-    }))
-  }
-
-  const handleAddMapToEntry = (processIndex: number) => {
-    const varName = prompt("Enter variable name:")
-    const propertyName = prompt("Enter property name from function result:")
-    if (varName && propertyName) {
-      setEditedTestData((prev: any) => ({
-        ...prev,
-        preProcess: prev.preProcess.map((process: any, i: number) => {
-          if (i === processIndex) {
-            return {
-              ...process,
-              mapTo: {
-                ...process.mapTo,
-                [varName]: propertyName,
-              },
-            }
-          }
-          return process
-        }),
-      }))
-    }
-  }
-
-  const handleRemoveMapToEntry = (processIndex: number, varName: string) => {
-    setEditedTestData((prev: any) => ({
-      ...prev,
-      preProcess: prev.preProcess.map((process: any, i: number) => {
-        if (i === processIndex) {
-          const newMapTo = { ...process.mapTo }
-          delete newMapTo[varName]
-          return { ...process, mapTo: newMapTo }
-        }
-        return process
-      }),
-    }))
-  }
-
-  const handleUpdateMapToEntry = (processIndex: number, oldVarName: string, newVarName: string, propertyName: string) => {
-    setEditedTestData((prev: any) => ({
-      ...prev,
-      preProcess: prev.preProcess.map((process: any, i: number) => {
-        if (i === processIndex) {
-          const newMapTo = { ...process.mapTo }
-          if (oldVarName !== newVarName) {
-            delete newMapTo[oldVarName]
-          }
-          newMapTo[newVarName] = propertyName
-          return { ...process, mapTo: newMapTo }
-        }
-        return process
-      }),
     }))
   }
 
@@ -256,41 +238,31 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
   }
 
   // Function to clean pre-process data
-  const cleanPreProcessData = (preProcess: PreProcessStep[]) => {
-    return preProcess
-      .filter((process: PreProcessStep) => process.function) // Only keep processes with functions
-      .map((process: PreProcessStep) => {
-        const cleanProcess: any = {
-          function: process.function,
-        }
+  const cleanPreProcessData = (process: any) => {
+    const cleaned: any = {
+      function: process.function,
+    }
 
-        // Add args if they exist and are not empty
-        if (process.args && process.args.length > 0 && process.args.some(arg => arg.trim() !== "")) {
-          cleanProcess.args = process.args.filter(arg => arg.trim() !== "")
-        }
+    // Handle database queries
+    if (process.isDbQuery) {
+      cleaned.db = process.db
+      // For DB queries, args should be an array with the SQL query
+      cleaned.args = Array.isArray(process.args) ? process.args : [process.args || ""]
+    } else {
+      // For non-DB queries, handle args as before
+      if (process.args && process.args.length > 0) {
+        cleaned.args = Array.isArray(process.args) ? process.args : process.args.split(",").map((arg: string) => arg.trim()).filter(Boolean)
+      }
+    }
 
-        // Add database name for dbQuery function
-        if (process.function === "dbQuery" && process.db) {
-          cleanProcess.db = process.db
-        }
+    // Handle variable assignment
+    if (process.variableMode === "single" && process.var) {
+      cleaned.var = process.var
+    } else if (process.variableMode === "multiple" && process.mapTo && Object.keys(process.mapTo).length > 0) {
+      cleaned.mapTo = process.mapTo
+    }
 
-        // Handle single variable mode
-        if (process.var && !process.mapTo) {
-          cleanProcess.var = process.var
-        }
-
-        // Handle multiple variable mode
-        if (process.mapTo && Object.keys(process.mapTo).length > 0) {
-          cleanProcess.mapTo = process.mapTo
-        }
-
-        return cleanProcess
-      })
-  }
-
-  // Check if function is dbQuery
-  const isDbQueryFunction = (functionName: string) => {
-    return functionName === "dbQuery"
+    return cleaned
   }
 
   const handleSave = () => {
@@ -299,8 +271,10 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
       ...editedTestData,
       // Clean assertions to remove unnecessary fields
       assertions: (editedTestData.assertions || []).map(cleanAssertionData),
-      // Clean preProcess to remove empty entries and format correctly
-      preProcess: cleanPreProcessData(editedTestData.preProcess || []),
+      // Clean preProcess to remove UI-specific fields and empty entries
+      preProcess: (editedTestData.preProcess || [])
+        .filter((process: any) => process.function)
+        .map(cleanPreProcessData),
     }
 
     onSave(cleanedTestData)
@@ -685,10 +659,7 @@ Example:
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Database className="h-5 w-5 text-purple-600" />
-                      Pre-Process
-                    </CardTitle>
+                    <CardTitle>Pre-Process</CardTitle>
                     <CardDescription>Define variables and functions to execute before the request</CardDescription>
                   </div>
                   <Button
@@ -702,191 +673,178 @@ Example:
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {(editedTestData.preProcess || []).map((process: PreProcessStep, index: number) => {
-                    const isMultipleMode = !!process.mapTo
-                    const isSingleMode = !!process.var || !process.mapTo
-                    const isDbQuery = isDbQueryFunction(process.function)
+                  {(editedTestData.preProcess || []).map((process: any, index: number) => (
+                    <div key={index} className="p-6 border border-gray-200 rounded-lg space-y-4 bg-gray-50/50">
+                      {/* Function Name */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">Function Name</Label>
+                        <Input
+                          placeholder="e.g., faker.email, generateUser, encrypt"
+                          value={process.function || ""}
+                          onChange={(e) => handleUpdatePreProcess(index, "function", e.target.value)}
+                          className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        />
+                      </div>
 
-                    return (
-                      <div key={index} className="p-6 border border-gray-200 rounded-lg space-y-4 bg-gray-50/50">
-                        {/* Function Input */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">Function</Label>
-                          <Select
-                            value={process.function || ""}
-                            onValueChange={(value) => handleUpdatePreProcess(index, "function", value)}
-                          >
-                            <SelectTrigger className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                              <SelectValue placeholder="Select function type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="faker.email">faker.email</SelectItem>
-                              <SelectItem value="faker.uuid">faker.uuid</SelectItem>
-                              <SelectItem value="faker.username">faker.username</SelectItem>
-                              <SelectItem value="date.now">date.now</SelectItem>
-                              <SelectItem value="encrypt">encrypt</SelectItem>
-                              <SelectItem value="authToken">authToken</SelectItem>
-                              <SelectItem value="generateUser">generateUser</SelectItem>
-                              <SelectItem value="dbQuery">dbQuery (Database Query)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      {/* Database Query Checkbox */}
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`db-query-${index}`}
+                          checked={process.isDbQuery || false}
+                          onCheckedChange={(checked) => handleUpdatePreProcess(index, "isDbQuery", checked)}
+                        />
+                        <Label htmlFor={`db-query-${index}`} className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <Database className="h-4 w-4 text-blue-600" />
+                          Database Query
+                        </Label>
+                      </div>
 
-                        {/* Database Name - Only for dbQuery */}
-                        {isDbQuery && (
+                      {/* Database Configuration (only show if DB query is checked) */}
+                      {process.isDbQuery && (
+                        <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                              <Database className="h-4 w-4 text-blue-600" />
-                              Database Name
-                            </Label>
+                            <Label className="text-sm font-medium text-blue-800">Database Name</Label>
                             <Input
-                              placeholder="Database name (e.g., userDb, productDb)"
+                              placeholder="e.g., userDb, mainDb"
                               value={process.db || ""}
                               onChange={(e) => handleUpdatePreProcess(index, "db", e.target.value)}
-                              className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                              className="h-10 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
                             />
                           </div>
-                        )}
-
-                        {/* Arguments - Special handling for dbQuery */}
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">
-                            {isDbQuery ? "SQL Query" : "Arguments (Optional)"}
-                          </Label>
-                          {isDbQuery ? (
+                          
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-blue-800">SQL Query</Label>
                             <Textarea
                               placeholder="SELECT id, email FROM users WHERE id = 1"
-                              value={Array.isArray(process.args) ? process.args[0] || "" : ""}
+                              value={Array.isArray(process.args) ? process.args[0] || "" : process.args || ""}
                               onChange={(e) => handleUpdatePreProcess(index, "args", [e.target.value])}
-                              className="font-mono text-sm min-h-[100px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                              className="font-mono text-sm min-h-[100px] border-blue-300 focus:border-blue-500 focus:ring-blue-500"
                             />
-                          ) : (
-                            <Input
-                              placeholder="Arguments (comma separated)"
-                              value={Array.isArray(process.args) ? process.args.join(", ") : ""}
-                              onChange={(e) =>
-                                handleUpdatePreProcess(index, "args", e.target.value.split(", ").filter(Boolean))
-                              }
-                              className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            />
-                          )}
+                            <p className="text-xs text-blue-600">
+                              Write your SQL query here. The result will be mapped to variables based on your selection below.
+                            </p>
+                          </div>
                         </div>
+                      )}
 
-                        {/* Mode Selection - Only show for functions that support multiple variables */}
-                        {(process.function === "generateUser" || isDbQuery) && (
-                          <div className="space-y-3">
-                            <Label className="text-sm font-medium text-gray-700">Variable Mode</Label>
-                            <RadioGroup
-                              value={isMultipleMode ? "multiple" : "single"}
-                              onValueChange={(value) => handlePreProcessModeChange(index, value as "single" | "multiple")}
-                              className="flex gap-6"
-                            >
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="single" id={`single-${index}`} />
-                                <Label htmlFor={`single-${index}`} className="text-sm">
-                                  Single Variable
-                                </Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="multiple" id={`multiple-${index}`} />
-                                <Label htmlFor={`multiple-${index}`} className="text-sm">
-                                  Multiple Variables (mapTo)
-                                </Label>
-                              </div>
-                            </RadioGroup>
-                          </div>
-                        )}
-
-                        {/* Single Variable Mode */}
-                        {(isSingleMode && !isMultipleMode) && (
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-700">Variable Name</Label>
-                            <Input
-                              placeholder="Variable name to store result"
-                              value={process.var || ""}
-                              onChange={(e) => handleUpdatePreProcess(index, "var", e.target.value)}
-                              className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            />
-                          </div>
-                        )}
-
-                        {/* Multiple Variables Mode */}
-                        {isMultipleMode && (
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <Label className="text-sm font-medium text-gray-700">Variable Mappings</Label>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleAddMapToEntry(index)}
-                                className="h-8 px-3 border-green-300 hover:border-green-400 hover:bg-green-50"
-                              >
-                                <Plus className="h-3 w-3 mr-1" />
-                                Add Mapping
-                              </Button>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              {Object.entries(process.mapTo || {}).map(([varName, propertyName]) => (
-                                <div key={varName} className="flex items-center gap-3 p-3 bg-white rounded border">
-                                  <div className="flex-1 space-y-1">
-                                    <Label className="text-xs text-gray-500">Variable Name</Label>
-                                    <Input
-                                      value={varName}
-                                      onChange={(e) => handleUpdateMapToEntry(index, varName, e.target.value, propertyName)}
-                                      className="h-8 text-sm"
-                                      placeholder="Variable name"
-                                    />
-                                  </div>
-                                  <div className="flex-1 space-y-1">
-                                    <Label className="text-xs text-gray-500">
-                                      {isDbQuery ? "Column Name" : "Property Name"}
-                                    </Label>
-                                    <Input
-                                      value={propertyName}
-                                      onChange={(e) => handleUpdateMapToEntry(index, varName, varName, e.target.value)}
-                                      className="h-8 text-sm"
-                                      placeholder={isDbQuery ? "Column from query result" : "Property from function result"}
-                                    />
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleRemoveMapToEntry(index, varName)}
-                                    className="h-8 px-2 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700 mt-5"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
-                              
-                              {(!process.mapTo || Object.keys(process.mapTo).length === 0) && (
-                                <div className="text-center py-4 text-gray-500 bg-white rounded border-2 border-dashed">
-                                  <p className="text-sm">No variable mappings defined</p>
-                                  <p className="text-xs mt-1">
-                                    Add mappings to store multiple {isDbQuery ? "columns" : "variables"} from {isDbQuery ? "query" : "function"} result
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Remove Button */}
-                        <div className="flex justify-end pt-2 border-t">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleRemovePreProcess(index)}
-                            className="border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
-                          >
-                            <Trash2 className="h-3 w-3 mr-1" />
-                            Remove Pre-Process
-                          </Button>
+                      {/* Arguments (only show if NOT a DB query) */}
+                      {!process.isDbQuery && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Arguments (comma separated)</Label>
+                          <Input
+                            placeholder="arg1, arg2, arg3"
+                            value={Array.isArray(process.args) ? process.args.join(", ") : process.args || ""}
+                            onChange={(e) =>
+                              handleUpdatePreProcess(index, "args", e.target.value.split(",").map(arg => arg.trim()).filter(Boolean))
+                            }
+                            className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          />
                         </div>
+                      )}
+
+                      {/* Variable Mode Selection */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium text-gray-700">Variable Assignment</Label>
+                        <RadioGroup
+                          value={process.variableMode || "single"}
+                          onValueChange={(value) => handleUpdatePreProcess(index, "variableMode", value)}
+                          className="flex gap-6"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="single" id={`single-${index}`} />
+                            <Label htmlFor={`single-${index}`} className="text-sm">Single Variable</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="multiple" id={`multiple-${index}`} />
+                            <Label htmlFor={`multiple-${index}`} className="text-sm">Multiple Variables (mapTo)</Label>
+                          </div>
+                        </RadioGroup>
                       </div>
-                    )
-                  })}
+
+                      {/* Single Variable Input */}
+                      {process.variableMode === "single" && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Variable Name</Label>
+                          <Input
+                            placeholder="variableName"
+                            value={process.var || ""}
+                            onChange={(e) => handleUpdatePreProcess(index, "var", e.target.value)}
+                            className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          />
+                        </div>
+                      )}
+
+                      {/* Multiple Variables (mapTo) */}
+                      {process.variableMode === "multiple" && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Variable Mapping {process.isDbQuery ? "(Column → Variable)" : "(Property → Variable)"}
+                            </Label>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAddPreProcessMapTo(index)}
+                              className="h-8 px-3 border-green-300 hover:border-green-400 hover:bg-green-50"
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add Mapping
+                            </Button>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            {Object.entries(process.mapTo || {}).map(([varName, propName]) => (
+                              <div key={varName} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-white">
+                                <Input
+                                  value={varName}
+                                  readOnly
+                                  className="flex-1 h-9 bg-gray-100 text-sm"
+                                  placeholder="Variable Name"
+                                />
+                                <span className="text-gray-400">←</span>
+                                <Input
+                                  value={propName as string}
+                                  onChange={(e) => handleUpdatePreProcessMapTo(index, varName, e.target.value)}
+                                  className="flex-1 h-9 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-sm"
+                                  placeholder={process.isDbQuery ? "Column Name" : "Property Name"}
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleRemovePreProcessMapTo(index, varName)}
+                                  className="h-9 px-2 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                            
+                            {(!process.mapTo || Object.keys(process.mapTo).length === 0) && (
+                              <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                                <p className="text-sm">No variable mappings defined</p>
+                                <p className="text-xs mt-1">
+                                  Add mappings to store {process.isDbQuery ? "database columns" : "response properties"} in variables
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Remove Button */}
+                      <div className="flex justify-end pt-2 border-t border-gray-200">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRemovePreProcess(index)}
+                          className="border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Remove Pre-Process
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                   
                   {(!editedTestData.preProcess || editedTestData.preProcess.length === 0) && (
                     <div className="text-center py-8 text-gray-500 bg-gray-50/50 rounded-lg border-2 border-dashed border-gray-200">
@@ -896,26 +854,26 @@ Example:
                   )}
                 </div>
 
-                {/* Info Section */}
+                {/* Examples Section */}
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="font-medium mb-2 text-blue-800">Pre-Process Examples</h4>
-                  <div className="space-y-3 text-sm text-blue-700">
+                  <h4 className="font-medium mb-3 text-blue-800">Examples:</h4>
+                  <div className="space-y-3 text-sm">
                     <div>
-                      <strong>Single Variable:</strong>
-                      <code className="ml-2 bg-blue-100 px-2 py-1 rounded text-xs block mt-1">
-                        {"{ \"var\": \"randomEmail\", \"function\": \"faker.email\" }"}
+                      <p className="font-medium text-blue-700">Single Variable:</p>
+                      <code className="text-xs bg-blue-100 px-2 py-1 rounded block mt-1">
+                        {`{ "function": "faker.email", "var": "userEmail" }`}
                       </code>
                     </div>
                     <div>
-                      <strong>Multiple Variables:</strong>
-                      <code className="ml-2 bg-blue-100 px-2 py-1 rounded text-xs block mt-1">
-                        {"{ \"function\": \"generateUser\", \"mapTo\": { \"userNameVar\": \"username\", \"userEmailVar\": \"email\" } }"}
+                      <p className="font-medium text-blue-700">Multiple Variables:</p>
+                      <code className="text-xs bg-blue-100 px-2 py-1 rounded block mt-1">
+                        {`{ "function": "generateUser", "mapTo": { "userName": "username", "userEmail": "email" } }`}
                       </code>
                     </div>
                     <div>
-                      <strong>Database Query:</strong>
-                      <code className="ml-2 bg-blue-100 px-2 py-1 rounded text-xs block mt-1">
-                        {"{ \"function\": \"dbQuery\", \"args\": [\"SELECT id, email FROM users WHERE id = 1\"], \"db\": \"userDb\", \"mapTo\": { \"userId\": \"id\", \"userEmail\": \"email\" } }"}
+                      <p className="font-medium text-blue-700">Database Query:</p>
+                      <code className="text-xs bg-blue-100 px-2 py-1 rounded block mt-1">
+                        {`{ "function": "dbQuery", "db": "userDb", "args": ["SELECT id, email FROM users WHERE id = 1"], "mapTo": { "userId": "id", "userEmail": "email" } }`}
                       </code>
                     </div>
                   </div>
