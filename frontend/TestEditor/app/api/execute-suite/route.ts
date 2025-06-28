@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Build the command arguments - use the framework path directly with runner.ts
-    const runnerPath = path.join(frameworkPath, "runner.ts")
+    const runnerPath = path.join(frameworkPath, "src/runner.ts")
     const args = ["ts-node", runnerPath, "--file", suiteFilePath]
 
     // Create a readable stream for real-time output

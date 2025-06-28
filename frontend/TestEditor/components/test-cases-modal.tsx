@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { X, FileText, Database, CheckCircle, XCircle, Clock, Code, Upload, Globe } from "lucide-react"
+import { X, FileText, Database, CheckCircle, XCircle, Clock, Code, Upload, Globe, Settings, Zap } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface TestCasesModalProps {
@@ -57,6 +57,131 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
     }
   }
 
+  // Helper function to render pre-process steps
+  const renderPreProcessSteps = (preProcess: any[]) => {
+    if (!preProcess || preProcess.length === 0) {
+      return (
+        <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+          <Zap className="h-6 w-6 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No pre-process steps defined</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-3">
+        {preProcess.map((step: any, stepIndex: number) => (
+          <div key={stepIndex} className="bg-white p-4 rounded-lg border border-gray-200">
+            <div className="space-y-3">
+              {/* Function Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {step.db ? (
+                    <Database className="h-4 w-4 text-blue-500" />
+                  ) : (
+                    <Zap className="h-4 w-4 text-purple-500" />
+                  )}
+                  <span className="font-medium text-gray-900">{step.function}</span>
+                  {step.db && (
+                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                      DB Query
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Database Information */}
+              {step.db && (
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-xs font-medium text-blue-700">Database:</span>
+                      <code className="ml-2 text-xs bg-blue-100 px-2 py-1 rounded text-blue-800">
+                        {step.db}
+                      </code>
+                    </div>
+                    {step.args && step.args.length > 0 && (
+                      <div>
+                        <span className="text-xs font-medium text-blue-700">SQL Query:</span>
+                        <pre className="mt-1 text-xs bg-blue-100 p-2 rounded text-blue-800 font-mono whitespace-pre-wrap break-words">
+                          {step.args[0]}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Arguments (for non-DB functions) */}
+              {!step.db && step.args && step.args.length > 0 && (
+                <div>
+                  <span className="text-xs font-medium text-gray-600">Arguments:</span>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {step.args.map((arg: string, argIndex: number) => (
+                      <code key={argIndex} className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">
+                        {arg}
+                      </code>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Variable Assignment */}
+              <div>
+                <span className="text-xs font-medium text-gray-600">Variable Assignment:</span>
+                <div className="mt-1">
+                  {/* Single Variable */}
+                  {step.var && (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs bg-green-50 text-green-700 border-green-200">
+                        Single Variable
+                      </Badge>
+                      <code className="text-xs bg-green-100 px-2 py-1 rounded text-green-800">
+                        {step.var}
+                      </code>
+                    </div>
+                  )}
+
+                  {/* Multiple Variables (mapTo) */}
+                  {step.mapTo && Object.keys(step.mapTo).length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                          Multiple Variables
+                        </Badge>
+                        <span className="text-xs text-gray-500">
+                          ({Object.keys(step.mapTo).length} mapping{Object.keys(step.mapTo).length !== 1 ? 's' : ''})
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        {Object.entries(step.mapTo).map(([varName, propName]) => (
+                          <div key={varName} className="flex items-center gap-2 text-xs">
+                            <code className="bg-purple-100 px-2 py-1 rounded text-purple-800 font-medium">
+                              {varName}
+                            </code>
+                            <span className="text-gray-400">←</span>
+                            <code className="bg-gray-100 px-2 py-1 rounded text-gray-700">
+                              {propName as string}
+                            </code>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* No variables defined */}
+                  {!step.var && (!step.mapTo || Object.keys(step.mapTo).length === 0) && (
+                    <span className="text-xs text-gray-500 italic">No variables will be stored</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[80vh]">
@@ -101,12 +226,12 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
 
                   {testCase.testData && testCase.testData.length > 0 && (
                     <CardContent>
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <h4 className="font-medium text-sm text-gray-700">Test Data:</h4>
                         {testCase.testData.map((testData: any, dataIndex: number) => (
                           <Card key={dataIndex} className="bg-gray-50">
                             <CardContent className="p-4">
-                              <div className="space-y-3">
+                              <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                   <h5 className="font-medium text-sm">{testData.name}</h5>
                                   <div className="flex items-center gap-2">
@@ -116,6 +241,17 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                     </code>
                                   </div>
                                 </div>
+
+                                {/* Pre-Process Section */}
+                                {testData.preProcess && testData.preProcess.length > 0 && (
+                                  <div>
+                                    <h6 className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-2">
+                                      <Zap className="h-3 w-3 text-purple-500" />
+                                      Pre-Process Steps ({testData.preProcess.length}):
+                                    </h6>
+                                    {renderPreProcessSteps(testData.preProcess)}
+                                  </div>
+                                )}
 
                                 {/* File References */}
                                 {(testData.bodyFile || testData.responseSchemaFile) && (
@@ -219,22 +355,6 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                               [{assertion.matchField}={assertion.matchValue} → {assertion.assertField}]
                                             </span>
                                           )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Pre-process */}
-                                {testData.preProcess && testData.preProcess.length > 0 && (
-                                  <div>
-                                    <h6 className="text-xs font-medium text-gray-600 mb-1">Pre-Process:</h6>
-                                    <div className="space-y-1">
-                                      {testData.preProcess.map((process: any, processIndex: number) => (
-                                        <div key={processIndex} className="text-xs bg-blue-50 p-2 rounded">
-                                          <code className="break-all">
-                                            {process.var} = {process.function}({process.args?.join(", ")})
-                                          </code>
                                         </div>
                                       ))}
                                     </div>

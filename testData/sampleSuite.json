@@ -14,7 +14,7 @@
     {
       "name": "Get Single User",
       "status": "Not Started",
-      "type":  "REST",
+      "type": "REST",
       "testData": [
         {
           "name": "Fetch User with ID 2",
@@ -82,6 +82,24 @@
             "variable2": "$.[1].id"
           },
           "preProcess": [
+            {
+              "function": "getDataBaseName",
+              "db": "",
+              "args": [
+                "select user, name. from UserDB"
+              ],
+              "mapTo": {
+                "user": "user",
+                "name": "name"
+              }
+            },
+            {
+              "function": "getAccessToken",
+              "args": [
+                "id"
+              ],
+              "var": "id"
+            }
           ]
         },
         {
@@ -154,7 +172,7 @@
     {
       "name": "List of all objects",
       "status": "Not Started",
-      "type":  "REST",
+      "type": "REST",
       "testData": [
         {
           "name": "Listing All Objects Using the endpoint",
@@ -188,7 +206,7 @@
     {
       "name": "Add Object",
       "status": "Not Started",
-      "type":  "REST",
+      "type": "REST",
       "testData": [
         {
           "name": "Adding a new Single Object",
@@ -241,8 +259,8 @@
       ]
     }
   ],
-  "id": "1750603193700_L1VzZXJzL2Fmc2FyYWxpL1JlcG9zaXRvcnkvYXBpLWZyYW1ld29yay90ZXN0RGF0YS9zYW1wbGVTdWl0ZS5qc29u_ejrvfe36m",
+  "id": "User_API_Suite_Demo_L1VzZXJz",
   "filePath": "/Users/afsarali/Repository/api-framework/testData/sampleSuite.json",
   "fileName": "sampleSuite.json",
-  "lastModified": "2025-06-22T14:30:51.209Z"
+  "lastModified": "2025-06-28T15:16:34.505Z"
 }

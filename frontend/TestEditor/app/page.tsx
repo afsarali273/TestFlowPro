@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Plus, FileText, Play, Edit, Trash2, BarChart3, Eye, Settings, Upload, Zap, Globe } from "lucide-react"
+import { Plus, FileText, Play, Edit, Trash2, BarChart3, Eye, Settings, Upload, Zap, Globe, PlayCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,6 +17,7 @@ import { TestCasesModal } from "@/components/test-cases-modal"
 import { PathConfigModal } from "@/components/path-config-modal"
 import { FrameworkConfigModal } from "@/components/framework-config-modal"
 import { SuiteRunnerModal } from "@/components/suite-runner-modal"
+import { RunAllSuitesModal } from "@/components/run-all-suites-modal"
 
 interface TestSuite {
   id: string
@@ -38,6 +39,7 @@ export default function APITestFramework() {
   const [showResultsDashboard, setShowResultsDashboard] = useState(false)
   const [showTestCasesModal, setShowTestCasesModal] = useState(false)
   const [showSuiteRunnerModal, setShowSuiteRunnerModal] = useState(false)
+  const [showRunAllSuitesModal, setShowRunAllSuitesModal] = useState(false)
 
   // Add path configuration states
   const [testSuitePath, setTestSuitePath] = useState<string>("")
@@ -65,6 +67,19 @@ export default function APITestFramework() {
 
     if (savedFrameworkPath) {
       setFrameworkPath(savedFrameworkPath)
+    }
+  }, [])
+
+  // Add event listener for navigation to results
+  useEffect(() => {
+    const handleNavigateToResults = () => {
+      setShowResultsDashboard(true)
+    }
+
+    window.addEventListener('navigate-to-results', handleNavigateToResults)
+    
+    return () => {
+      window.removeEventListener('navigate-to-results', handleNavigateToResults)
     }
   }, [])
 
@@ -341,6 +356,18 @@ export default function APITestFramework() {
                 </div>
               )}
             </div>
+
+            {/* Run All Suites Button - Back in the right position */}
+            <Button
+              variant="outline"
+              onClick={() => setShowRunAllSuitesModal(true)}
+              disabled={!frameworkPath}
+              className="h-11 px-6 border-gray-300 hover:border-green-400 hover:bg-green-50 transition-all duration-200 shadow-sm"
+              title={!frameworkPath ? "Configure framework path first" : "Run all test suites"}
+            >
+              <PlayCircle className="h-4 w-4 mr-2" />
+              Run All Suites
+            </Button>
           </div>
 
           {/* Loading state */}
@@ -528,6 +555,12 @@ export default function APITestFramework() {
           }}
         />
       )}
+
+      {/* ------------ Run All Suites Modal ------------- */}
+      <RunAllSuitesModal
+        isOpen={showRunAllSuitesModal}
+        onClose={() => setShowRunAllSuitesModal(false)}
+      />
 
       {/* ------------ Path Configuration Modals ------------- */}
       {isPathConfigOpen && (

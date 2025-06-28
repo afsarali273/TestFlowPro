@@ -1,16 +1,17 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Play, Square, CheckCircle, XCircle, Clock, Terminal, AlertCircle, Settings, Loader2, BarChart3 } from "lucide-react"
+import { Play, Square, CheckCircle, XCircle, Clock, Terminal, AlertCircle, Settings, Loader2, X, BarChart3 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-interface SuiteRunnerModalProps {
-  suite: any
+interface RunAllSuitesModalProps {
   isOpen: boolean
   onClose: () => void
 }
@@ -22,7 +23,7 @@ interface LogEntry {
   data?: any
 }
 
-export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalProps) {
+export function RunAllSuitesModal({ isOpen, onClose }: RunAllSuitesModalProps) {
   const [isRunning, setIsRunning] = useState(false)
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [executionResult, setExecutionResult] = useState<{
@@ -31,10 +32,13 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
     completed: boolean
   }>({ success: false, completed: false })
   const [frameworkPath, setFrameworkPath] = useState<string>("")
-  const abortControllerRef = useRef<AbortController | null>(null)
-  const logsEndRef = useRef<HTMLDivElement>(null)
+  
+  // Filter states
+  const [serviceName, setServiceName] = useState("")
+  const [suiteType, setSuiteType] = useState("")
+  const [showFilters, setShowFilters] = useState(false)
 
-  useEffect(() => {
+  useState(() => {
     // Load framework path from localStorage
     const savedFrameworkPath = localStorage.getItem("frameworkPath")
     if (savedFrameworkPath) {
@@ -42,26 +46,14 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
     }
   }, [])
 
-  useEffect(() => {
-    // Auto-scroll to bottom when new logs are added
-    if (logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: "smooth" })
-    }
-  }, [logs])
-
   const addLog = (type: LogEntry["type"], content: string, data?: any) => {
     const timestamp = new Date().toLocaleTimeString()
     setLogs((prev) => [...prev, { timestamp, type, content, data }])
   }
 
-  const runSuite = async () => {
+  const runAllSuites = async () => {
     if (!frameworkPath) {
       addLog("error", "Framework path not configured. Please configure it in settings.")
-      return
-    }
-
-    if (!suite.filePath) {
-      addLog("error", "Suite file path not available. Please save the suite first.")
       return
     }
 
@@ -69,24 +61,38 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
     setLogs([])
     setExecutionResult({ success: false, completed: false })
 
-    // Create abort controller for cancellation
-    abortControllerRef.current = new AbortController()
-
-    addLog("info", `🚀 Starting test suite execution...`)
+    addLog("info", `🚀 Starting all test suites execution...`)
     addLog("info", `📁 Framework Path: ${frameworkPath}`)
-    addLog("info", `📄 Suite File: ${suite.filePath}`)
+    
+    if (serviceName) {
+      addLog("info", `🏷️  Service Name Filter: ${serviceName}`)
+    }
+    if (suiteType) {
+      addLog("info", `🏷️  Suite Type Filter: ${suiteType}`)
+    }
+    if (!serviceName && !suiteType) {
+      addLog("info", `🏷️  No filters applied - running all suites`)
+    }
 
     try {
-      const response = await fetch("/api/execute-suite", {
+      // Build the command with optional filters
+      const params: any = {
+        frameworkPath,
+      }
+      
+      if (serviceName) {
+        params.serviceName = serviceName
+      }
+      if (suiteType) {
+        params.suiteType = suiteType
+      }
+
+      const response = await fetch("/api/execute-tests-stream", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          frameworkPath,
-          suiteFilePath: suite.filePath,
-        }),
-        signal: abortControllerRef.current.signal,
+        body: JSON.stringify(params),
       })
 
       if (!response.body) {
@@ -110,7 +116,8 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
 
               switch (data.type) {
                 case "command":
-                  addLog("command", `💻 Executing: ${data.command}`, data)
+                  addLog("command", `💻 Executing: ${data.command}`)
+                  addLog("info", `📂 Working Directory: ${data.workingDirectory}`)
                   break
                 case "stdout":
                   addLog("stdout", data.data.trim())
@@ -120,10 +127,10 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
                   break
                 case "exit":
                   if (data.success) {
-                    addLog("info", `✅ Test execution completed successfully (exit code: ${data.exitCode})`)
+                    addLog("info", `✅ All test suites completed successfully (exit code: ${data.exitCode})`)
                     setExecutionResult({ success: true, exitCode: data.exitCode, completed: true })
                   } else {
-                    addLog("error", `❌ Test execution failed (exit code: ${data.exitCode})`)
+                    addLog("error", `❌ Test suites execution failed (exit code: ${data.exitCode})`)
                     setExecutionResult({ success: false, exitCode: data.exitCode, completed: true })
                   }
                   break
@@ -139,22 +146,14 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
         }
       }
     } catch (error: any) {
-      if (error.name === "AbortError") {
-        addLog("info", "🛑 Test execution cancelled by user")
-      } else {
-        addLog("error", `❌ Failed to execute tests: ${error.message}`)
-      }
+      addLog("error", `❌ Failed to execute test suites: ${error.message}`)
       setExecutionResult({ success: false, completed: true })
     } finally {
       setIsRunning(false)
-      abortControllerRef.current = null
     }
   }
 
   const stopExecution = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-    }
     setIsRunning(false)
     addLog("info", "🛑 Stopping test execution...")
   }
@@ -206,18 +205,108 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
     }
   }
 
+  const handleClose = () => {
+    if (!isRunning) {
+      onClose()
+      // Reset state when closing
+      setLogs([])
+      setExecutionResult({ success: false, completed: false })
+      setServiceName("")
+      setSuiteType("")
+      setShowFilters(false)
+    }
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[85vh] flex flex-col overflow-hidden">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-6xl h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Terminal className="h-5 w-5" />
-            Test Suite Runner - {suite.suiteName}
+            Run All Test Suites
           </DialogTitle>
-          <DialogDescription>Execute the test suite using the configured automation framework</DialogDescription>
+          <DialogDescription>Execute all test suites with optional filtering</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 flex flex-col space-y-4 min-h-0 overflow-hidden">
+          {/* Filters Section */}
+          {!isRunning && (
+            <Card className="flex-shrink-0">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Filter Options (Optional)</CardTitle>
+                    <CardDescription className="text-sm">Apply filters to run specific test suites</CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    {showFilters ? "Hide Filters" : "Show Filters"}
+                  </Button>
+                </div>
+              </CardHeader>
+              {showFilters && (
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="serviceName" className="text-sm font-medium">
+                        Service Name
+                      </Label>
+                      <Input
+                        id="serviceName"
+                        value={serviceName}
+                        onChange={(e) => setServiceName(e.target.value)}
+                        placeholder="e.g., @UserService"
+                        className="h-10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="suiteType" className="text-sm font-medium">
+                        Suite Type
+                      </Label>
+                      <Input
+                        id="suiteType"
+                        value={suiteType}
+                        onChange={(e) => setSuiteType(e.target.value)}
+                        placeholder="e.g., @smoke"
+                        className="h-10"
+                      />
+                    </div>
+                  </div>
+                  {(serviceName || suiteType) && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Active filters:</span>
+                      {serviceName && (
+                        <Badge variant="secondary" className="text-xs">
+                          Service: {serviceName}
+                          <button
+                            onClick={() => setServiceName("")}
+                            className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )}
+                      {suiteType && (
+                        <Badge variant="secondary" className="text-xs">
+                          Type: {suiteType}
+                          <button
+                            onClick={() => setSuiteType("")}
+                            className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              )}
+            </Card>
+          )}
+
           {/* Status and Controls */}
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg flex-shrink-0">
             <div className="flex items-center gap-4">
@@ -260,7 +349,6 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    // This would open framework config - for now just show alert
                     alert("Please configure framework path in the main settings")
                   }}
                 >
@@ -288,12 +376,12 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
 
               {!isRunning ? (
                 <Button
-                  onClick={runSuite}
-                  disabled={!frameworkPath || !suite.filePath}
+                  onClick={runAllSuites}
+                  disabled={!frameworkPath}
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <Play className="h-4 w-4 mr-2" />
-                  Run Suite
+                  Run All Suites
                 </Button>
               ) : (
                 <Button variant="destructive" onClick={stopExecution}>
@@ -305,37 +393,30 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
           </div>
 
           {/* Prerequisites Check */}
-          {(!frameworkPath || !suite.filePath) && (
+          {!frameworkPath && (
             <Alert className="border-yellow-200 bg-yellow-50 flex-shrink-0">
               <AlertCircle className="h-4 w-4 text-yellow-600" />
               <AlertDescription className="text-yellow-800">
-                <div className="space-y-1">
-                  {!frameworkPath && <div>• Framework path is not configured</div>}
-                  {!suite.filePath && <div>• Suite file path is not available (save the suite first)</div>}
-                </div>
+                Framework path is not configured. Please configure it in the main settings.
               </AlertDescription>
             </Alert>
           )}
 
-          {/* Suite Info */}
+          {/* Framework Info */}
           <Card className="flex-shrink-0">
             <CardContent className="p-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium text-gray-600">Suite Name:</span>
-                  <span className="ml-2">{suite.suiteName}</span>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-600">Test Cases:</span>
-                  <span className="ml-2">{suite.testCases?.length || 0}</span>
-                </div>
+              <div className="grid grid-cols-1 gap-2 text-sm">
                 <div>
                   <span className="font-medium text-gray-600">Framework Path:</span>
                   <span className="ml-2 text-xs break-all">{frameworkPath || "Not configured"}</span>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">Suite File:</span>
-                  <span className="ml-2 text-xs break-all">{suite.filePath || "Not saved"}</span>
+                  <span className="font-medium text-gray-600">Command:</span>
+                  <span className="ml-2 text-xs font-mono">
+                    npx ts-node src/runner.ts
+                    {serviceName && ` --serviceName=${serviceName}`}
+                    {suiteType && ` --suiteType=${suiteType}`}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -354,7 +435,7 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
                     {logs.length === 0 ? (
                       <div className="text-center py-8 text-gray-400">
                         <Terminal className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p>No logs yet. Click "Run Suite" to start execution.</p>
+                        <p>No logs yet. Click "Run All Suites" to start execution.</p>
                         <p className="text-xs mt-1 opacity-75">Console output will appear here in real-time</p>
                       </div>
                     ) : (
@@ -373,7 +454,6 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
                         </div>
                       ))
                     )}
-                    <div ref={logsEndRef} />
                   </div>
                 </ScrollArea>
               </div>
