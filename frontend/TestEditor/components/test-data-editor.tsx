@@ -11,12 +11,20 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Trash2, Save, X, ArrowLeft, FileText, Upload, Code } from "lucide-react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 interface TestDataEditorProps {
   testData: any
   onSave: (testData: any) => void
   onCancel: () => void
   testCaseType?: string // Add this to know if it's SOAP or REST
+}
+
+interface PreProcessStep {
+  var?: string // Legacy single variable
+  function: string
+  args?: any[]
+  mapTo?: Record<string, string> // New multi-variable mapping
 }
 
 export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "REST" }: TestDataEditorProps) {
@@ -85,8 +93,7 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
   }
 
   const handleAddPreProcess = () => {
-    const newPreProcess = {
-      id: `preprocess_${Date.now()}`,
+    const newPreProcess: PreProcessStep = {
       var: "",
       function: "",
       args: [],
@@ -110,6 +117,80 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
     setEditedTestData((prev: any) => ({
       ...prev,
       preProcess: prev.preProcess.filter((_: any, i: number) => i !== index),
+    }))
+  }
+
+  // New handlers for mapTo functionality
+  const handlePreProcessModeChange = (index: number, mode: "single" | "multiple") => {
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      preProcess: prev.preProcess.map((process: any, i: number) => {
+        if (i === index) {
+          if (mode === "single") {
+            // Convert to single variable mode
+            const { mapTo, ...rest } = process
+            return { ...rest, var: "" }
+          } else {
+            // Convert to multiple variable mode
+            const { var: singleVar, ...rest } = process
+            return { ...rest, mapTo: {} }
+          }
+        }
+        return process
+      }),
+    }))
+  }
+
+  const handleAddMapToEntry = (processIndex: number) => {
+    const varName = prompt("Enter variable name:")
+    const propertyName = prompt("Enter property name from function result:")
+    if (varName && propertyName) {
+      setEditedTestData((prev: any) => ({
+        ...prev,
+        preProcess: prev.preProcess.map((process: any, i: number) => {
+          if (i === processIndex) {
+            return {
+              ...process,
+              mapTo: {
+                ...process.mapTo,
+                [varName]: propertyName,
+              },
+            }
+          }
+          return process
+        }),
+      }))
+    }
+  }
+
+  const handleRemoveMapToEntry = (processIndex: number, varName: string) => {
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      preProcess: prev.preProcess.map((process: any, i: number) => {
+        if (i === processIndex) {
+          const newMapTo = { ...process.mapTo }
+          delete newMapTo[varName]
+          return { ...process, mapTo: newMapTo }
+        }
+        return process
+      }),
+    }))
+  }
+
+  const handleUpdateMapToEntry = (processIndex: number, oldVarName: string, newVarName: string, propertyName: string) => {
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      preProcess: prev.preProcess.map((process: any, i: number) => {
+        if (i === processIndex) {
+          const newMapTo = { ...process.mapTo }
+          if (oldVarName !== newVarName) {
+            delete newMapTo[oldVarName]
+          }
+          newMapTo[newVarName] = propertyName
+          return { ...process, mapTo: newMapTo }
+        }
+        return process
+      }),
     }))
   }
 
@@ -173,14 +254,42 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
     return baseAssertion
   }
 
+  // Function to clean pre-process data
+  const cleanPreProcessData = (preProcess: PreProcessStep[]) => {
+    return preProcess
+      .filter((process: PreProcessStep) => process.function) // Only keep processes with functions
+      .map((process: PreProcessStep) => {
+        const cleanProcess: any = {
+          function: process.function,
+        }
+
+        // Add args if they exist
+        if (process.args && process.args.length > 0) {
+          cleanProcess.args = process.args
+        }
+
+        // Handle single variable mode
+        if (process.var && !process.mapTo) {
+          cleanProcess.var = process.var
+        }
+
+        // Handle multiple variable mode
+        if (process.mapTo && Object.keys(process.mapTo).length > 0) {
+          cleanProcess.mapTo = process.mapTo
+        }
+
+        return cleanProcess
+      })
+  }
+
   const handleSave = () => {
     // Clean the test data before saving
     const cleanedTestData = {
       ...editedTestData,
       // Clean assertions to remove unnecessary fields
       assertions: (editedTestData.assertions || []).map(cleanAssertionData),
-      // Clean preProcess to remove empty entries
-      preProcess: (editedTestData.preProcess || []).filter((process: any) => process.var && process.function),
+      // Clean preProcess to remove empty entries and format correctly
+      preProcess: cleanPreProcessData(editedTestData.preProcess || []),
     }
 
     onSave(cleanedTestData)
@@ -578,48 +687,172 @@ Example:
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {(editedTestData.preProcess || []).map((process: any, index: number) => (
-                    <div key={index} className="p-4 border border-gray-200 rounded-lg space-y-3 bg-gray-50/50">
-                      <div className="grid grid-cols-3 gap-3">
-                        <Input
-                          placeholder="Variable Name"
-                          value={process.var || ""}
-                          onChange={(e) => handleUpdatePreProcess(index, "var", e.target.value)}
-                          className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                        />
-                        <Input
-                          placeholder="Function"
-                          value={process.function || ""}
-                          onChange={(e) => handleUpdatePreProcess(index, "function", e.target.value)}
-                          className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                        />
-                        <Input
-                          placeholder="Args (comma separated)"
-                          value={Array.isArray(process.args) ? process.args.join(", ") : ""}
-                          onChange={(e) =>
-                            handleUpdatePreProcess(index, "args", e.target.value.split(", ").filter(Boolean))
-                          }
-                          className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                        />
+                <div className="space-y-6">
+                  {(editedTestData.preProcess || []).map((process: PreProcessStep, index: number) => {
+                    const isMultipleMode = !!process.mapTo
+                    const isSingleMode = !!process.var || !process.mapTo
+
+                    return (
+                      <div key={index} className="p-6 border border-gray-200 rounded-lg space-y-4 bg-gray-50/50">
+                        {/* Function Input */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Function</Label>
+                          <Input
+                            placeholder="Function name (e.g., faker.email, generateUser)"
+                            value={process.function || ""}
+                            onChange={(e) => handleUpdatePreProcess(index, "function", e.target.value)}
+                            className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        {/* Mode Selection */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">Variable Mode</Label>
+                          <RadioGroup
+                            value={isMultipleMode ? "multiple" : "single"}
+                            onValueChange={(value) => handlePreProcessModeChange(index, value as "single" | "multiple")}
+                            className="flex gap-6"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="single" id={`single-${index}`} />
+                              <Label htmlFor={`single-${index}`} className="text-sm">
+                                Single Variable
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="multiple" id={`multiple-${index}`} />
+                              <Label htmlFor={`multiple-${index}`} className="text-sm">
+                                Multiple Variables (mapTo)
+                              </Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+
+                        {/* Single Variable Mode */}
+                        {isSingleMode && !isMultipleMode && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700">Variable Name</Label>
+                            <Input
+                              placeholder="Variable name to store result"
+                              value={process.var || ""}
+                              onChange={(e) => handleUpdatePreProcess(index, "var", e.target.value)}
+                              className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                          </div>
+                        )}
+
+                        {/* Multiple Variables Mode */}
+                        {isMultipleMode && (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-sm font-medium text-gray-700">Variable Mappings</Label>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleAddMapToEntry(index)}
+                                className="h-8 px-3 border-green-300 hover:border-green-400 hover:bg-green-50"
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add Mapping
+                              </Button>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              {Object.entries(process.mapTo || {}).map(([varName, propertyName]) => (
+                                <div key={varName} className="flex items-center gap-3 p-3 bg-white rounded border">
+                                  <div className="flex-1 space-y-1">
+                                    <Label className="text-xs text-gray-500">Variable Name</Label>
+                                    <Input
+                                      value={varName}
+                                      onChange={(e) => handleUpdateMapToEntry(index, varName, e.target.value, propertyName)}
+                                      className="h-8 text-sm"
+                                      placeholder="Variable name"
+                                    />
+                                  </div>
+                                  <div className="flex-1 space-y-1">
+                                    <Label className="text-xs text-gray-500">Property Name</Label>
+                                    <Input
+                                      value={propertyName}
+                                      onChange={(e) => handleUpdateMapToEntry(index, varName, varName, e.target.value)}
+                                      className="h-8 text-sm"
+                                      placeholder="Property from function result"
+                                    />
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleRemoveMapToEntry(index, varName)}
+                                    className="h-8 px-2 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700 mt-5"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                              
+                              {(!process.mapTo || Object.keys(process.mapTo).length === 0) && (
+                                <div className="text-center py-4 text-gray-500 bg-white rounded border-2 border-dashed">
+                                  <p className="text-sm">No variable mappings defined</p>
+                                  <p className="text-xs mt-1">Add mappings to store multiple variables from function result</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Arguments */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-700">Arguments (Optional)</Label>
+                          <Input
+                            placeholder="Arguments (comma separated)"
+                            value={Array.isArray(process.args) ? process.args.join(", ") : ""}
+                            onChange={(e) =>
+                              handleUpdatePreProcess(index, "args", e.target.value.split(", ").filter(Boolean))
+                            }
+                            className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        {/* Remove Button */}
+                        <div className="flex justify-end pt-2 border-t">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRemovePreProcess(index)}
+                            className="border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            Remove Pre-Process
+                          </Button>
+                        </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleRemovePreProcess(index)}
-                        className="border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
-                      >
-                        <Trash2 className="h-3 w-3 mr-1" />
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
+                    )
+                  })}
+                  
                   {(!editedTestData.preProcess || editedTestData.preProcess.length === 0) && (
                     <div className="text-center py-8 text-gray-500 bg-gray-50/50 rounded-lg border-2 border-dashed border-gray-200">
                       <p className="text-sm">No pre-process steps defined yet</p>
                       <p className="text-xs mt-1">Add pre-process steps to prepare data before requests</p>
                     </div>
                   )}
+                </div>
+
+                {/* Info Section */}
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="font-medium mb-2 text-blue-800">Pre-Process Examples</h4>
+                  <div className="space-y-2 text-sm text-blue-700">
+                    <div>
+                      <strong>Single Variable:</strong>
+                      <code className="ml-2 bg-blue-100 px-2 py-1 rounded text-xs">
+                        {"{ \"var\": \"randomEmail\", \"function\": \"faker.email\" }"}
+                      </code>
+                    </div>
+                    <div>
+                      <strong>Multiple Variables:</strong>
+                      <code className="ml-2 bg-blue-100 px-2 py-1 rounded text-xs">
+                        {"{ \"function\": \"generateUser\", \"mapTo\": { \"userNameVar\": \"username\", \"userEmailVar\": \"email\" } }"}
+                      </code>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
