@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Play, Square, CheckCircle, XCircle, Clock, Terminal, AlertCircle, Settings, Loader2, X } from "lucide-react"
+import { Play, Square, CheckCircle, XCircle, Clock, Terminal, AlertCircle, Settings, Loader2, X, BarChart3 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface RunAllSuitesModalProps {
@@ -161,6 +161,14 @@ export function RunAllSuitesModal({ isOpen, onClose }: RunAllSuitesModalProps) {
   const clearLogs = () => {
     setLogs([])
     setExecutionResult({ success: false, completed: false })
+  }
+
+  const navigateToResults = () => {
+    // Close this modal and navigate to results dashboard
+    onClose()
+    // Trigger navigation to results dashboard
+    // This will be handled by the parent component
+    window.dispatchEvent(new CustomEvent('navigate-to-results'))
   }
 
   const getLogIcon = (type: LogEntry["type"]) => {
@@ -346,6 +354,19 @@ export function RunAllSuitesModal({ isOpen, onClose }: RunAllSuitesModalProps) {
                 >
                   <Settings className="h-3 w-3 mr-1" />
                   Configure
+                </Button>
+              )}
+
+              {/* View Results Button - Show when execution is completed */}
+              {executionResult.completed && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={navigateToResults}
+                  className="bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700"
+                >
+                  <BarChart3 className="h-3 w-3 mr-1" />
+                  View Results
                 </Button>
               )}
 

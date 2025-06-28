@@ -70,6 +70,19 @@ export default function APITestFramework() {
     }
   }, [])
 
+  // Add event listener for navigation to results
+  useEffect(() => {
+    const handleNavigateToResults = () => {
+      setShowResultsDashboard(true)
+    }
+
+    window.addEventListener('navigate-to-results', handleNavigateToResults)
+    
+    return () => {
+      window.removeEventListener('navigate-to-results', handleNavigateToResults)
+    }
+  }, [])
+
   // Update the loadTestSuitesFromPath function to handle IDs more consistently
   const loadTestSuitesFromPath = async (path: string) => {
     setIsLoading(true)
@@ -305,6 +318,18 @@ export default function APITestFramework() {
                   </Button>
                 </div>
 
+                {/* Run All Suites Button - Moved here */}
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRunAllSuitesModal(true)}
+                  disabled={!frameworkPath}
+                  className="h-10 px-4 border-gray-300 hover:border-green-400 hover:bg-green-50 transition-all duration-200 shadow-sm"
+                  title={!frameworkPath ? "Configure framework path first" : "Run all test suites"}
+                >
+                  <PlayCircle className="h-4 w-4 mr-2" />
+                  Run All Suites
+                </Button>
+
                 <Button
                   onClick={handleCreateSuite}
                   className="h-10 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
@@ -343,18 +368,6 @@ export default function APITestFramework() {
                 </div>
               )}
             </div>
-
-            {/* Run All Suites Button - Moved here */}
-            <Button
-              variant="outline"
-              onClick={() => setShowRunAllSuitesModal(true)}
-              disabled={!frameworkPath}
-              className="h-11 px-6 border-gray-300 hover:border-green-400 hover:bg-green-50 transition-all duration-200 shadow-sm"
-              title={!frameworkPath ? "Configure framework path first" : "Run all test suites"}
-            >
-              <PlayCircle className="h-4 w-4 mr-2" />
-              Run All Suites
-            </Button>
           </div>
 
           {/* Loading state */}
