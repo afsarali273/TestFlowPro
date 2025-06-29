@@ -6,7 +6,8 @@ A powerful and flexible API test automation tool built with **TypeScript**, supp
 
 ## ▶️ Demo Video
 
-* [YouTube](https://www.youtube.com/watch?v=Jw-B24hmNhQ)
+* [YouTube Part-1](https://www.youtube.com/watch?v=Jw-B24hmNhQ)
+* [YouTube Part-2](https://www.youtube.com/watch?v=wWXK-iqgtTE)
 
 ---
 
