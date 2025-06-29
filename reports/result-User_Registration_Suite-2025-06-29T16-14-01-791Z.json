@@ -1,0 +1,42 @@
+{
+  "summary": {
+    "suiteName": "User Registration Suite",
+    "tags": {
+      "serviceName": "digitalLibrary",
+      "suiteType": "@regression"
+    },
+    "totalTestCases": 2,
+    "totalDataSets": 3,
+    "passed": 3,
+    "failed": 0,
+    "totalAssertionsPassed": 10,
+    "totalAssertionsFailed": 0,
+    "executionTimeMs": 2005
+  },
+  "results": [
+    {
+      "testCase": "Register New User -Valid data",
+      "dataSet": "Create a new User- valid",
+      "status": "PASS",
+      "assertionsPassed": 4,
+      "assertionsFailed": 0,
+      "responseTimeMs": 1436
+    },
+    {
+      "testCase": "Register New User -Valid data",
+      "dataSet": "Create new User - empty body",
+      "status": "PASS",
+      "assertionsPassed": 2,
+      "assertionsFailed": 0,
+      "responseTimeMs": 310
+    },
+    {
+      "testCase": "Get User By Email ",
+      "dataSet": "Get User By Email - valid",
+      "status": "PASS",
+      "assertionsPassed": 4,
+      "assertionsFailed": 0,
+      "responseTimeMs": 258
+    }
+  ]
+}

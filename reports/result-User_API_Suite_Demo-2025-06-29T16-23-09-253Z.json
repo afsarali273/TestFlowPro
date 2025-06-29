@@ -11,7 +11,7 @@
     "failed": 1,
     "totalAssertionsPassed": 8,
     "totalAssertionsFailed": 2,
-    "executionTimeMs": 472
+    "executionTimeMs": 491
   },
   "results": [
     {
@@ -20,7 +20,7 @@
       "status": "PASS",
       "assertionsPassed": 2,
       "assertionsFailed": 0,
-      "responseTimeMs": 237
+      "responseTimeMs": 260
     },
     {
       "testCase": "Get Single User",
@@ -28,7 +28,7 @@
       "status": "PASS",
       "assertionsPassed": 2,
       "assertionsFailed": 0,
-      "responseTimeMs": 76
+      "responseTimeMs": 75
     },
     {
       "testCase": "List of all objects",
@@ -152,7 +152,7 @@
       "status": "PASS",
       "assertionsPassed": 3,
       "assertionsFailed": 0,
-      "responseTimeMs": 87
+      "responseTimeMs": 84
     }
   ]
 }

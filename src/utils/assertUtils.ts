@@ -2,11 +2,15 @@ import { JSONPath } from 'jsonpath-plus';
 import { Assertion } from '../types';
 import { DOMParser } from 'xmldom';
 import * as xpath from 'xpath';
+import {injectVariables} from "./variableStore";
 
 export function assertJson(response: any, statusCode: number, assertions: Assertion[]) {
     for (const a of assertions) {
-        const { type, jsonPath, expected } = a;
-
+        const { type, jsonPath } = a;
+        let {expected} = a;
+        if( typeof expected === 'string' ){
+            expected = injectVariables(expected);
+        }
         let result;
         if (jsonPath && type !== 'arrayObjectMatch') {
             result = JSONPath({ path: jsonPath, json: response })[0];

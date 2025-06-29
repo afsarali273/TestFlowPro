@@ -1,17 +1,17 @@
 import axios from 'axios';
 import { Ajv } from 'ajv';
-import {Reporter} from "./reporter";
-import {assertJson, assertXPath} from "./utils/assertUtils";
-import {loadRequestBody} from "./utils/loadRequestBody";
-import {TestSuite} from "./types";
-import {loadEnvironment} from "./utils/envManager";
-import {injectVariables, storeResponseVariables} from "./utils/variableStore";
-import {runPreProcessors} from "./preProcessor";
-import {loadSchema} from "./utils/loadSchema";
+import { Reporter } from "./reporter";
+import { assertJson, assertXPath } from "./utils/assertUtils";
+import { loadRequestBody } from "./utils/loadRequestBody";
+import { TestSuite } from "./types";
+import { loadEnvironment } from "./utils/envManager";
+import { injectVariables, storeResponseVariables } from "./utils/variableStore";
+import { runPreProcessors } from "./preProcessor";
+import { loadSchema } from "./utils/loadSchema";
 
 const ajv = new Ajv();
 
- function isSoapRequest(headers?: Record<string, string>): boolean {
+function isSoapRequest(headers?: Record<string, string>): boolean {
     const ct = headers?.['Content-Type']?.toLowerCase();
     return (
         ct?.includes('text/xml') ||
@@ -19,7 +19,6 @@ const ajv = new Ajv();
         !!headers?.['SOAPAction']
     );
 }
-
 
 export async function executeSuite(suite: TestSuite, reporter: Reporter) {
     const env = loadEnvironment();
@@ -34,10 +33,16 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
             const start = Date.now();
             let responseData: any = null;
             const fullUrl = injectVariables(resolvedBaseUrl + data.endpoint);
-            const headers = data.headers;
+            let headers = data.headers;
             const soap = isSoapRequest(headers);
 
             if (data.preProcess) await runPreProcessors(data.preProcess);
+
+            console.log("================================");
+            console.log(`Request URL: ${fullUrl}`);
+            console.log(`Request Type: ${data.method}`);
+            console.log("Request Body:");
+            console.log(JSON.stringify(data?.body, null, 2));
 
             let body: any;
             try {
@@ -80,39 +85,42 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
             const allErrors: string[] = [];
 
             try {
-                const res = await axios({ url: fullUrl, method: data.method.toLowerCase(), headers, data: body });
+                headers = injectVariableInHeaders(headers || {});
+                console.log("Headers:", headers);
+                const res = await axios({
+                    url: fullUrl,
+                    method: data.method.toLowerCase(),
+                    headers,
+                    data: body,
+                });
+
                 responseData = res.data;
+                console.log("Response from server:", responseData);
 
-                if (!soap) {
-                    if (schema) {
-                        const validate = ajv.compile(schema);
-                        if (!validate(res.data)) {
-                            failed++;
-                            allErrors.push(`Schema validation failed: ${validate.errors?.map(e => `${e.instancePath} ${e.message}`).join('; ')}`);
-                        }
-                    }
-
-                    for (const assertion of data.assertions || []) {
-                        try {
-                            assertJson(res.data, res.status, [assertion]);
-                            passed++;
-                        } catch (e: any) {
-                            failed++;
-                            allErrors.push(e.message);
-                        }
-                    }
-                } else {
-                    for (const assertion of data.assertions || []) {
-                        try {
-                            assertXPath(res.data, assertion);
-                            passed++;
-                        } catch (e: any) {
-                            failed++;
-                            allErrors.push(e.message);
-                        }
+                if (!soap && schema) {
+                    const validate = ajv.compile(schema);
+                    if (!validate(res.data)) {
+                        failed++;
+                        allErrors.push(`Schema validation failed: ${validate.errors?.map(e => `${e.instancePath} ${e.message}`).join('; ')}`);
                     }
                 }
 
+                // Run assertions
+                for (const assertion of data.assertions || []) {
+                    try {
+                        if (soap) {
+                            assertXPath(res.data, assertion);
+                        } else {
+                            assertJson(res.data, res.status, [assertion]);
+                        }
+                        passed++;
+                    } catch (e: any) {
+                        failed++;
+                        allErrors.push(e.message);
+                    }
+                }
+
+                // Variable storage
                 if (data.store) {
                     try {
                         storeResponseVariables(res.data, data.store);
@@ -123,9 +131,42 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
                 }
 
                 if (failed > 0) status = 'FAIL';
+
             } catch (err: any) {
-                status = 'FAIL';
-                allErrors.push(`Request error: ${err.message}`);
+                if (axios.isAxiosError(err) && err.response) {
+                    const res = err.response;
+                    responseData = res.data;
+                    console.log("Response from server",responseData)
+
+                    for (const assertion of data.assertions || []) {
+                        try {
+                            if (soap) {
+                                assertXPath(res.data, assertion);
+                            } else {
+                                assertJson(res.data, res.status, [assertion]);
+                            }
+                            passed++;
+                        } catch (e: any) {
+                            failed++;
+                            allErrors.push(e.message);
+                        }
+                    }
+
+                    if (data.store) {
+                        try {
+                            storeResponseVariables(res.data, data.store);
+                        } catch (err: any) {
+                            failed++;
+                            allErrors.push(`Variable store failed: ${err.message}`);
+                        }
+                    }
+
+                    if (failed > 0) status = 'FAIL';
+
+                } else {
+                    status = 'FAIL';
+                    allErrors.push(`Request error: ${err.message}`);
+                }
             } finally {
                 const end = Date.now();
                 reporter.add({
@@ -141,4 +182,13 @@ export async function executeSuite(suite: TestSuite, reporter: Reporter) {
             }
         }
     }
+}
+
+export function injectVariableInHeaders(headers: Record<string, string>): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const [key, value] of Object.entries(headers)) {
+        result[key] = injectVariables(value);
+    }
+
+    return result;
 }

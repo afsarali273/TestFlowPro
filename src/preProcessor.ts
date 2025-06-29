@@ -20,16 +20,9 @@ export async function runPreProcessors(steps: PreProcessStep[]) {
         );
 
         switch (step.function) {
-            case 'faker.email':
-                value = faker.internet.email();
-                break;
 
-            case 'faker.username':
-                value = faker.internet.userName();
-                break;
-
-            case 'faker.uuid':
-                // value = faker.datatype.uuid(); // Uncomment if needed
+            case 'getRandomData':
+                value = getRandomFakeData(step.args || []);
                 break;
 
             case 'date.now':
@@ -94,4 +87,45 @@ export async function runPreProcessors(steps: PreProcessStep[]) {
         }
     }
 }
+
+
+export function getRandomFakeData(args: string[]): Record<string, any> {
+    const result: Record<string, any> = {};
+
+    for (const key of args) {
+        switch (key.toLowerCase()) {
+            case 'name':
+                result[key] = faker.person.fullName();
+                break;
+            case 'email':
+                result[key] = faker.internet.email().toLowerCase();
+                break;
+            case 'username':
+                result[key] = faker.internet.userName();
+                break;
+            case 'phone':
+                result[key] = faker.phone.number();
+                break;
+            case 'address':
+                result[key] = faker.location.streetAddress();
+                break;
+            case 'city':
+                result[key] = faker.location.city();
+                break;
+            case 'uuid':
+                result[key] = faker.string.uuid();
+                break;
+            case 'password':
+                result[key] = faker.internet.password();
+                break;
+            case 'company':
+                result[key] = faker.company.name();
+                break;
+            default:
+                result[key] = faker.word.sample(); // fallback
+        }
+    }
+    return result;
+}
+
 

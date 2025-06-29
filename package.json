@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npx ts-node src/runner.ts",
-    "test:smoke": "npx ts-node src/runner.ts --serviceName=@UserService --suiteType=smoke",
+    "test:smoke": "npx ts-node src/runner.ts --serviceName=digitalLibrary",
     "generate:swagger": "npx ts-node src/swaggerSuiteGenerator.ts /Users/afsarali/Repository/POC/swagger.json",
     "report:html": "npx ts-node src/generateHtmlReport.ts"
   },

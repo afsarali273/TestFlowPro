@@ -1,0 +1,142 @@
+{
+  "suiteName": "User Registration Suite",
+  "status": "Not Started",
+  "baseUrl": "https://www.abibliadigital.com.br",
+  "tags": [
+    {
+      "serviceName": "digitalLibrary"
+    },
+    {
+      "suiteType": "@regression"
+    }
+  ],
+  "testCases": [
+    {
+      "name": "Register New User -Valid data",
+      "status": "Not Started",
+      "type": "REST",
+      "testData": [
+        {
+          "name": "Create a new User- valid",
+          "method": "POST",
+          "endpoint": "/api/users",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "name": "{{name}}",
+            "email": "{{email}}",
+            "password": "102030",
+            "notifications": true
+          },
+          "assertions": [
+            {
+              "id": "assertion_1751207016384",
+              "type": "statusCode",
+              "expected": 200
+            },
+            {
+              "id": "assertion_1751207049211",
+              "type": "equals",
+              "jsonPath": "$.name",
+              "expected": "{{name}}"
+            },
+            {
+              "id": "assertion_1751207069962",
+              "type": "equals",
+              "jsonPath": "$.email",
+              "expected": "{{email}}"
+            },
+            {
+              "id": "assertion_1751207081541",
+              "type": "exists",
+              "jsonPath": "$.token"
+            }
+          ],
+          "store": {
+            "token": "$.token"
+          },
+          "preProcess": [
+            {
+              "function": "generateUser",
+              "mapTo": {
+                "name": "username",
+                "email": "email"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create new User - empty body",
+          "method": "POST",
+          "endpoint": "/api/users",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {},
+          "assertions": [
+            {
+              "id": "assertion_1751207324795",
+              "type": "equals",
+              "jsonPath": "$.msg",
+              "expected": "{name}(String), {email}(String), {notifications}(Boolean) and {password}(String) are required"
+            },
+            {
+              "id": "assertion_1751207346986",
+              "type": "statusCode",
+              "expected": 400
+            }
+          ],
+          "store": {},
+          "preProcess": []
+        }
+      ]
+    },
+    {
+      "id": "testcase_1751211640261",
+      "name": "Get User By Email ",
+      "status": "Not Started",
+      "testData": [
+        {
+          "name": "Get User By Email - valid",
+          "method": "GET",
+          "endpoint": "/api/users/{{email}}",
+          "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{token}}"
+          },
+          "assertions": [
+            {
+              "id": "assertion_1751211996702",
+              "type": "equals",
+              "jsonPath": "$.name",
+              "expected": "{{name}}"
+            },
+            {
+              "id": "assertion_1751212011712",
+              "type": "equals",
+              "jsonPath": "$.email",
+              "expected": "{{email}}"
+            },
+            {
+              "id": "assertion_1751212022745",
+              "type": "statusCode",
+              "expected": 200
+            },
+            {
+              "id": "assertion_1751212032806",
+              "type": "exists",
+              "jsonPath": "$.token"
+            }
+          ],
+          "store": {},
+          "preProcess": []
+        }
+      ]
+    }
+  ],
+  "id": "User_Registration_Suite_L1VzZXJz",
+  "filePath": "/Users/afsarali/Repository/api-framework/testData/Create_new_User.json",
+  "fileName": "Create_new_User.json",
+  "lastModified": "2025-06-29T15:47:32.441Z"
+}
