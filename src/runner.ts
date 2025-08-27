@@ -6,6 +6,7 @@ import pLimit from 'p-limit';
 import { TestSuite } from './types';
 import { executeSuite } from './executor';
 import { Reporter } from './reporter';
+import {UIRunner} from "./ui-test";
 
 dotenv.config({
     path: path.resolve(__dirname, '../../.env')
@@ -41,6 +42,7 @@ async function runSuiteFromFile(filePath: string, filters: Record<string, string
     reporter.start(suite.suiteName || path.basename(filePath), suite.tags);
 
     console.log(`\n▶️ Starting Suite: ${suite.suiteName || path.basename(filePath)}`);
+
     await executeSuite(suite, reporter);
 
     reporter.writeReportToFile();

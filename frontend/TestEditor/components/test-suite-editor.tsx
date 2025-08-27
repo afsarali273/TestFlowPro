@@ -9,7 +9,21 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Trash2, Save, X, ArrowLeft, Globe, Download, Copy, Code, TreePine, Eye, Edit3 } from "lucide-react"
+import {
+  Plus,
+  Trash2,
+  Save,
+  X,
+  ArrowLeft,
+  Globe,
+  Download,
+  Copy,
+  Code,
+  TreePine,
+  Eye,
+  Edit3,
+  ArrowRight,
+} from "lucide-react"
 import dynamic from "next/dynamic"
 import { TestCaseEditor } from "@/components/test-case-editor"
 import { type TestSuite, type TestCase, type Tag, validateTestSuite } from "@/types/test-suite"
@@ -39,6 +53,10 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
   const [isEditingTestCase, setIsEditingTestCase] = useState(false)
   const [jsonViewMode, setJsonViewMode] = useState<"tree" | "code" | "raw">("tree")
   const [jsonError, setJsonError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("general")
+  const [showFileConflictDialog, setShowFileConflictDialog] = useState(false)
+  const [conflictFilePath, setConflictFilePath] = useState<string>("")
+  const [pendingSuite, setPendingSuite] = useState<any>(null)
 
   const handleSuiteChange = (field: keyof TestSuite, value: any) => {
     setEditedSuite((prev) => ({
@@ -78,10 +96,11 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
 
   const handleAddTestCase = () => {
     const newTestCase: TestCase = {
+      testSteps: [],
       name: "New Test Case",
       status: "Not Started",
       type: "REST",
-      testData: [],
+      testData: []
     }
     setSelectedTestCase(newTestCase)
     setIsEditingTestCase(true)
@@ -132,6 +151,51 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
     }))
   }
 
+  const saveToFile = async (suiteData: any, filePath: string, forceReplace = false) => {
+    try {
+      const response = await fetch("/api/test-suites", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          testSuite: suiteData,
+          filePath: filePath,
+          forceReplace: forceReplace,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+
+        if (error.code === "FILE_EXISTS" && !forceReplace) {
+          setConflictFilePath(filePath)
+          setPendingSuite(suiteData)
+          setShowFileConflictDialog(true)
+          return
+        }
+
+        throw new Error(error.error || "Failed to save test suite")
+      }
+
+      // Update the suite with the file path for future saves
+      const updatedSuite = {
+        ...suiteData,
+        filePath: filePath,
+        fileName: filePath.split("/").pop() || `${suiteData.suiteName}.json`,
+      }
+
+      onSave(updatedSuite)
+
+      // Show success message
+      console.log(`Test suite saved to: ${filePath}`)
+      alert(`Test suite saved successfully to: ${filePath}`)
+    } catch (error: any) {
+      console.error("Error saving test suite:", error)
+      alert(`Failed to save test suite: ${error.message}`)
+    }
+  }
+
   const handleSave = async () => {
     try {
       const validatedSuite = validateTestSuite(editedSuite)
@@ -159,38 +223,28 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
         targetFilePath = `${suitePath}/${fileName}`
       }
 
-      // Save to file system
-      const response = await fetch("/api/test-suites", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          testSuite: finalSuite,
-          filePath: targetFilePath,
-        }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to save test suite")
-      }
-
-      // Update the suite with the file path for future saves
-      const updatedSuite = {
-        ...finalSuite,
-        filePath: targetFilePath,
-        fileName: targetFilePath.split("/").pop() || `${finalSuite.suiteName}.json`,
-      }
-
-      onSave(updatedSuite)
-
-      // Show success message
-      console.log(`Test suite saved to: ${targetFilePath}`)
+      await saveToFile(finalSuite, targetFilePath, false)
     } catch (error: any) {
       console.error("Error saving test suite:", error)
       alert(`Failed to save test suite: ${error.message}`)
     }
+  }
+
+  const handleFileConflictReplace = async () => {
+    setShowFileConflictDialog(false)
+    await saveToFile(pendingSuite, conflictFilePath, true) // force replace
+  }
+
+  const handleFileConflictRename = () => {
+    setShowFileConflictDialog(false)
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5)
+    const pathParts = conflictFilePath.split("/")
+    const fileName = pathParts.pop()
+    const nameWithoutExt = fileName?.replace(".json", "") || "suite"
+    const newFileName = `${nameWithoutExt}_${timestamp}.json`
+    const newFilePath = [...pathParts, newFileName].join("/")
+
+    saveToFile(pendingSuite, newFilePath, false)
   }
 
   const handleJsonTreeEdit = (edit: any) => {
@@ -241,6 +295,33 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
 
   return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        {showFileConflictDialog && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">File Already Exists</h3>
+                <p className="text-gray-600 mb-6">
+                  A file with the name "{conflictFilePath.split("/").pop()}" already exists. Would you like to replace it or
+                  save with a different name?
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <Button variant="outline" onClick={() => setShowFileConflictDialog(false)} className="hover:bg-gray-50">
+                    Cancel
+                  </Button>
+                  <Button
+                      variant="outline"
+                      onClick={handleFileConflictRename}
+                      className="hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 bg-transparent"
+                  >
+                    Rename File
+                  </Button>
+                  <Button onClick={handleFileConflictReplace} className="bg-red-600 hover:bg-red-700 text-white">
+                    Replace File
+                  </Button>
+                </div>
+              </div>
+            </div>
+        )}
+
         <div className="max-w-6xl mx-auto p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
@@ -300,7 +381,7 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
             </div>
           </div>
 
-          <Tabs defaultValue="general" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="bg-white/80 backdrop-blur-sm shadow-sm">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="testcases">Test Cases ({editedSuite.testCases.length})</TabsTrigger>
@@ -369,6 +450,42 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
                     <p className="text-xs text-gray-500">
                       The base URL will be prepended to all endpoint paths in this test suite
                     </p>
+                  </div>
+
+                  {/* Suite Type Selection */}
+                  <div className="space-y-4">
+                    <Label className="text-sm font-medium text-gray-700">Suite Type</Label>
+                    <div className="flex gap-6">
+                      <div className="flex items-center space-x-2">
+                        <input
+                            type="radio"
+                            id="api-suite"
+                            name="suiteType"
+                            value="API"
+                            checked={editedSuite.type === "API"}
+                            onChange={(e) => handleSuiteChange("type", "API")}
+                            className="h-4 w-4"
+                        />
+                        <Label htmlFor="api-suite" className="font-normal">
+                          API Test Suite
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                            type="radio"
+                            id="ui-suite"
+                            name="suiteType"
+                            value="UI"
+                            checked={editedSuite.type === "UI"}
+                            onChange={(e) => handleSuiteChange("type", "UI")}
+                            className="h-4 w-4"
+                        />
+                        <Label htmlFor="ui-suite" className="font-normal">
+                          UI Test Suite
+                        </Label>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500">Choose the primary type of testing this suite will perform</p>
                   </div>
 
                   <div className="space-y-4">
@@ -447,6 +564,15 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
                       )}
                     </div>
                   </div>
+                  <div className="flex justify-end pt-4 border-t border-gray-200">
+                    <Button
+                        onClick={() => setActiveTab("testcases")}
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                      Next: Test Cases
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -475,7 +601,9 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
                             <div>
                               <CardTitle className="text-base text-gray-900">{testCase.name}</CardTitle>
                               <CardDescription>
-                                {testCase.testData?.length || 0} test data item{testCase.testData?.length !== 1 ? "s" : ""}
+                                {testCase.type === "UI"
+                                    ? `${testCase.testSteps?.length || 0} test step${testCase.testSteps?.length !== 1 ? "s" : ""}`
+                                    : `${testCase.testData?.length || 0} test data item${testCase.testData?.length !== 1 ? "s" : ""}`}
                               </CardDescription>
                             </div>
                             <div className="flex items-center gap-2">

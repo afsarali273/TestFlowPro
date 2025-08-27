@@ -4,7 +4,23 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { X, FileText, Database, CheckCircle, XCircle, Clock, Code, Upload, Globe, Zap } from "lucide-react"
+import {
+  X,
+  FileText,
+  Database,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Code,
+  Upload,
+  Globe,
+  Zap,
+  MousePointer,
+  Keyboard,
+  Eye,
+  Camera,
+  Play,
+} from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface TestCasesModalProps {
@@ -57,7 +73,50 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
     }
   }
 
-  // Helper function to render pre-process steps
+  const getKeywordIcon = (keyword: string) => {
+    switch (keyword.toLowerCase()) {
+      case "click":
+        return <MousePointer className="h-3 w-3 text-blue-500" />
+      case "type":
+        return <Keyboard className="h-3 w-3 text-green-500" />
+      case "asserttext":
+      case "assertvisible":
+        return <Eye className="h-3 w-3 text-purple-500" />
+      case "screenshot":
+        return <Camera className="h-3 w-3 text-orange-500" />
+      case "openbrowser":
+      case "goto":
+        return <Globe className="h-3 w-3 text-indigo-500" />
+      case "select":
+      case "waitfor":
+        return <Play className="h-3 w-3 text-teal-500" />
+      default:
+        return <Zap className="h-3 w-3 text-gray-500" />
+    }
+  }
+
+  const getKeywordColor = (keyword: string) => {
+    switch (keyword.toLowerCase()) {
+      case "click":
+        return "bg-blue-100 text-blue-800"
+      case "type":
+        return "bg-green-100 text-green-800"
+      case "asserttext":
+      case "assertvisible":
+        return "bg-purple-100 text-purple-800"
+      case "screenshot":
+        return "bg-orange-100 text-orange-800"
+      case "openbrowser":
+      case "goto":
+        return "bg-indigo-100 text-indigo-800"
+      case "select":
+      case "waitfor":
+        return "bg-teal-100 text-teal-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
   const renderPreProcessSteps = (preProcess: any[]) => {
     if (!preProcess || preProcess.length === 0) {
       return (
@@ -176,6 +235,93 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
     )
   }
 
+  const renderTestSteps = (testSteps: any[]) => {
+    if (!testSteps || testSteps.length === 0) {
+      return (
+          <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+            <Play className="h-6 w-6 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No test steps defined</p>
+          </div>
+      )
+    }
+
+    return (
+        <div className="space-y-3">
+          {testSteps.map((step: any, stepIndex: number) => (
+              <div key={stepIndex} className="bg-white p-4 rounded-lg border border-gray-200">
+                <div className="space-y-3">
+                  {/* Step Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {getKeywordIcon(step.keyword)}
+                      <Badge className={getKeywordColor(step.keyword)}>{step.keyword}</Badge>
+                      <span className="text-sm text-gray-600">Step {stepIndex + 1}</span>
+                    </div>
+                    <span className="text-xs text-gray-500">ID: {step.id}</span>
+                  </div>
+
+                  {/* Locator Information */}
+                  {step.locator && (
+                      <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-blue-700">Locator Strategy:</span>
+                            <Badge variant="outline" className="text-xs bg-blue-100 text-blue-800 border-blue-300">
+                              {step.locator.strategy}
+                            </Badge>
+                          </div>
+                          <div>
+                            <span className="text-xs font-medium text-blue-700">Locator Value:</span>
+                            <code className="ml-2 text-xs bg-blue-100 px-2 py-1 rounded text-blue-800 break-all">
+                              {step.locator.value}
+                            </code>
+                          </div>
+                        </div>
+                      </div>
+                  )}
+
+                  {/* Step Value */}
+                  {step.value && (
+                      <div>
+                        <span className="text-xs font-medium text-gray-600">Value:</span>
+                        <div className="mt-1">
+                          <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-700 break-all">{step.value}</code>
+                        </div>
+                      </div>
+                  )}
+
+                  {/* Step Preview */}
+                  <div className="bg-gray-50 p-2 rounded text-xs text-gray-600 italic">
+                    {step.keyword === "openBrowser" && "Opens a new browser instance"}
+                    {step.keyword === "goto" && step.value && `Navigate to: ${step.value}`}
+                    {step.keyword === "click" &&
+                        step.locator &&
+                        `Click on element: ${step.locator.strategy}="${step.locator.value}"`}
+                    {step.keyword === "type" &&
+                        step.locator &&
+                        step.value &&
+                        `Type "${step.value}" into element: ${step.locator.strategy}="${step.locator.value}"`}
+                    {step.keyword === "select" &&
+                        step.locator &&
+                        step.value &&
+                        `Select "${step.value}" from element: ${step.locator.strategy}="${step.locator.value}"`}
+                    {step.keyword === "assertText" &&
+                        step.locator &&
+                        step.value &&
+                        `Assert text "${step.value}" in element: ${step.locator.strategy}="${step.locator.value}"`}
+                    {step.keyword === "assertVisible" &&
+                        step.locator &&
+                        `Assert element is visible: ${step.locator.strategy}="${step.locator.value}"`}
+                    {step.keyword === "waitFor" && step.value && `Wait for ${step.value} milliseconds`}
+                    {step.keyword === "screenshot" && "Take a screenshot"}
+                  </div>
+                </div>
+              </div>
+          ))}
+        </div>
+    )
+  }
+
   return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-6xl max-h-[80vh]">
@@ -184,7 +330,7 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
               <FileText className="h-5 w-5" />
               Test Cases - {suite.suiteName}
             </DialogTitle>
-            <DialogDescription>View all test cases and their test data for this suite</DialogDescription>
+            <DialogDescription>View all test cases and their test data or test steps for this suite</DialogDescription>
             {suite.baseUrl && (
                 <div className="flex items-center gap-2 mt-2">
                   <Globe className="h-4 w-4 text-blue-500" />
@@ -211,14 +357,28 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                 )}
                               </CardTitle>
                               <CardDescription>
-                                {testCase.testData?.length || 0} test data item{testCase.testData?.length !== 1 ? "s" : ""}
+                                {testCase.type === "UI"
+                                    ? `${testCase.testSteps?.length || 0} test step${testCase.testSteps?.length !== 1 ? "s" : ""}`
+                                    : `${testCase.testData?.length || 0} test data item${testCase.testData?.length !== 1 ? "s" : ""}`}
                               </CardDescription>
                             </div>
                             <Badge className={getStatusColor(testCase.status)}>{testCase.status}</Badge>
                           </div>
                         </CardHeader>
 
-                        {testCase.testData && testCase.testData.length > 0 && (
+                        {testCase.type === "UI" && testCase.testSteps && testCase.testSteps.length > 0 && (
+                            <CardContent>
+                              <div className="space-y-4">
+                                <h4 className="font-medium text-sm text-gray-700 flex items-center gap-2">
+                                  <Play className="h-4 w-4 text-blue-500" />
+                                  Test Steps:
+                                </h4>
+                                {renderTestSteps(testCase.testSteps)}
+                              </div>
+                            </CardContent>
+                        )}
+
+                        {testCase.type !== "UI" && testCase.testData && testCase.testData.length > 0 && (
                             <CardContent>
                               <div className="space-y-4">
                                 <h4 className="font-medium text-sm text-gray-700">Test Data:</h4>
@@ -379,11 +539,21 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                             </CardContent>
                         )}
 
-                        {(!testCase.testData || testCase.testData.length === 0) && (
+                        {((testCase.type === "UI" && (!testCase.testSteps || testCase.testSteps.length === 0)) ||
+                            (testCase.type !== "UI" && (!testCase.testData || testCase.testData.length === 0))) && (
                             <CardContent>
                               <div className="text-center py-4 text-gray-500">
-                                <Database className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                <p className="text-sm">No test data defined for this test case</p>
+                                {testCase.type === "UI" ? (
+                                    <>
+                                      <Play className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                      <p className="text-sm">No test steps defined for this UI test case</p>
+                                    </>
+                                ) : (
+                                    <>
+                                      <Database className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                      <p className="text-sm">No test data defined for this test case</p>
+                                    </>
+                                )}
                               </div>
                             </CardContent>
                         )}

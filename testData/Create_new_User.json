@@ -1,6 +1,6 @@
 {
   "suiteName": "User Registration Suite",
-  "status": "Not Started",
+  "type": "API",
   "baseUrl": "https://www.abibliadigital.com.br",
   "tags": [
     {
@@ -21,8 +21,14 @@
           "method": "POST",
           "endpoint": "/api/users",
           "headers": {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Afsar": "dsdfsdf"
           },
+          "preProcess": [
+            {
+              "function": "generateUser"
+            }
+          ],
           "body": {
             "name": "{{name}}",
             "email": "{{email}}",
@@ -55,16 +61,7 @@
           ],
           "store": {
             "token": "$.token"
-          },
-          "preProcess": [
-            {
-              "function": "generateUser",
-              "mapTo": {
-                "name": "username",
-                "email": "email"
-              }
-            }
-          ]
+          }
         },
         {
           "name": "Create new User - empty body",
@@ -73,6 +70,7 @@
           "headers": {
             "Content-Type": "application/json"
           },
+          "preProcess": [],
           "body": {},
           "assertions": [
             {
@@ -87,15 +85,15 @@
               "expected": 400
             }
           ],
-          "store": {},
-          "preProcess": []
+          "store": {}
         }
-      ]
+      ],
+      "testSteps": []
     },
     {
-      "id": "testcase_1751211640261",
       "name": "Get User By Email ",
       "status": "Not Started",
+      "type": "REST",
       "testData": [
         {
           "name": "Get User By Email - valid",
@@ -105,6 +103,7 @@
             "Content-Type": "application/json",
             "Authorization": "Bearer {{token}}"
           },
+          "preProcess": [],
           "assertions": [
             {
               "id": "assertion_1751211996702",
@@ -129,14 +128,13 @@
               "jsonPath": "$.token"
             }
           ],
-          "store": {},
-          "preProcess": []
+          "store": {}
         }
-      ]
+      ],
+      "testSteps": []
     }
   ],
   "id": "User_Registration_Suite_L1VzZXJz",
-  "filePath": "/Users/afsarali/Repository/api-framework/testData/Create_new_User.json",
-  "fileName": "Create_new_User.json",
-  "lastModified": "2025-06-29T15:47:32.441Z"
+  "status": "Not Started",
+  "filePath": "/Users/afsarali/Repository/TestFlowPro/testData/Create_new_User.json"
 }

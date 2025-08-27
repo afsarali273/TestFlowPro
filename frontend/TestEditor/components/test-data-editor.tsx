@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useCallback} from "react"
+import type React from "react"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -10,29 +10,57 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Trash2, Save, X, ArrowLeft, FileText, Upload, Code, Database, Copy } from "lucide-react"
+import { Plus, Trash2, Save, X, ArrowLeft, FileText, Upload, Code, Database, Copy, ArrowRight } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
-import dynamic from "next/dynamic"
-const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false })
 
 interface TestDataEditorProps {
   testData: any
   onSave: (testData: any) => void
   onCancel: () => void
-  testCaseType?: string // Add this to know if it's SOAP or REST
+  testCaseType?: string
 }
+
+const commonHeaders = [
+  "Accept",
+  "Accept-Encoding",
+  "Accept-Language",
+  "Authorization",
+  "Cache-Control",
+  "Content-Type",
+  "Cookie",
+  "Host",
+  "Origin",
+  "Referer",
+  "User-Agent",
+  "X-API-Key",
+  "X-Auth-Token",
+  "X-Requested-With",
+  "X-CSRF-Token",
+]
 
 export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "REST" }: TestDataEditorProps) {
   const [editedTestData, setEditedTestData] = useState(JSON.parse(JSON.stringify(testData)))
-  const [editorValue, setEditorValue] = useState(JSON.stringify(editedTestData, null, 2))
-  const [rawJson, setRawJson] = useState(JSON.stringify(editedTestData, null, 2))
-
-
   const [rawBodyJson, setRawBodyJson] = useState("")
   const [rawSchemaJson, setRawSchemaJson] = useState("")
   const [bodyJsonError, setBodyJsonError] = useState("")
   const [schemaJsonError, setSchemaJsonError] = useState("")
+
+  const [activeTab, setActiveTab] = useState("general")
+
+  const tabSequence = ["general", "headers", "body", "assertions", "preprocess", "store", "schema", "json"]
+
+  const getNextTab = (currentTab: string) => {
+    const currentIndex = tabSequence.indexOf(currentTab)
+    return currentIndex < tabSequence.length - 1 ? tabSequence[currentIndex + 1] : null
+  }
+
+  const handleNextTab = () => {
+    const nextTab = getNextTab(activeTab)
+    if (nextTab) {
+      setActiveTab(nextTab)
+    }
+  }
 
   useEffect(() => {
     if (testData) {
@@ -80,11 +108,43 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
   }
 
   const handleAddHeader = () => {
-    const key = prompt("Enter header key:")
-    const value = prompt("Enter header value:")
-    if (key && value) {
-      handleNestedChange("headers", key, value)
+    const newHeaders = { ...editedTestData.headers }
+    let newKey = ""
+    let counter = 1
+
+    // Find next available empty key
+    while (newHeaders[newKey] !== undefined) {
+      newKey = `header_${counter}`
+      counter++
     }
+
+    newHeaders[newKey] = ""
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      headers: newHeaders,
+    }))
+  }
+
+  const handleUpdateHeaderKey = (oldKey: string, newKey: string) => {
+    if (oldKey === newKey) return
+
+    const newHeaders = { ...editedTestData.headers }
+    const value = newHeaders[oldKey]
+    delete newHeaders[oldKey]
+
+    // Avoid duplicate keys
+    let finalKey = newKey
+    let counter = 1
+    while (newHeaders[finalKey] !== undefined && finalKey !== newKey) {
+      finalKey = `${newKey}_${counter}`
+      counter++
+    }
+
+    newHeaders[finalKey] = value
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      headers: newHeaders,
+    }))
   }
 
   const handleRemoveHeader = (key: string) => {
@@ -100,7 +160,6 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
     let finalKey = newKey
     let counter = 1
 
-    // Ensure unique key name
     while (editedTestData.headers && editedTestData.headers[finalKey]) {
       finalKey = `${newKey}_${counter}`
       counter++
@@ -149,32 +208,6 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
     newAssertions.splice(index + 1, 0, clonedAssertion)
     handleChange("assertions", newAssertions)
   }
-
-  const handleEditorChange = useCallback((value: string | undefined) => {
-    if (!value) return
-    setEditorValue(value)
-    try {
-      const parsed = JSON.parse(value)
-      setEditedTestData(parsed)
-    } catch (error) {
-      // Allow typing even if JSON is invalid
-      console.warn("Invalid JSON:", error)
-    }
-  }, [setEditedTestData])
-
-  const handleFormat = () => {
-    try {
-      const formatted = JSON.stringify(JSON.parse(editorValue), null, 2)
-      setEditorValue(formatted)
-      setEditedTestData(JSON.parse(formatted))
-    } catch (error) {
-      console.warn("Invalid JSON on format:", error)
-    }
-  }
-  const handleCopy = () => {
-    navigator.clipboard.writeText(editorValue)
-  }
-
 
   const handleAddPreProcess = () => {
     const newPreProcess = {
@@ -294,7 +327,7 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
 
   // Function to clean assertion data based on type
   const cleanAssertionData = (assertion: any) => {
-    const baseAssertion : BaseAssertion = {
+    const baseAssertion: BaseAssertion= {
       id: assertion.id,
       type: assertion.type,
     }
@@ -376,6 +409,7 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
   return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="max-w-6xl mx-auto p-6">
+          {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <Button variant="ghost" onClick={onCancel} className="hover:bg-white/80">
@@ -401,7 +435,7 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
             </div>
           </div>
 
-          <Tabs defaultValue="general" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-8 bg-white/80 backdrop-blur-sm shadow-sm">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="headers">Headers</TabsTrigger>
@@ -467,6 +501,18 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
                       />
                     </div>
                   </div>
+
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex justify-end">
+                      <Button
+                          onClick={handleNextTab}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      >
+                        Next: Headers
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -495,10 +541,24 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
                             key={key}
                             className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50/50"
                         >
-                          <Input value={key} readOnly className="flex-1 h-10 bg-gray-100" />
+                          <div className="flex-1 relative">
+                            <Input
+                                value={key}
+                                onChange={(e) => handleUpdateHeaderKey(key, e.target.value)}
+                                placeholder="Header key"
+                                className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                list={`headers-${key}`}
+                            />
+                            <datalist id={`headers-${key}`}>
+                              {commonHeaders.map((header) => (
+                                  <option key={header} value={header} />
+                              ))}
+                            </datalist>
+                          </div>
                           <Input
                               value={value as string}
                               onChange={(e) => handleNestedChange("headers", key, e.target.value)}
+                              placeholder="Header value"
                               className="flex-1 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                           />
                           <Button
@@ -520,12 +580,80 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
                           </Button>
                         </div>
                     ))}
+
+                    <div className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50/30 hover:border-gray-400 hover:bg-gray-50/50 transition-colors">
+                      <div className="flex-1 relative">
+                        <Input
+                            placeholder="Enter header key..."
+                            className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            list="common-headers"
+                            onKeyDown={(e) => {
+                              if (e.key === "Tab" || e.key === "Enter") {
+                                const key = e.currentTarget.value.trim()
+                                if (key) {
+                                  handleNestedChange("headers", key, "")
+                                  e.currentTarget.value = ""
+                                  // Focus next input (value field)
+                                  const nextInput = e.currentTarget.parentElement?.parentElement?.querySelector(
+                                      "input:nth-child(2)",
+                                  ) as HTMLInputElement
+                                  if (nextInput) nextInput.focus()
+                                }
+                              }
+                            }}
+                        />
+                        <datalist id="common-headers">
+                          {commonHeaders.map((header) => (
+                              <option key={header} value={header} />
+                          ))}
+                        </datalist>
+                      </div>
+                      <Input
+                          placeholder="Enter header value..."
+                          className="flex-1 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          onKeyDown={(e) => {
+                            if (e.key === "Tab" || e.key === "Enter") {
+                              const value = e.currentTarget.value.trim()
+                              const keyInput = e.currentTarget.parentElement?.querySelector(
+                                  "input:first-child",
+                              ) as HTMLInputElement
+                              const key = keyInput?.value.trim()
+
+                              if (key && value) {
+                                handleNestedChange("headers", key, value)
+                                keyInput.value = ""
+                                e.currentTarget.value = ""
+                                keyInput.focus()
+                              }
+                            }
+                          }}
+                      />
+                      <div className="h-10 px-3 flex items-center text-gray-400">
+                        <Plus className="h-3 w-3" />
+                      </div>
+                      <div className="h-10 px-3 flex items-center text-gray-400">
+                        <span className="text-xs">Tab/Enter to add</span>
+                      </div>
+                    </div>
+
                     {(!editedTestData.headers || Object.keys(editedTestData.headers).length === 0) && (
                         <div className="text-center py-8 text-gray-500 bg-gray-50/50 rounded-lg border-2 border-dashed border-gray-200">
                           <p className="text-sm">No headers defined yet</p>
-                          <p className="text-xs mt-1">Add headers to customize your request</p>
+                          <p className="text-xs mt-1">Use the row above to add headers quickly</p>
                         </div>
                     )}
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex justify-end">
+                      <Button
+                          onClick={handleNextTab}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      >
+                        Next: {testCaseType === "SOAP" ? "XML Body" : "JSON Body"}
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -634,7 +762,7 @@ Example:
                                   setRawBodyJson(e.target.value)
                                   setBodyJsonError("") // Clear error while typing
                                 }}
-                                onBlur={() => applyJsonChanges('body', rawBodyJson)}
+                                onBlur={() => applyJsonChanges("body", rawBodyJson)}
                                 className={`font-mono text-sm min-h-[300px] resize-y ${
                                     bodyJsonError
                                         ? "border-red-300 focus:border-red-500 focus:ring-red-500"
@@ -653,14 +781,12 @@ Example:
                               <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => applyJsonChanges('body', rawBodyJson)}
+                                  onClick={() => applyJsonChanges("body", rawBodyJson)}
                                   className="text-xs px-2 py-1 h-7"
                               >
                                 Apply JSON
                               </Button>
-                              <div className="text-xs text-gray-400 bg-white px-2 py-1 rounded border">
-                                JSON Editor
-                              </div>
+                              <div className="text-xs text-gray-400 bg-white px-2 py-1 rounded border">JSON Editor</div>
                             </div>
                           </div>
                           {bodyJsonError && (
@@ -674,6 +800,18 @@ Example:
                       Enter the request body in {testCaseType === "SOAP" ? "XML" : "JSON"} format. This will be ignored if
                       a body file is specified.
                     </p>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex justify-end">
+                      <Button
+                          onClick={handleNextTab}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      >
+                        Next: Assertions
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -817,6 +955,18 @@ Example:
                           <p className="text-xs mt-1">Add assertions to validate your API responses</p>
                         </div>
                     )}
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex justify-end">
+                      <Button
+                          onClick={handleNextTab}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      >
+                        Next: Pre-Process
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1065,6 +1215,18 @@ Example:
                       </div>
                     </div>
                   </div>
+
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex justify-end">
+                      <Button
+                          onClick={handleNextTab}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      >
+                        Next: Store
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -1117,6 +1279,18 @@ Example:
                         </div>
                     )}
                   </div>
+
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex justify-end">
+                      <Button
+                          onClick={handleNextTab}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      >
+                        Next: Schema
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -1128,26 +1302,19 @@ Example:
                     <Code className="h-5 w-5 text-green-600" />
                     Response Schema Validation
                   </CardTitle>
-                  <CardDescription>
-                    Define response schema validation using JSON Schema or file reference
-                  </CardDescription>
+                  <CardDescription>Define response schema validation using JSON Schema or file reference</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Response Schema File */}
                   <div className="space-y-2">
-                    <Label
-                        htmlFor="responseSchemaFile"
-                        className="text-sm font-medium text-gray-700"
-                    >
+                    <Label htmlFor="responseSchemaFile" className="text-sm font-medium text-gray-700">
                       Response Schema File
                     </Label>
                     <div className="flex items-center gap-3">
                       <Input
                           id="responseSchemaFile"
                           value={editedTestData.responseSchemaFile || ""}
-                          onChange={(e) =>
-                              handleChange("responseSchemaFile", e.target.value)
-                          }
+                          onChange={(e) => handleChange("responseSchemaFile", e.target.value)}
                           placeholder="Path to schema file (e.g., ./schemas/user-response.json)"
                           className="flex-1 h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       />
@@ -1161,9 +1328,7 @@ Example:
                         />
                         <Button
                             variant="outline"
-                            onClick={() =>
-                                document.getElementById("schema-file-upload")?.click()
-                            }
+                            onClick={() => document.getElementById("schema-file-upload")?.click()}
                             className="h-11 px-4 border-gray-300 hover:border-green-400 hover:bg-green-50"
                         >
                           <Upload className="h-4 w-4 mr-2" />
@@ -1172,17 +1337,13 @@ Example:
                       </div>
                     </div>
                     <p className="text-xs text-gray-500">
-                      Specify a file path for the JSON Schema. This will override the inline
-                      schema content.
+                      Specify a file path for the JSON Schema. This will override the inline schema content.
                     </p>
                   </div>
 
-                  {/* Inline Schema */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Inline Response Schema (JSON Schema)
-                      </Label>
+                      <Label className="text-sm font-medium text-gray-700">Inline Response Schema (JSON Schema)</Label>
                       <div className="flex gap-2">
                         <Button
                             size="sm"
@@ -1190,11 +1351,9 @@ Example:
                             onClick={() => {
                               try {
                                 const formatted = JSON.stringify(
-                                    JSON.parse(
-                                        JSON.stringify(editedTestData.responseSchema || {}, null, 2)
-                                    ),
+                                    JSON.parse(JSON.stringify(editedTestData.responseSchema || {}, null, 2)),
                                     null,
-                                    2
+                                    2,
                                 )
                                 handleChange("responseSchema", JSON.parse(formatted))
                               } catch (error) {
@@ -1227,7 +1386,6 @@ Example:
                         </Button>
                       </div>
                     </div>
-
                     <div className="space-y-2">
                       <div className="relative">
                         <Textarea
@@ -1260,9 +1418,7 @@ Example:
                           <Button
                               size="sm"
                               variant="outline"
-                              onClick={() =>
-                                  applyJsonChanges("responseSchema", rawSchemaJson)
-                              }
+                              onClick={() => applyJsonChanges("responseSchema", rawSchemaJson)}
                               className="text-xs px-2 py-1 h-7"
                           >
                             Apply Schema
@@ -1272,7 +1428,6 @@ Example:
                           </div>
                         </div>
                       </div>
-
                       {schemaJsonError && (
                           <div className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">
                             <strong>Schema Error:</strong> {schemaJsonError}
@@ -1286,18 +1441,26 @@ Example:
                     <h4 className="font-medium mb-2 text-blue-800">JSON Schema Validation</h4>
                     <ul className="space-y-1 text-sm text-blue-700">
                       <li>• Use JSON Schema Draft 7 format for response validation</li>
-                      <li>
-                        • Schema validation runs after assertions but before storing
-                        variables
-                      </li>
+                      <li>• Schema validation runs after assertions but before storing variables</li>
                       <li>• File-based schemas take precedence over inline schemas</li>
                       <li>• Validation failures will mark the test as failed</li>
                     </ul>
                   </div>
+
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex justify-end">
+                      <Button
+                          onClick={handleNextTab}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      >
+                        Next: JSON
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
-
 
             <TabsContent value="json">
               <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
@@ -1308,10 +1471,29 @@ Example:
                       <CardDescription>View and edit the raw JSON structure with syntax highlighting</CardDescription>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={handleFormat} className="text-xs px-3 py-1 h-8">
+                      <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            try {
+                              const formatted = JSON.stringify(JSON.parse(JSON.stringify(editedTestData, null, 2)), null, 2)
+                              setEditedTestData(JSON.parse(formatted))
+                            } catch (error) {
+                              // Invalid JSON, ignore
+                            }
+                          }}
+                          className="text-xs px-3 py-1 h-8"
+                      >
                         Format JSON
                       </Button>
-                      <Button size="sm" variant="outline" onClick={handleCopy} className="text-xs px-3 py-1 h-8">
+                      <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(JSON.stringify(editedTestData, null, 2))
+                          }}
+                          className="text-xs px-3 py-1 h-8"
+                      >
                         Copy JSON
                       </Button>
                     </div>
@@ -1319,24 +1501,27 @@ Example:
                 </CardHeader>
                 <CardContent>
                   <div className="relative">
-                    {/* ✅ Monaco Editor instead of Textarea */}
-                    <MonacoEditor
-                        height="500px"
-                        defaultLanguage="json"
-                        theme="vs-dark"
-                        value={editorValue}
-                        onChange={handleEditorChange}
-                        options={{
-                          fontSize: 14,
-                          minimap: { enabled: false },
-                          wordWrap: "on",
-                          formatOnPaste: true,
-                          formatOnType: true,
+                    <Textarea
+                        value={JSON.stringify(editedTestData, null, 2)}
+                        onChange={(e) => {
+                          try {
+                            const parsed = JSON.parse(e.target.value)
+                            setEditedTestData(parsed)
+                          } catch (error) {
+                            // Invalid JSON, don't update but allow typing
+                          }
+                        }}
+                        className="font-mono text-sm min-h-[500px] border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-y"
+                        style={{
+                          background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)",
+                          lineHeight: "1.6",
                         }}
                     />
                     <div className="absolute top-2 right-2 text-xs text-gray-400 bg-white px-2 py-1 rounded border shadow-sm">
-                      JSON Editor
+                      Raw JSON Editor
                     </div>
+                    {/* JSON syntax highlighting overlay effect */}
+                    <div className="absolute inset-0 pointer-events-none rounded border-2 border-transparent bg-gradient-to-r from-blue-500/5 via-transparent to-green-500/5"></div>
                   </div>
                 </CardContent>
               </Card>
@@ -1346,8 +1531,6 @@ Example:
       </div>
   )
 }
-
-
 
 interface BaseAssertion {
   id: string;

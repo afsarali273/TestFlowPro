@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "^9.8.0",
+    "@playwright/test": "^1.55.0",
     "ajv": "^8.17.1",
     "axios": "^1.10.0",
     "dotenv": "^16.5.0",
@@ -28,6 +29,7 @@
     "mysql2": "^3.14.1",
     "odbc": "^2.4.9",
     "p-limit": "^6.2.0",
+    "playwright": "^1.55.0",
     "uuid": "^11.1.0",
     "xml2js": "^0.6.2",
     "xmldom": "^0.6.0",

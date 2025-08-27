@@ -8,6 +8,7 @@ import { loadEnvironment } from "./utils/envManager";
 import { injectVariables, storeResponseVariables } from "./utils/variableStore";
 import { runPreProcessors } from "./preProcessor";
 import { loadSchema } from "./utils/loadSchema";
+import {UIRunner} from "./ui-test";
 
 const ajv = new Ajv();
 
@@ -21,11 +22,30 @@ function isSoapRequest(headers?: Record<string, string>): boolean {
 }
 
 export async function executeSuite(suite: TestSuite, reporter: Reporter) {
-    const env = loadEnvironment();
-    const resolvedBaseUrl = env[suite.baseUrl] || suite.baseUrl || env.BASE_URL || '';
 
     console.log(`Running Suite: ${suite.suiteName}`);
 
+    if(suite?.type === 'UI'){
+        await runUITests(suite, reporter);
+    }else {
+        await runAPITests(suite, reporter);
+    }
+}
+
+export async function runUITests(suite: TestSuite, reporter: Reporter) {
+    const runner = new UIRunner(reporter);
+    for (const testCase of suite.testCases) {
+        await runner.init();
+        console.log(`  TestCase: ${testCase.name}`);
+        await runner.runTestCase(testCase);
+        await runner.close();
+    }
+}
+
+
+export async function runAPITests(suite: TestSuite, reporter: Reporter){
+    const env = loadEnvironment();
+    const resolvedBaseUrl = env[suite.baseUrl] || suite.baseUrl || env.BASE_URL || '';
     for (const testCase of suite.testCases) {
         console.log(`  TestCase: ${testCase.name}`);
 

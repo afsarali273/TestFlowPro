@@ -1,0 +1,147 @@
+{
+  "suiteName": "Sample Login UI Suite",
+  "type": "UI",
+  "baseUrl": "https://the-internet.herokuapp.com",
+  "tags": [
+    {
+      "priority": "high"
+    },
+    {
+      "type": "ui"
+    }
+  ],
+  "testCases": [
+    {
+      "name": "Valid Login Test",
+      "status": "Not Started",
+      "type": "UI",
+      "testData": [],
+      "testSteps": [
+        {
+          "id": "step1",
+          "keyword": "openBrowser",
+          "assertions": []
+        },
+        {
+          "id": "step2",
+          "keyword": "goto",
+          "value": "https://the-internet.herokuapp.com/login",
+          "assertions": []
+        },
+        {
+          "id": "step3",
+          "keyword": "type",
+          "locator": {
+            "strategy": "label",
+            "value": "Username"
+          },
+          "value": "tomsmith",
+          "assertions": []
+        },
+        {
+          "id": "step4",
+          "keyword": "type",
+          "locator": {
+            "strategy": "label",
+            "value": "Password"
+          },
+          "value": "SuperSecretPassword!",
+          "assertions": []
+        },
+        {
+          "id": "step5",
+          "keyword": "click",
+          "locator": {
+            "strategy": "role",
+            "value": "button"
+          },
+          "value": "bggd",
+          "assertions": []
+        },
+        {
+          "id": "step6",
+          "keyword": "assertText",
+          "locator": {
+            "strategy": "css",
+            "value": ".flash.success"
+          },
+          "value": "You logged into a secure area!",
+          "assertions": []
+        },
+        {
+          "id": "step7",
+          "keyword": "screenshot",
+          "value": "login-success.png",
+          "assertions": []
+        }
+      ]
+    },
+    {
+      "name": "Invalid Login Test",
+      "status": "Not Started",
+      "type": "UI",
+      "testData": [],
+      "testSteps": [
+        {
+          "id": "step1",
+          "keyword": "openBrowser",
+          "assertions": []
+        },
+        {
+          "id": "step2",
+          "keyword": "goto",
+          "value": "https://the-internet.herokuapp.com/login",
+          "assertions": []
+        },
+        {
+          "id": "step3",
+          "keyword": "type",
+          "locator": {
+            "strategy": "label",
+            "value": "Username"
+          },
+          "value": "invalidUser",
+          "assertions": []
+        },
+        {
+          "id": "step4",
+          "keyword": "type",
+          "locator": {
+            "strategy": "label",
+            "value": "Password"
+          },
+          "value": "wrongPassword",
+          "assertions": []
+        },
+        {
+          "id": "step5",
+          "keyword": "click",
+          "locator": {
+            "strategy": "role",
+            "value": "button"
+          },
+          "assertions": []
+        },
+        {
+          "id": "step6",
+          "keyword": "assertText",
+          "locator": {
+            "strategy": "css",
+            "value": ".flash.error"
+          },
+          "value": "Your username is invalid!",
+          "assertions": []
+        },
+        {
+          "id": "step7",
+          "keyword": "screenshot",
+          "value": "login-failure.png",
+          "assertions": []
+        }
+      ]
+    }
+  ],
+  "id": "Sample_Login_UI_Suite_L1VzZXJz",
+  "status": "Not Started",
+  "filePath": "/Users/afsarali/Repository/TestFlowPro/testData/web-ui-test.json"
+}
