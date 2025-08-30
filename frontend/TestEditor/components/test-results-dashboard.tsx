@@ -31,12 +31,12 @@ import {
   Timer,
 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { TestResultDetailModal } from "@/components/test-result-detail-modal"
 
 interface TestResult {
   testCase: string
@@ -101,6 +101,170 @@ const formatXmlContent = (xmlString: string): string => {
   }
 }
 
+// Helper function to format API assertion errors
+const formatApiError = (errorString: string) => {
+  const errors = errorString.split(' | ').filter(error => error.trim())
+  
+  return (
+    <div className="space-y-2">
+      {errors.map((error, index) => {
+        const trimmedError = error.trim()
+        
+        // Parse different types of API assertions
+        if (trimmedError.includes('Assertion failed:')) {
+          const assertionText = trimmedError.replace('Assertion failed: ', '')
+          
+          // Status code assertions
+          if (assertionText.includes('statusCode expected')) {
+            const match = assertionText.match(/statusCode expected (\d+), got (\d+)/)
+            if (match) {
+              return (
+                <div key={index} className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-red-800">Status Code Mismatch</div>
+                    <div className="text-xs text-red-600 mt-1">
+                      Expected: <span className="font-mono bg-red-100 px-1 rounded">{match[1]}</span> | 
+                      Received: <span className="font-mono bg-red-100 px-1 rounded">{match[2]}</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+          }
+          
+          // JSONPath assertions with expected/got values
+          if (assertionText.includes('expected') && assertionText.includes('got')) {
+            const parts = assertionText.split(' expected ')
+            if (parts.length === 2) {
+              const jsonPath = parts[0]
+              const expectedGot = parts[1].split(', got ')
+              const expected = expectedGot[0]
+              const got = expectedGot[1] || 'undefined'
+              
+              return (
+                <div key={index} className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-orange-800">JSONPath Assertion Failed</div>
+                    <div className="text-xs text-orange-600 mt-1">
+                      Path: <span className="font-mono bg-orange-100 px-1 rounded">{jsonPath}</span>
+                    </div>
+                    <div className="text-xs text-orange-600 mt-1">
+                      Expected: <span className="font-mono bg-orange-100 px-1 rounded">{expected}</span> | 
+                      Got: <span className="font-mono bg-orange-100 px-1 rounded">{got}</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+          }
+          
+          // Existence assertions
+          if (assertionText.includes('does not exist')) {
+            const jsonPath = assertionText.replace(' does not exist', '')
+            return (
+              <div key={index} className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-blue-800">Missing Field</div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    Path: <span className="font-mono bg-blue-100 px-1 rounded">{jsonPath}</span> does not exist
+                  </div>
+                </div>
+              </div>
+            )
+          }
+        }
+        
+        // Fallback for other error formats
+        return (
+          <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+            <div className="text-sm text-gray-700">{trimmedError}</div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// Helper function to format Playwright errors with proper styling
+const formatPlaywrightError = (errorString: string) => {
+  const cleanError = errorString.replace(/\x1B\[[0-9;]*m/g, '')
+  const sections = cleanError.split('\n\n')
+  
+  return (
+    <div className="space-y-3 font-mono text-sm">
+      {sections.map((section, index) => {
+        const lines = section.split('\n')
+        
+        return (
+          <div key={index} className="space-y-1">
+            {lines.map((line, lineIndex) => {
+              if (line.includes('expect(') && line.includes('failed')) {
+                return (
+                  <div key={lineIndex} className="text-red-600 font-semibold">
+                    {line}
+                  </div>
+                )
+              }
+              
+              if (line.includes('Locator:')) {
+                return (
+                  <div key={lineIndex} className="text-blue-600">
+                    {line}
+                  </div>
+                )
+              }
+              
+              if (line.startsWith('- ')) {
+                return (
+                  <div key={lineIndex} className="text-red-500 bg-red-50 px-2 py-1 rounded">
+                    <span className="text-red-700 font-bold">- </span>
+                    {line.substring(2)}
+                  </div>
+                )
+              }
+              
+              if (line.startsWith('+ ')) {
+                return (
+                  <div key={lineIndex} className="text-green-600 bg-green-50 px-2 py-1 rounded">
+                    <span className="text-green-700 font-bold">+ </span>
+                    {line.substring(2)}
+                  </div>
+                )
+              }
+              
+              if (line.includes('Timeout:')) {
+                return (
+                  <div key={lineIndex} className="text-orange-600 font-medium">
+                    {line}
+                  </div>
+                )
+              }
+              
+              if (line.includes('Call log:')) {
+                return (
+                  <div key={lineIndex} className="text-gray-700 font-semibold mt-2">
+                    {line}
+                  </div>
+                )
+              }
+              
+              return (
+                <div key={lineIndex} className="text-gray-700">
+                  {line}
+                </div>
+              )
+            })}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 const isXmlContent = (content: string): boolean => {
   if (typeof content !== "string") return false
   const trimmed = content.trim()
@@ -112,11 +276,12 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
   const [selectedResult, setSelectedResult] = useState<TestResultsData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [expandedResults, setExpandedResults] = useState<Set<number>>(new Set())
   const [searchTerm, setSearchTerm] = useState("")
   const [resultsPath, setResultsPath] = useState<string>("")
   const [isPathConfigOpen, setIsPathConfigOpen] = useState(false)
   const [sortBy, setSortBy] = useState<string>("date")
+  const [selectedTestResult, setSelectedTestResult] = useState<TestResult | null>(null)
+  const [showTestResultModal, setShowTestResultModal] = useState(false)
 
   useEffect(() => {
     const savedResultsPath = localStorage.getItem("resultsPath")
@@ -156,6 +321,11 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
     localStorage.setItem("resultsPath", path)
     setIsPathConfigOpen(false)
     loadAllResults(path)
+  }
+
+  const handleTestResultClick = (result: TestResult) => {
+    setSelectedTestResult(result)
+    setShowTestResultModal(true)
   }
 
   const toggleResultExpansion = (index: number) => {
@@ -457,53 +627,46 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
           <div className="flex-1 overflow-hidden">
             {selectedResult ? (
               <div className="bg-white rounded-lg shadow-lg border border-gray-200 h-full flex flex-col">
-                <div className="p-4 border-b border-gray-200 flex-shrink-0">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-xl font-bold text-gray-900">{selectedResult.summary.suiteName}</h2>
-                    <Button variant="outline" onClick={() => exportResults(selectedResult)} className="hover:bg-gray-50">
-                      <Download className="h-4 w-4 mr-2" />
+                <div className="p-3 border-b border-gray-200 flex-shrink-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-lg font-bold text-gray-900">{selectedResult.summary.suiteName}</h2>
+                    <Button variant="outline" size="sm" onClick={() => exportResults(selectedResult)} className="hover:bg-gray-50">
+                      <Download className="h-3 w-3 mr-1" />
                       Export
                     </Button>
                   </div>
 
-                  {/* Simplified Summary Cards */}
-                  <div className="grid grid-cols-4 gap-3 mb-3">
-                    <div className="bg-white border rounded-lg p-3">
-                      <div className="text-xl font-bold text-green-600">
+                  {/* Compact Summary */}
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="text-sm">
+                      <span className="font-bold text-green-600">
                         {calculateSuccessRate(selectedResult.summary.passed, selectedResult.summary.totalDataSets)}%
-                      </div>
-                      <div className="text-xs text-gray-600">Success Rate</div>
+                      </span>
+                      <span className="text-gray-500 ml-1">success</span>
                     </div>
-
-                    <div className="bg-white border rounded-lg p-3">
-                      <div className="text-xl font-bold text-gray-900">{selectedResult.summary.totalTestCases}</div>
-                      <div className="text-xs text-gray-600">{selectedResult.summary.totalDataSets} Tests</div>
+                    <div className="text-sm">
+                      <span className="font-bold text-gray-900">{selectedResult.summary.totalDataSets}</span>
+                      <span className="text-gray-500 ml-1">tests</span>
                     </div>
-
-                    <div className="bg-white border rounded-lg p-3">
-                      <div className="text-xl font-bold text-blue-600">{selectedResult.summary.totalAssertionsPassed}</div>
-                      <div className="text-xs text-gray-600">Assertions</div>
+                    <div className="text-sm">
+                      <span className="font-bold text-blue-600">{selectedResult.summary.totalAssertionsPassed}</span>
+                      <span className="text-gray-500 ml-1">assertions</span>
                     </div>
-
-                    <div className="bg-white border rounded-lg p-3">
-                      <div className="text-xl font-bold text-gray-900">
-                        {formatExecutionTime(selectedResult.summary.executionTimeMs)}
-                      </div>
-                      <div className="text-xs text-gray-600">Duration</div>
+                    <div className="text-sm">
+                      <span className="font-bold text-gray-900">{formatExecutionTime(selectedResult.summary.executionTimeMs)}</span>
+                      <span className="text-gray-500 ml-1">duration</span>
                     </div>
                   </div>
 
-                  {/* Tags */}
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium text-gray-700">Tags:</span>
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                  {/* Compact Tags */}
+                  <div className="flex items-center gap-2 text-xs">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 px-2 py-0.5">
                       {selectedResult.summary.tags.serviceName}
                     </Badge>
-                    <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                    <Badge variant="secondary" className="bg-purple-100 text-purple-700 px-2 py-0.5">
                       {selectedResult.summary.tags.suiteType}
                     </Badge>
-                    <span className="text-sm text-gray-500 ml-auto">
-                      <Calendar className="h-4 w-4 inline mr-1" />
+                    <span className="text-gray-500 ml-auto">
                       {new Date(selectedResult.lastModified || 0).toLocaleString()}
                     </span>
                   </div>
@@ -525,110 +688,54 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
 
                     <TabsContent value="results" className="flex-1 overflow-hidden mt-4">
                       <ScrollArea className="h-full px-6">
-                        <div className="space-y-4 pb-6">
+                        <div className="space-y-3 pb-6">
                           {selectedResult.results.map((result, index) => (
                             <Card
                               key={index}
-                              className={`border-l-4 ${
-                                result.status === "PASS" ? "border-l-green-500 bg-green-50/30" : "border-l-red-500 bg-red-50/30"
-                              } hover:shadow-md transition-shadow`}
+                              className={`border-l-4 cursor-pointer hover:shadow-md transition-all ${
+                                result.status === "PASS" ? "border-l-green-500 hover:bg-green-50/50" : "border-l-red-500 hover:bg-red-50/50"
+                              }`}
+                              onClick={() => handleTestResultClick(result)}
                             >
-                              <Collapsible>
-                                <CollapsibleTrigger asChild>
-                                  <CardHeader className="cursor-pointer hover:bg-gray-50/50 transition-colors">
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-3">
-                                        {getStatusIcon(result.status)}
-                                        <div>
-                                          <CardTitle className="text-base font-medium">{result.testCase}</CardTitle>
-                                          <CardDescription className="text-sm">{result.dataSet}</CardDescription>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center gap-4">
-                                        <div className="text-right text-sm">
-                                          <div className="flex items-center gap-2">
-                                            <Badge className={getStatusColor(result.status)} variant="secondary">
-                                              {result.status}
-                                            </Badge>
-                                            <span className="text-gray-500 font-mono">
-                                              {formatExecutionTime(result.responseTimeMs)}
-                                            </span>
-                                          </div>
-                                          <div className="text-xs text-gray-500 mt-1">
-                                            <span className="text-green-600">✓ {result.assertionsPassed}</span>
-                                            {result.assertionsFailed > 0 && (
-                                              <span className="text-red-500 ml-2">✗ {result.assertionsFailed}</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                        {expandedResults.has(index) ? (
-                                          <EyeOff className="h-4 w-4 text-gray-400" />
-                                        ) : (
-                                          <Eye className="h-4 w-4 text-gray-400" />
-                                        )}
+                              <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    {getStatusIcon(result.status)}
+                                    <div>
+                                      <div className="font-medium text-gray-900">{result.testCase}</div>
+                                      <div className="text-sm text-gray-600">{result.dataSet}</div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-4">
+                                    <div className="text-right text-sm">
+                                      <Badge className={getStatusColor(result.status)} variant="secondary">
+                                        {result.status}
+                                      </Badge>
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        {formatExecutionTime(result.responseTimeMs)}
                                       </div>
                                     </div>
-                                  </CardHeader>
-                                </CollapsibleTrigger>
-
-                                <CollapsibleContent>
-                                  <CardContent className="pt-0">
-                                    {result.error && (
-                                      <Alert className="mb-4 border-red-200 bg-red-50">
-                                        <AlertTriangle className="h-4 w-4 text-red-600" />
-                                        <AlertDescription className="text-red-800">
-                                          <div className="font-medium mb-2">Error Details:</div>
-                                          <div className="text-sm space-y-1">
-                                            {result.error.split(" | ").map((error, i) => (
-                                              <div key={i} className="flex items-start gap-2">
-                                                <span className="text-red-500 mt-0.5">•</span>
-                                                <span>{error}</span>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </AlertDescription>
-                                      </Alert>
-                                    )}
-
-                                    {result.responseBody && (
-                                      <div className="mt-4">
-                                        <h4 className="font-medium mb-3 text-red-800 flex items-center gap-2">
-                                          <Activity className="h-4 w-4" />
-                                          Response Body (Failed Test):
-                                        </h4>
-                                        <ScrollArea className="h-64 w-full border rounded-lg bg-gray-900">
-                                          <pre className="p-4 text-xs font-mono whitespace-pre-wrap break-words">
-                                            {typeof result.responseBody === "string" && isXmlContent(result.responseBody) ? (
-                                              <code className="text-blue-300">
-                                                {formatXmlContent(result.responseBody)}
-                                              </code>
-                                            ) : (
-                                              <code className="text-green-300">
-                                                {typeof result.responseBody === "string"
-                                                  ? result.responseBody
-                                                  : JSON.stringify(result.responseBody, null, 2)}
-                                              </code>
-                                            )}
-                                          </pre>
-                                        </ScrollArea>
-                                      </div>
-                                    )}
-
-                                    <div className="grid grid-cols-2 gap-4 mt-4 p-4 bg-gray-50 rounded-lg">
-                                      <div className="flex items-center gap-2">
-                                        <CheckCircle className="h-4 w-4 text-green-500" />
-                                        <span className="text-sm font-medium">Assertions Passed:</span>
-                                        <span className="text-green-600 font-bold">{result.assertionsPassed}</span>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <XCircle className="h-4 w-4 text-red-500" />
-                                        <span className="text-sm font-medium">Assertions Failed:</span>
-                                        <span className="text-red-600 font-bold">{result.assertionsFailed}</span>
-                                      </div>
+                                    
+                                    <div className="text-right text-sm">
+                                      <div className="text-green-600">✓ {result.assertionsPassed}</div>
+                                      {result.assertionsFailed > 0 && (
+                                        <div className="text-red-500">✗ {result.assertionsFailed}</div>
+                                      )}
                                     </div>
-                                  </CardContent>
-                                </CollapsibleContent>
-                              </Collapsible>
+                                    
+                                    <Eye className="h-4 w-4 text-gray-400" />
+                                  </div>
+                                </div>
+                                
+                                {result.error && (
+                                  <div className="mt-3 pt-3 border-t border-gray-200">
+                                    <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+                                      ⚠️ Error: Click to view details
+                                    </div>
+                                  </div>
+                                )}
+                              </CardContent>
                             </Card>
                           ))}
                         </div>
@@ -762,6 +869,12 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
           </div>
         </div>
       </div>
+      
+      <TestResultDetailModal
+        isOpen={showTestResultModal}
+        onClose={() => setShowTestResultModal(false)}
+        testResult={selectedTestResult}
+      />
     </div>
   )
 }

@@ -1,0 +1,50 @@
+{
+  "summary": {
+    "suiteName": "User Registration Suite",
+    "tags": {
+      "serviceName": "digitalLibrary",
+      "suiteType": "@regression"
+    },
+    "totalTestCases": 2,
+    "totalDataSets": 3,
+    "passed": 1,
+    "failed": 2,
+    "totalAssertionsPassed": 2,
+    "totalAssertionsFailed": 8,
+    "executionTimeMs": 4094
+  },
+  "results": [
+    {
+      "testCase": "Register New User -Valid data",
+      "dataSet": "Create a new User- valid",
+      "status": "FAIL",
+      "error": "Assertion failed: statusCode expected 200, got 400 | Assertion failed: $.name expected , got undefined | Assertion failed: $.email expected Gianni.Wolf29@yahoo.com, got undefined | Assertion failed: $.token does not exist",
+      "assertionsPassed": 0,
+      "assertionsFailed": 4,
+      "responseTimeMs": 3267,
+      "responseBody": {
+        "msg": "{name}(String), {email}(String), {notifications}(Boolean) and {password}(String) are required"
+      }
+    },
+    {
+      "testCase": "Register New User -Valid data",
+      "dataSet": "Create new User - empty body",
+      "status": "PASS",
+      "assertionsPassed": 2,
+      "assertionsFailed": 0,
+      "responseTimeMs": 345
+    },
+    {
+      "testCase": "Get User By Email ",
+      "dataSet": "Get User By Email - valid",
+      "status": "FAIL",
+      "error": "Assertion failed: $.name expected , got undefined | Assertion failed: $.email expected Gianni.Wolf29@yahoo.com, got undefined | Assertion failed: statusCode expected 200, got 403 | Assertion failed: $.token does not exist",
+      "assertionsPassed": 0,
+      "assertionsFailed": 4,
+      "responseTimeMs": 461,
+      "responseBody": {
+        "msg": "Not authorized token"
+      }
+    }
+  ]
+}

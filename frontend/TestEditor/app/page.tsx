@@ -21,6 +21,7 @@ import {
   ChevronRight,
   List,
   Grid3X3,
+  Folder,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -37,6 +38,7 @@ import { PathConfigModal } from "@/components/path-config-modal"
 import { FrameworkConfigModal } from "@/components/framework-config-modal"
 import { SuiteRunnerModal } from "@/components/suite-runner-modal"
 import { RunAllSuitesModal } from "@/components/run-all-suites-modal"
+import { FolderTree } from "@/components/folder-tree"
 
 import type { TestSuite } from "@/types/test-suite"
 
@@ -53,6 +55,9 @@ export default function APITestFramework() {
   const [expandedSuites, setExpandedSuites] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'all' | 'ui' | 'api'>('all')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
+  const [folderSuites, setFolderSuites] = useState<TestSuite[]>([])
+  const [showFolderView, setShowFolderView] = useState(false)
 
 
   // Add path configuration states
@@ -248,6 +253,11 @@ export default function APITestFramework() {
     setShowSuiteRunnerModal(true)
   }
 
+  const handleFolderSelect = (folderPath: string, suites: TestSuite[]) => {
+    setSelectedFolder(folderPath)
+    setFolderSuites(suites)
+  }
+
   // Filter suites with unique check
   // Filter suites with unique check
   const filteredSuites = testSuites
@@ -437,25 +447,39 @@ export default function APITestFramework() {
                 </TabsList>
               </Tabs>
 
-              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+              <div className="flex items-center gap-3">
                 <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    className="h-8 px-3"
+                  variant={showFolderView ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowFolderView(!showFolderView)}
+                  className="h-8 px-3"
                 >
-                  <List className="h-4 w-4 mr-1" />
-                  List
+                  <Folder className="h-4 w-4 mr-1" />
+                  Folders
                 </Button>
-                <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    className="h-8 px-3"
-                >
-                  <Grid3X3 className="h-4 w-4 mr-1" />
-                  Grid
-                </Button>
+                
+                {!showFolderView && (
+                  <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                    <Button
+                        variant={viewMode === 'list' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('list')}
+                        className="h-8 px-3"
+                    >
+                      <List className="h-4 w-4 mr-1" />
+                      List
+                    </Button>
+                    <Button
+                        variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('grid')}
+                        className="h-8 px-3"
+                    >
+                      <Grid3X3 className="h-4 w-4 mr-1" />
+                      Grid
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -471,11 +495,114 @@ export default function APITestFramework() {
                 </div>
             )}
 
-            {/* Suite Layout */}
-            <div className={viewMode === 'grid' 
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
-              : "space-y-4"
-            }>
+            {/* Main Content Area */}
+            {showFolderView ? (
+              <div className="flex gap-6 h-[calc(100vh-400px)]">
+                {/* Folder Sidebar */}
+                <div className="w-80 bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <FolderTree
+                    testSuites={testSuites}
+                    activeTab={activeTab}
+                    onFolderSelect={handleFolderSelect}
+                    selectedFolder={selectedFolder}
+                  />
+                </div>
+                
+                {/* Suite Display Area */}
+                <div className="flex-1 bg-white rounded-lg border border-gray-200 shadow-sm">
+                  {selectedFolder !== null ? (
+                    <div className="p-6">
+                      <div className="mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {selectedFolder === '' ? 'All Test Suites' : `Folder: ${selectedFolder}`}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {folderSuites.length} suite{folderSuites.length !== 1 ? 's' : ''} found
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-4 max-h-[calc(100vh-500px)] overflow-y-auto">
+                        {folderSuites.map((suite) => {
+                          const isUISuite = suite.type === "UI"
+                          const totalSteps = isUISuite 
+                            ? suite.testCases.reduce((acc, tc) => acc + (tc.testSteps?.length || 0), 0)
+                            : suite.testCases.reduce((acc, tc) => acc + (tc.testData?.length || 0), 0)
+                          
+                          return (
+                            <Card key={suite.id} className="hover:shadow-md transition-shadow">
+                              <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                      isUISuite ? 'bg-purple-100' : 'bg-blue-100'
+                                    }`}>
+                                      {isUISuite ? (
+                                        <MousePointer className="h-5 w-5 text-purple-600" />
+                                      ) : (
+                                        <Globe className="h-5 w-5 text-blue-600" />
+                                      )}
+                                    </div>
+                                    <div>
+                                      <CardTitle className="text-base">{suite.suiteName}</CardTitle>
+                                      <CardDescription className="text-sm">
+                                        {suite.testCases.length} cases • {totalSteps} {isUISuite ? 'steps' : 'items'}
+                                      </CardDescription>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2">
+                                    <Badge className={getStatusBadge(suite.status || "Not Started")}>
+                                      {suite.status}
+                                    </Badge>
+                                    <Button size="sm" variant="outline" onClick={() => {
+                                      setSelectedSuite(suite)
+                                      setShowTestCasesModal(true)
+                                    }}>
+                                      <Eye className="h-3 w-3 mr-1" />
+                                      Details
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={() => {
+                                      setSelectedSuite(suite)
+                                      setIsEditing(true)
+                                    }}>
+                                      <Edit className="h-3 w-3 mr-1" />
+                                      Edit
+                                    </Button>
+                                    <Button size="sm" onClick={() => handleRunSuite(suite)} className="bg-green-600 hover:bg-green-700 text-white">
+                                      <Play className="h-3 w-3 mr-1" />
+                                      Run
+                                    </Button>
+                                  </div>
+                                </div>
+                              </CardHeader>
+                            </Card>
+                          )
+                        })}
+                        
+                        {folderSuites.length === 0 && (
+                          <div className="text-center py-12 text-gray-500">
+                            <Folder className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                            <p>No test suites in this folder</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-500">
+                      <div className="text-center">
+                        <Folder className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">Select a folder</p>
+                        <p className="text-sm">Choose a folder from the sidebar to view test suites</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className={viewMode === 'grid' 
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
+                : "space-y-4"
+              }>
               {filteredSuites.map((suite) => {
                 const isUISuite = suite.type === "UI"
                 const totalSteps = isUISuite 
@@ -755,7 +882,8 @@ export default function APITestFramework() {
                   </Card>
                 )
               })}
-            </div>
+              </div>
+            )}
 
             {/* Empty state */}
             {!isLoading && filteredSuites.length === 0 && (
