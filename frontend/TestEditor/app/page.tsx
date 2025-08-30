@@ -39,6 +39,7 @@ import { FrameworkConfigModal } from "@/components/framework-config-modal"
 import { SuiteRunnerModal } from "@/components/suite-runner-modal"
 import { RunAllSuitesModal } from "@/components/run-all-suites-modal"
 import { FolderTree } from "@/components/folder-tree"
+import { AIChat } from "@/components/ai-chat"
 
 import type { TestSuite } from "@/types/test-suite"
 
@@ -966,6 +967,9 @@ export default function APITestFramework() {
                 currentPath={frameworkPath}
             />
         )}
+        
+        {/* AI Chat Component */}
+        <AIChat />
       </>
   )
 }
