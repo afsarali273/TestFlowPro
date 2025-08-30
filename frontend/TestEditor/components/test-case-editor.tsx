@@ -12,7 +12,12 @@ import { Plus, Trash2, Save, X, ArrowLeft, Copy } from "lucide-react"
 import { TestDataEditor } from "@/components/test-data-editor"
 import { TestStepsEditor } from "@/components/test-steps-editor"
 import { type TestCase, type TestData, type TestStep, validateTestCase } from "@/types/test-suite"
-import ReactJson from "react-json-view"
+import dynamic from "next/dynamic"
+
+const ReactJson = dynamic(() => import("react-json-view"), {
+  ssr: false,
+  loading: () => <div className="p-4 text-center text-gray-500">Loading JSON viewer...</div>
+})
 import MonacoEditor from "@monaco-editor/react"
 
 interface TestCaseEditorProps {

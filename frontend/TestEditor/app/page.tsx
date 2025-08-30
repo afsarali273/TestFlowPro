@@ -16,12 +16,18 @@ import {
   Zap,
   Globe,
   PlayCircle,
+  MousePointer,
+  ChevronDown,
+  ChevronRight,
+  List,
+  Grid3X3,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { TestSuiteEditor } from "@/components/test-suite-editor"
 import { TestSuiteRunner } from "@/components/test-suite-runner"
@@ -44,6 +50,10 @@ export default function APITestFramework() {
   const [showTestCasesModal, setShowTestCasesModal] = useState(false)
   const [showSuiteRunnerModal, setShowSuiteRunnerModal] = useState(false)
   const [showRunAllSuitesModal, setShowRunAllSuitesModal] = useState(false)
+  const [expandedSuites, setExpandedSuites] = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab] = useState<'all' | 'ui' | 'api'>('all')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+
 
   // Add path configuration states
   const [testSuitePath, setTestSuitePath] = useState<string>("")
@@ -172,6 +182,18 @@ export default function APITestFramework() {
     return map[status.toLowerCase()] || "bg-gray-100 text-gray-800"
   }
 
+  const toggleSuiteExpansion = (suiteId: string) => {
+    setExpandedSuites(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(suiteId)) {
+        newSet.delete(suiteId)
+      } else {
+        newSet.add(suiteId)
+      }
+      return newSet
+    })
+  }
+
   /* --------------------------- handlers ----------------------------- */
   // Update the handleCreateSuite function to use a more deterministic ID
   const handleCreateSuite = () => {
@@ -227,8 +249,30 @@ export default function APITestFramework() {
   }
 
   // Filter suites with unique check
+  // Filter suites with unique check
   const filteredSuites = testSuites
-      .filter((s) => s.suiteName.toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter((suite) => {
+        // Search term filter (suite name, tags, test names)
+        const matchesSearch = !searchTerm || 
+          suite.suiteName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (suite.tags && suite.tags.some(tag => 
+            Object.values(tag).some(value => 
+              value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+            )
+          )) ||
+          suite.testCases.some(tc => 
+            tc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (tc.testData && tc.testData.some(td => td.name.toLowerCase().includes(searchTerm.toLowerCase()))) ||
+            (tc.testSteps && tc.testSteps.some(ts => ts.keyword.toLowerCase().includes(searchTerm.toLowerCase())))
+          )
+        
+        // Tab filter
+        const matchesTab = activeTab === 'all' || 
+          (activeTab === 'ui' && suite.type === 'UI') ||
+          (activeTab === 'api' && suite.type === 'API')
+        
+        return matchesSearch && matchesTab
+      })
       .filter(
           (suite, index, self) => index === self.findIndex((s) => s.id === suite.id), // Remove any remaining duplicates
       )
@@ -337,11 +381,11 @@ export default function APITestFramework() {
           {/* Main Content */}
           <div className="max-w-7xl mx-auto px-6 py-8">
             {/* Search and Stats Section */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <Input
-                      placeholder="Search test suites..."
+                      placeholder="Search suites, tags, test cases..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-80 h-11 pl-4 pr-4 border-gray-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm"
@@ -361,7 +405,7 @@ export default function APITestFramework() {
                 )}
               </div>
 
-              {/* Run All Suites Button - Back in the right position */}
+              {/* Run All Suites Button */}
               <Button
                   variant="outline"
                   onClick={() => setShowRunAllSuitesModal(true)}
@@ -374,6 +418,49 @@ export default function APITestFramework() {
               </Button>
             </div>
 
+            {/* Filter Tabs and View Toggle */}
+            <div className="flex items-center justify-between mb-6">
+              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'all' | 'ui' | 'api')}>
+                <TabsList className="grid w-full grid-cols-3 max-w-md">
+                  <TabsTrigger value="all" className="flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    All ({testSuites.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="ui" className="flex items-center gap-2">
+                    <MousePointer className="h-4 w-4" />
+                    UI ({testSuites.filter(s => s.type === 'UI').length})
+                  </TabsTrigger>
+                  <TabsTrigger value="api" className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    API ({testSuites.filter(s => s.type === 'API').length})
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                <Button
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    className="h-8 px-3"
+                >
+                  <List className="h-4 w-4 mr-1" />
+                  List
+                </Button>
+                <Button
+                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    className="h-8 px-3"
+                >
+                  <Grid3X3 className="h-4 w-4 mr-1" />
+                  Grid
+                </Button>
+              </div>
+            </div>
+
+
+
             {/* Loading state */}
             {isLoading && (
                 <div className="text-center py-16">
@@ -384,96 +471,264 @@ export default function APITestFramework() {
                 </div>
             )}
 
-            {/* Suite grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredSuites.map((suite) => (
+            {/* Suite Layout */}
+            <div className={viewMode === 'grid' 
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
+              : "space-y-4"
+            }>
+              {filteredSuites.map((suite) => {
+                const isUISuite = suite.type === "UI"
+                const totalSteps = isUISuite 
+                  ? suite.testCases.reduce((acc, tc) => acc + (tc.testSteps?.length || 0), 0)
+                  : suite.testCases.reduce((acc, tc) => acc + (tc.testData?.length || 0), 0)
+                
+                return (
                   <Card
                       key={suite.id}
-                      className="group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-white/80 backdrop-blur-sm hover:bg-white"
+                      className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-white/80 backdrop-blur-sm hover:bg-white ${
+                        isUISuite ? 'border-l-4 border-l-purple-500' : 'border-l-4 border-l-blue-500'
+                      } ${viewMode === 'list' ? 'flex flex-row' : ''}`}
                   >
                     <CardHeader className="pb-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg shadow-sm group-hover:shadow-md transition-shadow duration-300">
-                            <FileText className="h-5 w-5 text-white" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200">
-                              {suite.suiteName}
-                            </CardTitle>
-                            <CardDescription className="text-sm text-gray-600 mt-1">
-                              {suite.testCases.length} test case{suite.testCases.length !== 1 ? "s" : ""}
+                      {/* Title Row - Full Width */}
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200 flex-1">
+                            {suite.suiteName}
+                          </CardTitle>
+                          <Badge className={`${getStatusBadge(suite.status || "Not Started")} font-medium px-3 py-1 flex-shrink-0 ml-3`}>
+                            {suite.status}
+                          </Badge>
+                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs font-medium ${
+                            isUISuite 
+                              ? 'bg-purple-50 text-purple-700 border-purple-200' 
+                              : 'bg-blue-50 text-blue-700 border-blue-200'
+                          }`}
+                        >
+                          {isUISuite ? '🖱️ UI Tests' : '🌐 API Tests'}
+                        </Badge>
+                      </div>
+                      
+                      {/* Details Row */}
+                      <div className="flex items-center gap-3">
+                        <div className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-sm group-hover:shadow-md transition-shadow duration-300 ${
+                          isUISuite 
+                            ? 'bg-gradient-to-br from-purple-500 to-pink-500' 
+                            : 'bg-gradient-to-br from-blue-500 to-indigo-500'
+                        }`}>
+                          {isUISuite ? (
+                            <MousePointer className="h-6 w-6 text-white" />
+                          ) : (
+                            <Globe className="h-6 w-6 text-white" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <CardDescription className="text-sm text-gray-600">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-4">
+                                <span>{suite.testCases.length} test case{suite.testCases.length !== 1 ? "s" : ""}</span>
+                                <span className="text-gray-400">•</span>
+                                <span>{totalSteps} {isUISuite ? 'step' : 'data item'}{totalSteps !== 1 ? 's' : ''}</span>
+                              </div>
                               {suite.fileName && (
-                                  <span className="block text-xs text-gray-500 mt-1">📄 {suite.fileName}</span>
+                                  <span className="block text-xs text-gray-500">📄 {suite.fileName}</span>
                               )}
                               {suite.baseUrl && (
-                                  <span className="flex items-center text-xs text-blue-600 mt-1">
-                              <Globe className="h-3 w-3 mr-1 flex-shrink-0" />
-                              <span className="break-all">{suite.baseUrl}</span>
-                            </span>
+                                  <span className="flex items-center text-xs text-blue-600">
+                                <Globe className="h-3 w-3 mr-1 flex-shrink-0" />
+                                <span className="break-all">{suite.baseUrl}</span>
+                              </span>
                               )}
-                            </CardDescription>
-                          </div>
+                            </div>
+                          </CardDescription>
                         </div>
-                        <Badge className={`${getStatusBadge(suite.status || "Not Started")} font-medium px-3 py-1 flex-shrink-0`}>
-                          {suite.status}
-                        </Badge>
                       </div>
                     </CardHeader>
 
-                    <CardContent className="pt-0">
-                      <div className="space-y-4">
-                        <div className="flex flex-wrap gap-2">
-                          {suite.tags?.map((tag, index) => (
-                              <div key={index} className="flex gap-1">
-                                {Object.entries(tag).map(([key, value]) => (
-                                    <Badge
-                                        key={key}
-                                        variant="secondary"
-                                        className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors duration-200"
-                                    >
-                                      {key}: {value}
-                                    </Badge>
-                                ))}
-                              </div>
-                          ))}
+                    <CardContent className={`pt-0 ${viewMode === 'list' ? 'flex-1 flex flex-col' : ''}`}>
+                      <div className={`space-y-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+                        {/* Test Cases Section */}
+                        <div className="bg-gray-50 rounded-lg">
+                          <button
+                            onClick={() => toggleSuiteExpansion(suite.id)}
+                            className="w-full p-3 flex items-center justify-between hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                          >
+                            <h4 className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                              {isUISuite ? (
+                                <><MousePointer className="h-3 w-3" /> UI Test Cases ({suite.testCases.length})</>
+                              ) : (
+                                <><FileText className="h-3 w-3" /> API Test Cases ({suite.testCases.length})</>
+                              )}
+                            </h4>
+                            {expandedSuites.has(suite.id) ? (
+                              <ChevronDown className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-gray-500" />
+                            )}
+                          </button>
+                          
+                          {expandedSuites.has(suite.id) && (
+                            <div className="px-3 pb-3 space-y-2 max-h-48 overflow-y-auto">
+                              {suite.testCases.map((testCase, idx) => {
+                                const caseSteps = isUISuite ? testCase.testSteps?.length || 0 : testCase.testData?.length || 0
+                                return (
+                                  <div key={idx} className="bg-white p-2 rounded border border-gray-200">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs font-medium text-gray-800 truncate flex-1 mr-2">
+                                        {testCase.name}
+                                      </span>
+                                      <div className="flex items-center gap-1 flex-shrink-0">
+                                        {testCase.type && (
+                                          <Badge variant="outline" className="text-xs px-1 py-0">
+                                            {testCase.type}
+                                          </Badge>
+                                        )}
+                                        <span className="text-xs text-gray-500">
+                                          {caseSteps} {isUISuite ? 'steps' : 'items'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Test Case Details */}
+                                    {isUISuite && testCase.testSteps && testCase.testSteps.length > 0 && (
+                                      <div className="space-y-1">
+                                        {testCase.testSteps.slice(0, 3).map((step, stepIdx) => (
+                                          <div key={stepIdx} className="text-xs text-gray-600 flex items-center gap-2">
+                                            <Badge variant="secondary" className="text-xs px-1 py-0">
+                                              {step.keyword}
+                                            </Badge>
+                                            <span className="truncate">
+                                              {step.value || step.locator?.value || step.target || 'No target'}
+                                            </span>
+                                          </div>
+                                        ))}
+                                        {testCase.testSteps.length > 3 && (
+                                          <div className="text-xs text-gray-500 italic">+{testCase.testSteps.length - 3} more steps...</div>
+                                        )}
+                                      </div>
+                                    )}
+                                    
+                                    {!isUISuite && testCase.testData && testCase.testData.length > 0 && (
+                                      <div className="space-y-1">
+                                        {testCase.testData.slice(0, 2).map((data, dataIdx) => (
+                                          <div key={dataIdx} className="text-xs text-gray-600 flex items-center gap-2">
+                                            <Badge variant="secondary" className="text-xs px-1 py-0">
+                                              {data.method}
+                                            </Badge>
+                                            <span className="truncate font-mono">{data.endpoint}</span>
+                                          </div>
+                                        ))}
+                                        {testCase.testData.length > 2 && (
+                                          <div className="text-xs text-gray-500 italic">+{testCase.testData.length - 2} more data items...</div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                          <div className="flex items-center space-x-2">
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedSuite(suite)
-                                  setIsEditing(true)
-                                }}
-                                className="h-8 px-3 border-gray-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200"
-                            >
-                              <Edit className="h-3 w-3 mr-1" />
-                              Edit
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedSuite(suite)
-                                  setShowTestCasesModal(true)
-                                }}
-                                className="h-8 px-3 border-gray-300 hover:border-green-400 hover:bg-green-50 hover:text-green-700 transition-all duration-200"
-                            >
-                              <Eye className="h-3 w-3 mr-1" />
-                              View
-                            </Button>
+                        {/* Tags */}
+                        {suite.tags && suite.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {suite.tags.map((tag, index) => (
+                                <div key={index} className="flex gap-1">
+                                  {Object.entries(tag).map(([key, value]) => (
+                                      <Badge
+                                          key={key}
+                                          variant="secondary"
+                                          className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors duration-200"
+                                      >
+                                        {key}: {value}
+                                      </Badge>
+                                  ))}
+                                </div>
+                            ))}
                           </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className={`flex items-center ${viewMode === 'list' ? 'justify-end gap-2 pt-4 border-t border-gray-100' : 'justify-between pt-4 border-t border-gray-100'}`}>
+                          {viewMode === 'grid' && (
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedSuite(suite)
+                                    setIsEditing(true)
+                                  }}
+                                  className="h-8 px-3 border-gray-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200"
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedSuite(suite)
+                                    setShowTestCasesModal(true)
+                                  }}
+                                  className={`h-8 px-3 border-gray-300 transition-all duration-200 ${
+                                    isUISuite 
+                                      ? 'hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700'
+                                      : 'hover:border-green-400 hover:bg-green-50 hover:text-green-700'
+                                  }`}
+                              >
+                                <Eye className="h-3 w-3 mr-1" />
+                                Details
+                              </Button>
+                            </div>
+                          )}
 
                           <div className="flex items-center space-x-2">
+                            {viewMode === 'list' && (
+                              <>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedSuite(suite)
+                                      setIsEditing(true)
+                                    }}
+                                    className="h-8 px-3 border-gray-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200"
+                                >
+                                  <Edit className="h-3 w-3 mr-1" />
+                                  Edit
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedSuite(suite)
+                                      setShowTestCasesModal(true)
+                                    }}
+                                    className={`h-8 px-3 border-gray-300 transition-all duration-200 ${
+                                      isUISuite 
+                                        ? 'hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700'
+                                        : 'hover:border-green-400 hover:bg-green-50 hover:text-green-700'
+                                    }`}
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  Details
+                                </Button>
+                              </>
+                            )}
                             <Button
                                 size="sm"
                                 onClick={() => handleRunSuite(suite)}
                                 disabled={!frameworkPath || !suite.filePath}
-                                className="h-8 px-3 bg-green-600 hover:bg-green-700 text-white transition-all duration-200"
+                                className={`h-8 px-3 text-white transition-all duration-200 ${
+                                  isUISuite
+                                    ? 'bg-purple-600 hover:bg-purple-700'
+                                    : 'bg-green-600 hover:bg-green-700'
+                                }`}
                                 title={
                                   !frameworkPath
                                       ? "Configure framework path first"
@@ -498,7 +753,8 @@ export default function APITestFramework() {
                       </div>
                     </CardContent>
                   </Card>
-              ))}
+                )
+              })}
             </div>
 
             {/* Empty state */}

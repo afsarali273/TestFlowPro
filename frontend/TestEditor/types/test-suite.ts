@@ -77,15 +77,20 @@ export interface Tag {
 }
 
 export interface TestSuite {
+    id: string
     suiteName: string
-    type: "UI" | "API"
+    type?: "UI" | "API"
     tags?: Tag[]
     baseUrl: string
     testCases: TestCase[]
+    status?: string
+    fileName?: string
+    filePath?: string
 }
 
 export function validateTestSuite(suite: any): TestSuite {
     const validated: TestSuite = {
+        id: suite.id || "",
         suiteName: suite.suiteName || "",
         type: suite.type === "UI" ? "UI" : "API",
         baseUrl: suite.baseUrl || "",
