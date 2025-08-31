@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Bot, X, Send, Upload, FileText, Code, Globe, Sparkles, Copy, Check, RotateCcw } from 'lucide-react'
+import { Bot, X, Send, Upload, FileText, Code, Globe, Sparkles, Copy, Check, RotateCcw, Play, Square, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -34,6 +34,7 @@ export function AIChat() {
   const [curlCommand, setCurlCommand] = useState('')
   const [swaggerContent, setSwaggerContent] = useState('')
   const [uiSteps, setUiSteps] = useState('')
+  const [recordUrl, setRecordUrl] = useState('')
   const [generatedSuite, setGeneratedSuite] = useState<GeneratedSuite | null>(null)
   const [saveLocation, setSaveLocation] = useState('')
   const [fileName, setFileName] = useState('')
@@ -256,9 +257,43 @@ export function AIChat() {
     setCurlCommand('')
     setSwaggerContent('')
     setUiSteps('')
+    setRecordUrl('')
     setGeneratedSuite(null)
     setCopied(false)
     toast({ title: 'Reset', description: 'Chat cleared successfully' })
+  }
+
+  const handleStartRecording = async () => {
+    if (!recordUrl) return
+
+    try {
+      setIsLoading(true)
+      
+      const response = await fetch('/api/mcp-standalone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: recordUrl })
+      })
+      
+      const result = await response.json()
+      
+      if (response.ok) {
+        toast({
+          title: 'Playwright Codegen Started',
+          description: result.message
+        })
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Failed to Start Recording',
+        description: error.message || 'Could not start Playwright codegen',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -307,11 +342,12 @@ export function AIChat() {
               </div>
 
               <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="chat">Chat</TabsTrigger>
                   <TabsTrigger value="curl">cURL</TabsTrigger>
                   <TabsTrigger value="swagger">Swagger</TabsTrigger>
                   <TabsTrigger value="ui">UI Steps</TabsTrigger>
+                  <TabsTrigger value="record">Record</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="chat" className="flex-1 flex flex-col max-h-[calc(100vh-400px)]">
@@ -439,6 +475,51 @@ export function AIChat() {
                       </>
                     )}
                   </Button>
+                </TabsContent>
+
+                <TabsContent value="record" className="flex-1 flex flex-col">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        URL to Record
+                      </label>
+                      <Input
+                        value={recordUrl}
+                        onChange={(e) => setRecordUrl(e.target.value)}
+                        placeholder="https://example.com"
+                        className="mb-4"
+                      />
+                    </div>
+                    
+                    <Button
+                      onClick={handleStartRecording}
+                      disabled={!recordUrl || isLoading}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Start Playwright Codegen
+                    </Button>
+                    
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-medium text-blue-900 mb-2">🎬 Playwright Codegen</h4>
+                      <div className="text-sm text-blue-700 space-y-2">
+                        <p>1. Enter the URL you want to test</p>
+                        <p>2. Click "Start Playwright Codegen"</p>
+                        <p>3. Browser will open with recording tools</p>
+                        <p>4. Perform your test actions</p>
+                        <p>5. Copy the generated code from Playwright Inspector</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <h5 className="font-medium text-green-900 mb-2">💡 Tips</h5>
+                      <div className="text-xs text-green-700 space-y-1">
+                        <p>• Use the Playwright Inspector to see generated code</p>
+                        <p>• Record multiple test scenarios</p>
+                        <p>• Copy and convert the code to TestFlow Pro format</p>
+                      </div>
+                    </div>
+                  </div>
                 </TabsContent>
               </Tabs>
 

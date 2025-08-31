@@ -1,0 +1,62 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["playwright-mcp"],
+      "env": {
+        "PLAYWRIGHT_HEADLESS": "false"
+      }
+    }
+  },
+  "tools": {
+    "playwright/goto": {
+      "description": "Navigate to a URL",
+      "parameters": {
+        "url": { "type": "string", "required": true }
+      }
+    },
+    "playwright/click": {
+      "description": "Click an element",
+      "parameters": {
+        "selector": { "type": "string", "required": true }
+      }
+    },
+    "playwright/fill": {
+      "description": "Fill input field",
+      "parameters": {
+        "selector": { "type": "string", "required": true },
+        "value": { "type": "string", "required": true }
+      }
+    },
+    "playwright/press": {
+      "description": "Press keyboard key",
+      "parameters": {
+        "key": { "type": "string", "required": true }
+      }
+    },
+    "playwright/waitForSelector": {
+      "description": "Wait for element to appear",
+      "parameters": {
+        "selector": { "type": "string", "required": true }
+      }
+    },
+    "playwright/screenshot": {
+      "description": "Take screenshot",
+      "parameters": {
+        "path": { "type": "string", "required": false }
+      }
+    },
+    "playwright/getText": {
+      "description": "Get text content",
+      "parameters": {
+        "selector": { "type": "string", "required": true }
+      }
+    },
+    "playwright/hover": {
+      "description": "Hover over element",
+      "parameters": {
+        "selector": { "type": "string", "required": true }
+      }
+    }
+  }
+}

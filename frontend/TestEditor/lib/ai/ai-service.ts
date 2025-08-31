@@ -4,7 +4,6 @@ import { RunnableSequence } from '@langchain/core/runnables'
 import { StringOutputParser } from '@langchain/core/output_parsers'
 import { MemoryVectorStore } from 'langchain/vectorstores/memory'
 import { OllamaEmbeddings } from '@langchain/ollama'
-import { Document } from '@langchain/core/documents'
 import { RAGKnowledgeBase } from './rag-knowledge-base'
 import { TestSuite, validateTestSuite } from '../../types/test-suite'
 
@@ -36,7 +35,7 @@ export class AIService {
 
   private async initializeVectorStore(testDataPath?: string) {
     const frameworkDocs = RAGKnowledgeBase.getFrameworkDocuments()
-    const defaultPath = testDataPath || '/Users/afsarali/Repository/TestFlowPro/testData/'
+    const defaultPath = testDataPath || '/Users/afsarali/Repository/TestFlowPro/testData'
     const exampleDocs = await RAGKnowledgeBase.loadTestSuiteExamples(defaultPath)
     
     const allDocuments = [...frameworkDocs, ...exampleDocs]
@@ -94,24 +93,32 @@ STRICT SCHEMA REQUIREMENTS:
 
 Respond ONLY with valid JSON using double quotes. No explanations.`
 
-    const uiTemplate = `Convert these UI test steps to TestFlow Pro UI test suite JSON:
+    const uiTemplate = `Convert Playwright code or UI steps to TestFlow Pro JSON:
 
 Context: {context}
 
-UI Steps: {input}
+Input: {input}
 
-STRICT SCHEMA REQUIREMENTS:
-- id: generate unique string
+CONVERSION RULES:
+- Extract page.goto() → goto keyword with URL in value
+- Extract page.getByRole() → locator with strategy "role"
+- Extract page.getByLabel() → locator with strategy "label" 
+- Extract page.getByText() → locator with strategy "text"
+- Extract page.getByPlaceholder() → locator with strategy "placeholder"
+- Extract page.locator() → target field with CSS selector
+- Extract .click() → click keyword
+- Extract .fill() → type keyword with value
+- Extract .selectOption() → select keyword with value
+
+STRICT SCHEMA:
+- id: unique string
 - suiteName: descriptive name
 - type: "UI"
-- baseUrl: empty string for UI
-- testCases: array with name, type "UI", testSteps array
-- testSteps: id, keyword, locator (preferred) or target (fallback), value
-- Keywords: openBrowser, goto, click, type, select, waitFor, assertText, assertVisible, screenshot
-- Locator strategies: role, label, text, placeholder, altText, testId, css
-- Use locator object with strategy and value, prefer semantic locators (role, label, text) over CSS
+- baseUrl: ""
+- testCases: array with name, type "UI", testSteps
+- testSteps: id, keyword, locator OR target, value
 
-Respond ONLY with valid JSON using double quotes. No explanations.`
+Respond ONLY with valid JSON using double quotes.`
 
     return {
       general: RunnableSequence.from([
@@ -150,7 +157,7 @@ Respond ONLY with valid JSON using double quotes. No explanations.`
       ui: RunnableSequence.from([
         async (input: { input: string }) => {
           const context = this.vectorStore 
-            ? (await this.vectorStore.similaritySearch('UI structure playwright', 2)).map(doc => doc.pageContent).join('\n\n')
+            ? (await this.vectorStore.similaritySearch('playwright conversion UI', 3)).map(doc => doc.pageContent).join('\n\n')
             : ''
           return { context, input: input.input }
         },

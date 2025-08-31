@@ -174,28 +174,30 @@ export function FolderTree({ testSuites, activeTab, onFolderSelect, selectedFold
         >
           {node.isFolder && node.children.length > 0 && (
             isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-gray-500" />
+              <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-gray-500" />
+              <ChevronRight className="h-4 w-4 text-gray-500 flex-shrink-0" />
             )
           )}
           
           {node.isFolder ? (
             isExpanded ? (
-              <FolderOpen className="h-4 w-4 text-blue-500" />
+              <FolderOpen className="h-4 w-4 text-blue-500 flex-shrink-0" />
             ) : (
-              <Folder className="h-4 w-4 text-blue-500" />
+              <Folder className="h-4 w-4 text-blue-500 flex-shrink-0" />
             )
           ) : (
-            <FileText className="h-4 w-4 text-gray-500" />
+            <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
           )}
           
-          <span className="text-sm font-medium text-gray-700 flex-1">
-            {node.name}
-          </span>
+          <div className="flex-1 min-w-0 overflow-x-scroll max-w-[180px]" style={{scrollbarWidth: 'thin'}}>
+            <span className="text-sm font-medium text-gray-700 whitespace-nowrap block">
+              {node.name}
+            </span>
+          </div>
           
           {suiteCount > 0 && (
-            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
+            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full flex-shrink-0">
               {suiteCount}
             </span>
           )}
@@ -203,9 +205,11 @@ export function FolderTree({ testSuites, activeTab, onFolderSelect, selectedFold
 
         {node.isFolder && isExpanded && (
           <>
+            {/* Render child folders first */}
             {node.children.map(child => 
               renderNode(child, depth + 1)
             )}
+            {/* Then render direct files */}
             {node.suites.filter(suite => {
               // Only show suites that are directly in this folder (not in subfolders)
               if (!suite.filePath) return false
@@ -229,11 +233,13 @@ export function FolderTree({ testSuites, activeTab, onFolderSelect, selectedFold
                 style={{ paddingLeft: `${(depth + 1) * 16 + 12}px` }}
                 onClick={() => onFolderSelect(node.path, [suite])}
               >
-                <FileText className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600 flex-1">
-                  {suite.fileName || suite.filePath?.split('/').pop() || 'Unknown file'}
-                </span>
-                <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                <FileText className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0 overflow-x-scroll max-w-[180px]" style={{scrollbarWidth: 'thin'}}>
+                  <span className="text-sm text-gray-600 whitespace-nowrap block">
+                    {suite.fileName || suite.filePath?.split('/').pop() || 'Unknown file'}
+                  </span>
+                </div>
+                <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full flex-shrink-0">
                   {suite.type === 'UI' ? 'UI' : 'API'}
                 </span>
               </div>

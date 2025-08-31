@@ -6,7 +6,13 @@
     "test": "npx ts-node src/runner.ts",
     "test:smoke": "npx ts-node src/runner.ts --serviceName=digitalLibrary --suiteType=smoke",
     "generate:swagger": "npx ts-node src/swaggerSuiteGenerator.ts /Users/afsarali/Repository/POC/swagger.json",
-    "report:html": "npx ts-node src/generateHtmlReport.ts"
+    "report:html": "npx ts-node src/generateHtmlReport.ts",
+    "mcp:server": "node start-mcp-server.js",
+    "mcp:test": "node test-working.js",
+    "mcp:test-simple": "node test-simple.js",
+    "mcp:test-ts": "node test-mcp.js",
+    "mcp:tools": "node test-tools.js",
+    "mcp:install": "npm install -g playwright-mcp && npx playwright install"
   },
   "author": "Afsar",
   "license": "ISC",
@@ -20,6 +26,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "^9.8.0",
+    "@modelcontextprotocol/sdk": "^1.17.4",
     "@playwright/test": "^1.55.0",
     "ajv": "^8.17.1",
     "axios": "^1.10.0",
@@ -32,6 +39,7 @@
     "p-limit": "^6.2.0",
     "playwright": "^1.55.0",
     "uuid": "^11.1.0",
+    "ws": "^8.18.3",
     "xml2js": "^0.6.2",
     "xmldom": "^0.6.0",
     "xpath": "^0.0.34"

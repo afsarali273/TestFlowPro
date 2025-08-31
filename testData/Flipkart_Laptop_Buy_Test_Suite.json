@@ -1,0 +1,101 @@
+{
+  "id": "Flipkart_Laptop_Buy",
+  "suiteName": "Flipkart Laptop Buy Test Suite",
+  "type": "UI",
+  "baseUrl": "",
+  "tags": [
+    {
+      "key": "Environment",
+      "value": "Production"
+    },
+    {
+      "key": "Browser",
+      "value": "Chrome"
+    }
+  ],
+  "testCases": [
+    {
+      "name": "Buy Laptop",
+      "status": "Not Started",
+      "type": "UI",
+      "testData": [],
+      "testSteps": [
+        {
+          "id": "Step_1",
+          "keyword": "navigateToUrl",
+          "target": {
+            "locatorType": "url",
+            "locatorValue": "https://www.flipkart.com"
+          },
+          "value": "",
+          "assertions": []
+        },
+        {
+          "id": "Step_2",
+          "keyword": "waitForElementPresent",
+          "target": {
+            "locatorType": "xpath",
+            "locatorValue": "//input[@name='q']"
+          },
+          "value": "",
+          "assertions": [
+            {
+              "type": "present",
+              "jsonPath": ""
+            }
+          ]
+        },
+        {
+          "id": "Step_3",
+          "keyword": "enterText",
+          "target": {
+            "locatorType": "xpath",
+            "locatorValue": "//input[@name='q']"
+          },
+          "value": "Laptops",
+          "assertions": []
+        },
+        {
+          "id": "Step_4",
+          "keyword": "clickElement",
+          "target": {
+            "locatorType": "xpath",
+            "locatorValue": "//button[@type='submit']"
+          },
+          "value": "",
+          "assertions": [
+            {
+              "type": "present",
+              "jsonPath": ""
+            }
+          ]
+        },
+        {
+          "id": "Step_5",
+          "keyword": "waitForElementPresent",
+          "target": {
+            "locatorType": "xpath",
+            "locatorValue": "//a[@class='_1NOKbV']"
+          },
+          "value": "",
+          "assertions": [
+            {
+              "type": "present",
+              "jsonPath": ""
+            }
+          ]
+        },
+        {
+          "id": "Step_6",
+          "keyword": "clickElement",
+          "target": {
+            "locatorType": "xpath",
+            "locatorValue": "//a[@class='_1NOKbV']"
+          },
+          "value": "",
+          "assertions": []
+        }
+      ]
+    }
+  ]
+}

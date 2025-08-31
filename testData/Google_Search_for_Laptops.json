@@ -1,0 +1,57 @@
+{
+  "id": "e4d3a6c9-0b15-46fa-b1ec-2f7c29c8adbf",
+  "suiteName": "Google Search for Laptops",
+  "type": "UI",
+  "baseUrl": "",
+  "tags": [],
+  "testCases": [
+    {
+      "name": "Search for Laptops on Google",
+      "status": "Not Started",
+      "type": "UI",
+      "testData": [],
+      "testSteps": [
+        {
+          "id": "b4e3c6a5-2b15-46fa-b1ec-f7d29f8adbc1",
+          "keyword": "openBrowser",
+          "locator": {
+            "strategy": "css",
+            "value": ""
+          },
+          "value": "https://www.google.com",
+          "assertions": []
+        },
+        {
+          "id": "e4d3a6c9-0b15-46fa-b1ec-f7c29f8adbc2",
+          "keyword": "goto",
+          "locator": {
+            "strategy": "css",
+            "value": ""
+          },
+          "value": "https://www.google.com",
+          "assertions": []
+        },
+        {
+          "id": "e4d3a6c9-0b15-46fa-b1ec-f7c29f8adbc3",
+          "keyword": "type",
+          "locator": {
+            "strategy": "css",
+            "value": "#tsf > div:nth-child(2) > div.A8SBwf > div.RNNFM > div.a4b2a > input"
+          },
+          "value": "laptop",
+          "assertions": []
+        },
+        {
+          "id": "e4d3a6c9-0b15-46fa-b1ec-f7c29f8adbc4",
+          "keyword": "click",
+          "locator": {
+            "strategy": "css",
+            "value": ""
+          },
+          "value": "//div[@role='button']",
+          "assertions": []
+        }
+      ]
+    }
+  ]
+}
