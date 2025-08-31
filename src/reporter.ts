@@ -21,12 +21,14 @@ export class Reporter {
     private startTime: number = 0;
     private suiteName: string = '';
     private tagsMap: { [key: string]: string } = {};
+    private runId: string = '';
 
-    start(suiteName: string, tags?: Tag[]) {
+    start(suiteName: string, tags?: Tag[], runId?: string) {
         this.suiteName = suiteName;
         this.report = [];
         this.startTime = Date.now();
         this.tagsMap = {};
+        this.runId = runId || `run-${Date.now()}`;
         if (tags) {
             for (const tag of tags) {
                 Object.entries(tag).forEach(([k, v]) => {
@@ -34,7 +36,7 @@ export class Reporter {
                 });
             }
         }
-        console.log(`Started reporting for suite: ${suiteName}`);
+        console.log(`Started reporting for suite: ${suiteName} (Run: ${this.runId})`);
     }
 
     add(entry: ReportEntry) {
@@ -59,6 +61,7 @@ export class Reporter {
         const output = {
             summary: {
                 suiteName: this.suiteName,
+                runId: this.runId,
                 tags: this.tagsMap,
                 totalTestCases,
                 totalDataSets,

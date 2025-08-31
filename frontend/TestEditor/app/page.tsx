@@ -321,7 +321,7 @@ export default function APITestFramework() {
                       TestFlow Pro
                     </h1>
                     <div className="flex items-center gap-3 mt-1">
-                      <p className="text-gray-600 font-medium">Advanced API Test Automation Platform</p>
+                      <p className="text-gray-600 font-medium">Advanced Test Automation Platform</p>
                       {testSuitePath && (
                           <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                             📁 {testSuitePath.split("/").pop() || testSuitePath}

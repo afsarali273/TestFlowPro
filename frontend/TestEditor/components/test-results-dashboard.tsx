@@ -52,6 +52,7 @@ interface TestResult {
 interface TestResultsData {
   summary: {
     suiteName: string
+    runId?: string
     tags: {
       serviceName: string
       suiteType: string
@@ -67,6 +68,18 @@ interface TestResultsData {
   results: TestResult[]
   fileName?: string
   lastModified?: string
+}
+
+interface TestRun {
+  runId: string
+  runName: string
+  suites: TestResultsData[]
+  totalSuites: number
+  totalTests: number
+  totalPassed: number
+  totalFailed: number
+  totalExecutionTime: number
+  lastModified: string
 }
 
 interface TestResultsDashboardProps {
@@ -272,7 +285,8 @@ const isXmlContent = (content: string): boolean => {
 }
 
 export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
-  const [allResults, setAllResults] = useState<TestResultsData[]>([])
+  const [allRuns, setAllRuns] = useState<TestRun[]>([])
+  const [selectedRun, setSelectedRun] = useState<TestRun | null>(null)
   const [selectedResult, setSelectedResult] = useState<TestResultsData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -282,6 +296,7 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
   const [sortBy, setSortBy] = useState<string>("date")
   const [selectedTestResult, setSelectedTestResult] = useState<TestResult | null>(null)
   const [showTestResultModal, setShowTestResultModal] = useState(false)
+  const [expandedResults, setExpandedResults] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     const savedResultsPath = localStorage.getItem("resultsPath")
@@ -303,11 +318,51 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
         throw new Error("Failed to load test results")
       }
 
-      const results = await response.json()
-      setAllResults(results)
+      const results: TestResultsData[] = await response.json()
+      
+      // Group results by runId
+      const runsMap = new Map<string, TestResultsData[]>()
+      
+      results.forEach(result => {
+        const runId = result.summary.runId || 'unknown-run'
+        if (!runsMap.has(runId)) {
+          runsMap.set(runId, [])
+        }
+        runsMap.get(runId)!.push(result)
+      })
+      
+      // Convert to TestRun objects
+      const runs: TestRun[] = Array.from(runsMap.entries()).map(([runId, suites]) => {
+        const totalSuites = suites.length
+        const totalTests = suites.reduce((sum, s) => sum + s.summary.totalDataSets, 0)
+        const totalPassed = suites.reduce((sum, s) => sum + s.summary.passed, 0)
+        const totalFailed = suites.reduce((sum, s) => sum + s.summary.failed, 0)
+        const totalExecutionTime = suites.reduce((sum, s) => sum + s.summary.executionTimeMs, 0)
+        const lastModified = suites.reduce((latest, s) => 
+          new Date(s.lastModified || 0) > new Date(latest) ? s.lastModified || latest : latest, 
+          suites[0]?.lastModified || new Date().toISOString()
+        )
+        
+        return {
+          runId,
+          runName: `Test Run ${runId.replace('run-', '')}`,
+          suites,
+          totalSuites,
+          totalTests,
+          totalPassed,
+          totalFailed,
+          totalExecutionTime,
+          lastModified
+        }
+      }).sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime())
+      
+      setAllRuns(runs)
 
-      if (results.length > 0) {
-        setSelectedResult(results[0])
+      if (runs.length > 0) {
+        setSelectedRun(runs[0])
+        if (runs[0].suites.length > 0) {
+          setSelectedResult(runs[0].suites[0])
+        }
       }
     } catch (err: any) {
       setError(err.message || "Failed to load test results")
@@ -371,57 +426,54 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
   }
 
   // Calculate overall statistics
-  const overallStats = allResults.reduce(
-    (acc, result) => ({
-      totalSuites: acc.totalSuites + 1,
-      totalTests: acc.totalTests + result.summary.totalDataSets,
-      totalPassed: acc.totalPassed + result.summary.passed,
-      totalFailed: acc.totalFailed + result.summary.failed,
-      totalExecutionTime: acc.totalExecutionTime + result.summary.executionTimeMs,
-      totalAssertions: acc.totalAssertions + result.summary.totalAssertionsPassed + result.summary.totalAssertionsFailed,
-      passedAssertions: acc.passedAssertions + result.summary.totalAssertionsPassed,
+  const overallStats = allRuns.reduce(
+    (acc, run) => ({
+      totalRuns: acc.totalRuns + 1,
+      totalSuites: acc.totalSuites + run.totalSuites,
+      totalTests: acc.totalTests + run.totalTests,
+      totalPassed: acc.totalPassed + run.totalPassed,
+      totalFailed: acc.totalFailed + run.totalFailed,
+      totalExecutionTime: acc.totalExecutionTime + run.totalExecutionTime,
     }),
     {
+      totalRuns: 0,
       totalSuites: 0,
       totalTests: 0,
       totalPassed: 0,
       totalFailed: 0,
       totalExecutionTime: 0,
-      totalAssertions: 0,
-      passedAssertions: 0,
     }
   )
 
 
 
-  // Filter and sort results
-  const filteredResults = allResults
-    .filter((result) => {
+  // Filter and sort runs
+  const filteredRuns = allRuns
+    .filter((run) => {
       if (!searchTerm) return true
       
       const searchLower = searchTerm.toLowerCase()
       
-      return result.summary.suiteName.toLowerCase().includes(searchLower) ||
-        (result.summary.tags && Object.values(result.summary.tags).some(tagValue => 
-          tagValue && tagValue.toString().toLowerCase().includes(searchLower)
-        )) ||
-        result.results.some(r => 
-          (r.testCase && r.testCase.toLowerCase().includes(searchLower)) || 
-          (r.dataSet && r.dataSet.toLowerCase().includes(searchLower))
+      return run.runName.toLowerCase().includes(searchLower) ||
+        run.suites.some(suite => 
+          suite.summary.suiteName.toLowerCase().includes(searchLower) ||
+          (suite.summary.tags && Object.values(suite.summary.tags).some(tagValue => 
+            tagValue && tagValue.toString().toLowerCase().includes(searchLower)
+          ))
         )
     })
     .sort((a, b) => {
       switch (sortBy) {
         case "name":
-          return a.summary.suiteName.localeCompare(b.summary.suiteName)
+          return a.runName.localeCompare(b.runName)
         case "success":
-          return calculateSuccessRate(b.summary.passed, b.summary.totalDataSets) - 
-                 calculateSuccessRate(a.summary.passed, a.summary.totalDataSets)
+          return calculateSuccessRate(b.totalPassed, b.totalTests) - 
+                 calculateSuccessRate(a.totalPassed, a.totalTests)
         case "time":
-          return b.summary.executionTimeMs - a.summary.executionTimeMs
+          return b.totalExecutionTime - a.totalExecutionTime
         case "date":
         default:
-          return new Date(b.lastModified || 0).getTime() - new Date(a.lastModified || 0).getTime()
+          return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
       }
     })
 
@@ -510,7 +562,7 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Test Results</h1>
-                <p className="text-sm text-gray-500">{overallStats.totalSuites} suites • {overallStats.totalTests} tests</p>
+                <p className="text-sm text-gray-500">{overallStats.totalRuns} runs • {overallStats.totalSuites} suites • {overallStats.totalTests} tests</p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -532,8 +584,8 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card className="border-0 shadow-sm">
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-gray-900">{overallStats.totalSuites}</div>
-              <div className="text-sm text-gray-600">Test Suites</div>
+              <div className="text-2xl font-bold text-gray-900">{overallStats.totalRuns}</div>
+              <div className="text-sm text-gray-600">Test Runs</div>
             </CardContent>
           </Card>
           
@@ -570,7 +622,7 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search suites..."
+                  placeholder="Search runs..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 h-9 border-gray-200"
@@ -580,43 +632,76 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
 
             <ScrollArea className="flex-1">
               <div className="p-3 space-y-2">
-                {filteredResults.map((result, index) => {
-                  const successRate = calculateSuccessRate(result.summary.passed, result.summary.totalDataSets)
-                  const isSelected = selectedResult?.summary.suiteName === result.summary.suiteName
+                {filteredRuns.map((run, index) => {
+                  const successRate = calculateSuccessRate(run.totalPassed, run.totalTests)
+                  const isSelected = selectedRun?.runId === run.runId
 
                   return (
-                    <div
-                      key={index}
-                      className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                        isSelected ? "bg-blue-50 border border-blue-200" : "hover:bg-gray-50"
-                      }`}
-                      onClick={() => setSelectedResult(result)}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium text-sm text-gray-900 truncate">
-                          {result.summary.suiteName}
-                        </h3>
-                        <div className={`w-2 h-2 rounded-full ${
-                          successRate === 100 ? "bg-green-500" :
-                          successRate >= 80 ? "bg-yellow-500" : "bg-red-500"
-                        }`} />
+                    <div key={index} className="space-y-2">
+                      <div
+                        className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                          isSelected ? "bg-blue-50 border border-blue-200" : "hover:bg-gray-50"
+                        }`}
+                        onClick={() => {
+                          setSelectedRun(run)
+                          if (run.suites.length > 0) {
+                            setSelectedResult(run.suites[0])
+                          }
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium text-sm text-gray-900 truncate">
+                            {run.runName}
+                          </h3>
+                          <div className={`w-2 h-2 rounded-full ${
+                            successRate === 100 ? "bg-green-500" :
+                            successRate >= 80 ? "bg-yellow-500" : "bg-red-500"
+                          }`} />
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-xs text-gray-600">
+                          <span>{run.totalSuites} suites • {run.totalTests} tests</span>
+                          <span>{successRate}% passed</span>
+                        </div>
+                        
+                        <div className="mt-2">
+                          <Progress value={successRate} className="h-1" />
+                        </div>
                       </div>
                       
-                      <div className="flex items-center justify-between text-xs text-gray-600">
-                        <span>{result.summary.totalDataSets} tests</span>
-                        <span>{successRate}% passed</span>
-                      </div>
-                      
-                      <div className="mt-2">
-                        <Progress value={successRate} className="h-1" />
-                      </div>
+                      {isSelected && (
+                        <div className="ml-4 space-y-1">
+                          {run.suites.map((suite, suiteIndex) => {
+                            const suiteSuccessRate = calculateSuccessRate(suite.summary.passed, suite.summary.totalDataSets)
+                            const isSuiteSelected = selectedResult?.summary.suiteName === suite.summary.suiteName
+                            
+                            return (
+                              <div
+                                key={suiteIndex}
+                                className={`p-2 rounded cursor-pointer text-xs transition-colors ${
+                                  isSuiteSelected ? "bg-blue-100" : "hover:bg-gray-100"
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedResult(suite)
+                                }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="truncate">{suite.summary.suiteName}</span>
+                                  <span className="text-gray-500">{suiteSuccessRate}%</span>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
 
-                {filteredResults.length === 0 && (
+                {filteredRuns.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
-                    <p className="text-sm">No results found</p>
+                    <p className="text-sm">No runs found</p>
                   </div>
                 )}
               </div>
@@ -625,7 +710,7 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
 
           {/* Enhanced Main Content */}
           <div className="flex-1 overflow-hidden">
-            {selectedResult ? (
+            {selectedResult && selectedRun ? (
               <div className="bg-white rounded-lg shadow-lg border border-gray-200 h-full flex flex-col">
                 <div className="p-3 border-b border-gray-200 flex-shrink-0">
                   <div className="flex items-center justify-between mb-2">

@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'TestFlow Pro',
-  description: 'Advanced API Test Automation Generator',
+  description: 'Advanced Test Automation Generator',
   generator: '',
 }
 

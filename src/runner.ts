@@ -25,7 +25,7 @@ function suiteHasTags(suite: TestSuite, filters: Record<string, string>): boolea
     return true;
 }
 
-async function runSuiteFromFile(filePath: string, filters: Record<string, string>) {
+async function runSuiteFromFile(filePath: string, filters: Record<string, string>, runId?: string) {
     if (!fs.existsSync(filePath)) {
         console.error(`❌ File not found: ${filePath}`);
         return;
@@ -39,7 +39,7 @@ async function runSuiteFromFile(filePath: string, filters: Record<string, string
     }
 
     const reporter = new Reporter();
-    reporter.start(suite.suiteName || path.basename(filePath), suite.tags);
+    reporter.start(suite.suiteName || path.basename(filePath), suite.tags, runId);
 
     console.log(`\n▶️ Starting Suite: ${suite.suiteName || path.basename(filePath)}`);
 
@@ -51,16 +51,19 @@ async function runSuiteFromFile(filePath: string, filters: Record<string, string
 async function runAllSuitesParallel(filters: Record<string, string>) {
     const files = fs.readdirSync(suitesDir).filter(f => f.endsWith('.json'));
     const limit = pLimit(maxParallel);
+    const runId = `run-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+
+    console.log(`\n🚀 Starting Test Run: ${runId}`);
 
     const tasks = files.map((file) =>
         limit(() => {
             const fullPath = path.join(suitesDir, file);
-            return runSuiteFromFile(fullPath, filters);
+            return runSuiteFromFile(fullPath, filters, runId);
         })
     );
 
     await Promise.all(tasks);
-    console.log(`\n✅ All suites completed with max parallelism = ${maxParallel}`);
+    console.log(`\n✅ Test Run ${runId} completed with max parallelism = ${maxParallel}`);
 }
 
 async function main() {
@@ -71,7 +74,8 @@ async function main() {
         const fullPath = path.isAbsolute(file)
             ? file
             : path.join(suitesDir, file);
-        await runSuiteFromFile(fullPath, filters);
+        const runId = `run-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+        await runSuiteFromFile(fullPath, filters, runId);
     } else {
         await runAllSuitesParallel(filters);
     }
