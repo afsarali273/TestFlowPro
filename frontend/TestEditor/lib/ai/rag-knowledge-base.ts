@@ -58,7 +58,8 @@ export class RAGKnowledgeBase {
           'api-conversion-examples.json',
           'api-testflow-schema.json',
           'api-testdata-format.md',
-          'curl-conversion-rules.md'
+          'curl-conversion-rules.md',
+          'postman-conversion-examples.md'
         ]
       }
       

@@ -259,7 +259,7 @@ paths:
 
 ## Postman Collection to TestFlowPro JSON
 
-### Postman Request
+### Simple Postman Request
 ```json
 // Postman Collection Item
 {
@@ -281,21 +281,57 @@ paths:
 }
 ```
 ```json
-// TestFlowPro JSON
+// Complete TestFlow Pro Test Suite
 {
-  "method": "GET",
-  "endpoint": "/users/{{userId}}",
-  "headers": {
-    "Authorization": "Bearer {{token}}"
-  },
-  "assertions": [
+  "id": "get-user-postman-test",
+  "suiteName": "Get User Test Suite",
+  "type": "API",
+  "baseUrl": "{{baseUrl}}",
+  "timeout": 30000,
+  "tags": [
+    {"source": "@postman"},
+    {"collection": "@user-api"}
+  ],
+  "testCases": [
     {
-      "type": "statusCode",
-      "expected": 200
-    },
-    {
-      "type": "exists",
-      "jsonPath": "$.id"
+      "name": "User Retrieval Operations",
+      "type": "REST",
+      "testData": [
+        {
+          "name": "Get User - Valid ID with Auth",
+          "method": "GET",
+          "endpoint": "/users/{{userId}}",
+          "headers": {
+            "Authorization": "Bearer {{token}}"
+          },
+          "assertions": [
+            {"type": "statusCode", "expected": 200},
+            {"type": "exists", "jsonPath": "$.id"}
+          ]
+        },
+        {
+          "name": "Get User - Unauthorized Access",
+          "method": "GET",
+          "endpoint": "/users/{{userId}}",
+          "headers": {
+            "Accept": "application/json"
+          },
+          "assertions": [
+            {"type": "statusCode", "expected": 401}
+          ]
+        },
+        {
+          "name": "Get User - Invalid User ID",
+          "method": "GET",
+          "endpoint": "/users/999999",
+          "headers": {
+            "Authorization": "Bearer {{token}}"
+          },
+          "assertions": [
+            {"type": "statusCode", "expected": 404}
+          ]
+        }
+      ]
     }
   ]
 }
