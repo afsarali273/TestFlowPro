@@ -1,0 +1,176 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TestFlowPro UI Testing Schema",
+  "description": "JSON Schema for UI test suites using Playwright in TestFlowPro",
+  "type": "object",
+  "properties": {
+    "suiteName": {
+      "type": "string",
+      "description": "Name of the UI test suite"
+    },
+    "baseUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Base URL for the application under test"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "serviceName": {"type": "string"},
+          "suiteType": {"type": "string"}
+        }
+      }
+    },
+    "testCases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/UITestCase"
+      }
+    }
+  },
+  "required": ["suiteName", "testCases"],
+  "definitions": {
+    "UITestCase": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "testData": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UITestStep"
+          }
+        }
+      },
+      "required": ["name", "testData"]
+    },
+    "UITestStep": {
+      "type": "object",
+      "properties": {
+        "id": {"type": "string"},
+        "keyword": {
+          "type": "string",
+          "enum": [
+            "click", "fill", "check", "uncheck", "select", "hover", "press",
+            "goto", "waitForTimeout", "screenshot", "dragAndDrop",
+            "assertVisible", "assertHidden", "assertHaveText", "assertHaveCount",
+            "assertEnabled", "assertDisabled", "assertChecked", "assertUnchecked"
+          ]
+        },
+        "locator": {
+          "$ref": "#/definitions/UILocatorDefinition"
+        },
+        "value": {"type": "string"},
+        "options": {"type": "object"}
+      },
+      "required": ["keyword"],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "keyword": {
+                "enum": ["click", "check", "uncheck", "hover", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", "assertChecked", "assertUnchecked"]
+              }
+            }
+          },
+          "then": {
+            "required": ["locator"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "keyword": {
+                "enum": ["fill", "press", "select", "assertHaveText"]
+              }
+            }
+          },
+          "then": {
+            "required": ["locator", "value"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "keyword": {
+                "enum": ["goto", "waitForTimeout", "screenshot"]
+              }
+            }
+          },
+          "then": {
+            "required": ["value"]
+          }
+        }
+      ]
+    },
+    "UILocatorDefinition": {
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["role", "label", "text", "testId", "placeholder", "altText", "title", "css", "xpath"]
+        },
+        "value": {"type": "string"},
+        "options": {
+          "$ref": "#/definitions/UILocatorOptions"
+        },
+        "filter": {
+          "$ref": "#/definitions/UIFilterDefinition"
+        }
+      },
+      "required": ["strategy", "value"]
+    },
+    "UILocatorOptions": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "exact": {"type": "boolean"},
+        "level": {"type": "number"},
+        "checked": {"type": "boolean"},
+        "disabled": {"type": "boolean"},
+        "expanded": {"type": "boolean"},
+        "includeHidden": {"type": "boolean"},
+        "pressed": {"type": "boolean"},
+        "selected": {"type": "boolean"},
+        "hasText": {"type": "string"},
+        "hasNotText": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "UIFilterDefinition": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["hasText", "has", "hasNot"]
+        }
+      },
+      "required": ["type"],
+      "allOf": [
+        {
+          "if": {
+            "properties": {"type": {"const": "hasText"}}
+          },
+          "then": {
+            "properties": {
+              "value": {"type": "string"}
+            },
+            "required": ["value"]
+          }
+        },
+        {
+          "if": {
+            "properties": {"type": {"enum": ["has", "hasNot"]}}
+          },
+          "then": {
+            "properties": {
+              "locator": {"$ref": "#/definitions/UILocatorDefinition"}
+            },
+            "required": ["locator"]
+          }
+        }
+      ]
+    }
+  }
+}

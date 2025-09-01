@@ -1,0 +1,86 @@
+{
+  "id": "Playwright_Navigation_Test_L1VzZXJz",
+  "suiteName": "Playwright Navigation Test",
+  "type": "UI",
+  "baseUrl": "",
+  "tags": [],
+  "testCases": [
+    {
+      "name": "Navigation Test",
+      "status": "Not Started",
+      "type": "UI",
+      "testData": [],
+      "testSteps": [
+        {
+          "id": "",
+          "keyword": "goto",
+          "value": "https://playwright.dev/",
+          "assertions": []
+        },
+        {
+          "id": "",
+          "keyword": "click",
+          "locator": {
+            "strategy": "role",
+            "value": "link",
+            "options": {
+              "name": "Get started"
+            }
+          },
+          "assertions": []
+        },
+        {
+          "id": "",
+          "keyword": "click",
+          "locator": {
+            "strategy": "role",
+            "value": "link",
+            "options": {
+              "name": "How to install Playwright"
+            }
+          },
+          "assertions": []
+        },
+        {
+          "id": "",
+          "keyword": "click",
+          "locator": {
+            "strategy": "button",
+            "value": "Search (Command+K)"
+          },
+          "assertions": []
+        },
+        {
+          "id": "",
+          "keyword": "fill",
+          "locator": {
+            "strategy": "role",
+            "value": "searchbox"
+          },
+          "value": "API",
+          "assertions": []
+        },
+        {
+          "id": "",
+          "keyword": "press",
+          "value": "Enter",
+          "assertions": []
+        },
+        {
+          "id": "",
+          "keyword": "click",
+          "locator": {
+            "strategy": "role",
+            "value": "heading",
+            "options": {
+              "name": "Mock browser APIs"
+            }
+          },
+          "assertions": []
+        }
+      ]
+    }
+  ],
+  "status": "Not Started",
+  "filePath": "/Users/afsarali/Repository/TestFlowPro/testData/Playwright_Navigation_Test.json"
+}

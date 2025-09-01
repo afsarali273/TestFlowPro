@@ -40,6 +40,7 @@ import { SuiteRunnerModal } from "@/components/suite-runner-modal"
 import { RunAllSuitesModal } from "@/components/run-all-suites-modal"
 import { FolderTree } from "@/components/folder-tree"
 import { AIChat } from "@/components/ai-chat"
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 
 import type { TestSuite } from "@/types/test-suite"
 
@@ -59,6 +60,8 @@ export default function APITestFramework() {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
   const [folderSuites, setFolderSuites] = useState<TestSuite[]>([])
   const [showFolderView, setShowFolderView] = useState(false)
+  const [suiteToDelete, setSuiteToDelete] = useState<TestSuite | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
 
   // Add path configuration states
@@ -240,12 +243,44 @@ export default function APITestFramework() {
   }
 
   const handleDeleteSuite = (suite: TestSuite) => {
-    if (confirm(`Delete test-suite "${suite.suiteName}"? This action cannot be undone.`)) {
-      setTestSuites((prev) => prev.filter((s) => s.id !== suite.id))
+    setSuiteToDelete(suite)
+  }
+
+  const confirmDeleteSuite = async () => {
+    if (!suiteToDelete) return
+    
+    setIsDeleting(true)
+    try {
+      // Delete the file if it exists
+      if (suiteToDelete.filePath) {
+        const response = await fetch('/api/test-suites/delete', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filePath: suiteToDelete.filePath })
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to delete file')
+        }
+      }
+      
+      // Remove from local state
+      setTestSuites((prev) => prev.filter((s) => s.id !== suiteToDelete.id))
+      
       toast({
         title: "Test Suite Deleted",
-        description: "The test suite has been successfully deleted.",
+        description: `Test suite "${suiteToDelete.suiteName}" and its JSON file have been permanently deleted.`,
       })
+      
+      setSuiteToDelete(null)
+    } catch (error) {
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete the test suite file. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -970,6 +1005,17 @@ export default function APITestFramework() {
         
         {/* AI Chat Component */}
         <AIChat />
+        
+        {/* Delete Confirmation Dialog */}
+        {suiteToDelete && (
+          <DeleteConfirmationDialog
+            isOpen={!!suiteToDelete}
+            onClose={() => setSuiteToDelete(null)}
+            onConfirm={confirmDeleteSuite}
+            suiteName={suiteToDelete.suiteName}
+            isDeleting={isDeleting}
+          />
+        )}
       </>
   )
 }

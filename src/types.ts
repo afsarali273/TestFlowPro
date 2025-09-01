@@ -57,25 +57,91 @@ export interface Tag {
     [key: string]: string;
 }
 
+// Locator options for basic locator refinement
+export interface LocatorOptions {
+    name?: string | RegExp;
+    exact?: boolean;
+    checked?: boolean;
+    expanded?: boolean;
+    pressed?: boolean;
+    selected?: boolean;
+    level?: number;
+    hasText?: string | RegExp;
+    hasNotText?: string | RegExp;
+}
+
+// Filter types for advanced locator filtering
+export type FilterType = "hasText" | "has" | "hasNot";
+
+// Filter definition matching Playwright's .filter() structure
+export interface FilterDefinition {
+    type: FilterType;
+    value?: string; // For hasText type
+    locator?: LocatorDefinition; // For has/hasNot types
+}
+
+// Locator definition
+export interface LocatorDefinition {
+    strategy:
+        | "role"
+        | "label"
+        | "text"
+        | "placeholder"
+        | "altText"
+        | "title"
+        | "testId"
+        | "css"
+        | "xpath";
+    value: string;
+    options?: LocatorOptions;
+    filter?: FilterDefinition;
+}
+
+// Supported UI actions
+export type TestStepKeyword =
+    | "openBrowser"
+    | "closeBrowser"
+    | "closePage"
+    | "goto"
+    | "waitForNavigation"
+    | "reload"
+    | "click"
+    | "dblClick"
+    | "type"
+    | "fill"
+    | "press"
+    | "clear"
+    | "select"
+    | "check"
+    | "uncheck"
+    | "setChecked"
+    | "hover"
+    | "focus"
+    | "scrollIntoViewIfNeeded"
+    | "dragAndDrop"
+    | "assertText"
+    | "assertVisible"
+    | "assertHidden"
+    | "assertEnabled"
+    | "assertDisabled"
+    | "assertCount"
+    | "assertValue"
+    | "assertAttribute"
+    | "assertHaveText"
+    | "assertHaveCount"
+    | "screenshot"
+    | "waitForSelector"
+    | "waitForTimeout"
+    | "waitForFunction";
+
 // --- UI: TestStep ---
 export interface TestStep {
     id: string;
-    keyword:
-        | "openBrowser"
-        | "goto"
-        | "click"
-        | "type"
-        | "select"
-        | "waitFor"
-        | "assertText"
-        | "assertVisible"
-        | "screenshot";
-    target?: string;  // for CSS/XPath
-    locator?: {
-        strategy: "role" | "label" | "text" | "placeholder" | "altText" | "testId" | "css";
-        value: string;
-    };
-    value?: string;  // input text, url, expected text, etc.
+    keyword: TestStepKeyword;
+    target?: string; // fallback CSS/XPath selector
+    locator?: LocatorDefinition;
+    value?: string; // input text, URL, expected text, etc.
+    options?: any; // extra options per keyword
     assertions?: Assertion[];
 }
 

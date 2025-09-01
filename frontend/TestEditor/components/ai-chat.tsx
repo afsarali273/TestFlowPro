@@ -239,12 +239,17 @@ export function AIChat() {
   const handleCopyTestCases = async () => {
     if (!generatedSuite) return
     
-    const testCasesJson = JSON.stringify(generatedSuite.testCases, null, 2)
+    const contentToCopy = generateTestCaseOnly 
+      ? JSON.stringify(generatedSuite.testCases, null, 2)
+      : JSON.stringify(generatedSuite, null, 2)
     
     try {
-      await navigator.clipboard.writeText(testCasesJson)
+      await navigator.clipboard.writeText(contentToCopy)
       setCopied(true)
-      toast({ title: 'Copied!', description: 'Test cases copied to clipboard' })
+      toast({ 
+        title: 'Copied!', 
+        description: generateTestCaseOnly ? 'Test cases copied to clipboard' : 'Complete test suite copied to clipboard'
+      })
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to copy to clipboard', variant: 'destructive' })

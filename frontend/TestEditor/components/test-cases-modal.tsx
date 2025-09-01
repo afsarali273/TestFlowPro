@@ -31,7 +31,7 @@ interface TestCasesModalProps {
 
 export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) {
   const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case "passed":
         return <CheckCircle className="h-4 w-4 text-green-500" />
       case "failed":
@@ -44,7 +44,7 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
   }
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case "passed":
         return "bg-green-100 text-green-800"
       case "failed":
@@ -74,7 +74,7 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
   }
 
   const getKeywordIcon = (keyword: string) => {
-    switch (keyword.toLowerCase()) {
+    switch (keyword?.toLowerCase()) {
       case "click":
         return <MousePointer className="h-3 w-3 text-blue-500" />
       case "type":
@@ -96,7 +96,7 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
   }
 
   const getKeywordColor = (keyword: string) => {
-    switch (keyword.toLowerCase()) {
+    switch (keyword?.toLowerCase()) {
       case "click":
         return "bg-blue-100 text-blue-800"
       case "type":

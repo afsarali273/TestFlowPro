@@ -15,15 +15,49 @@ const getAIService = async () => {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { message, type } = body
+    const { message, type, stream } = body
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
     }
 
     const service = await getAIService()
-    const result = await service.generateResponse({ message, type })
     
+    // Handle streaming for status updates
+    if (stream) {
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream({
+        start(controller) {
+          const onStatusUpdate = (status: string) => {
+            const data = `data: ${JSON.stringify({ status })}\n\n`
+            controller.enqueue(encoder.encode(data))
+          }
+          
+          service.generateResponse({ message, type }, onStatusUpdate)
+            .then(result => {
+              const data = `data: ${JSON.stringify({ ...result, done: true })}\n\n`
+              controller.enqueue(encoder.encode(data))
+              controller.close()
+            })
+            .catch(error => {
+              const data = `data: ${JSON.stringify({ error: error.message, done: true })}\n\n`
+              controller.enqueue(encoder.encode(data))
+              controller.close()
+            })
+        }
+      })
+      
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        }
+      })
+    }
+    
+    // Regular non-streaming response
+    const result = await service.generateResponse({ message, type })
     return NextResponse.json(result)
   } catch (error) {
     console.error('AI Chat API Error:', error)

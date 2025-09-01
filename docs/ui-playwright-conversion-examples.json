@@ -1,0 +1,177 @@
+{
+  "uiTestingOnly": true,
+  "playwrightToJsonExamples": [
+    {
+      "input": "await page.getByRole('button').click();",
+      "output": {
+        "id": "step1",
+        "keyword": "click",
+        "locator": {
+          "strategy": "role",
+          "value": "button"
+        }
+      }
+    },
+    {
+      "input": "await page.getByRole('button', { name: 'Submit' }).click();",
+      "output": {
+        "id": "step1",
+        "keyword": "click",
+        "locator": {
+          "strategy": "role",
+          "value": "button",
+          "options": {
+            "name": "Submit"
+          }
+        }
+      }
+    },
+    {
+      "input": "await page.getByText('Sign up', { exact: true }).click();",
+      "output": {
+        "id": "step1",
+        "keyword": "click",
+        "locator": {
+          "strategy": "text",
+          "value": "Sign up",
+          "options": {
+            "exact": true
+          }
+        }
+      }
+    },
+    {
+      "input": "await page.getByLabel('Email').fill('test@example.com');",
+      "output": {
+        "id": "step1",
+        "keyword": "fill",
+        "locator": {
+          "strategy": "label",
+          "value": "Email"
+        },
+        "value": "test@example.com"
+      }
+    },
+    {
+      "input": "await page.getByTestId('submit-btn').click();",
+      "output": {
+        "id": "step1",
+        "keyword": "click",
+        "locator": {
+          "strategy": "testId",
+          "value": "submit-btn"
+        }
+      }
+    },
+    {
+      "input": "await page.locator('.btn-primary').click();",
+      "output": {
+        "id": "step1",
+        "keyword": "click",
+        "locator": {
+          "strategy": "css",
+          "value": ".btn-primary"
+        }
+      }
+    },
+    {
+      "input": "await page.getByRole('button').filter({ hasText: 'Save' }).click();",
+      "output": {
+        "id": "step1",
+        "keyword": "click",
+        "locator": {
+          "strategy": "role",
+          "value": "button",
+          "filter": {
+            "type": "hasText",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    {
+      "input": "await page.getByRole('listitem').filter({ has: page.getByRole('button', { name: 'Delete' }) }).click();",
+      "output": {
+        "id": "step1",
+        "keyword": "click",
+        "locator": {
+          "strategy": "role",
+          "value": "listitem",
+          "filter": {
+            "type": "has",
+            "locator": {
+              "strategy": "role",
+              "value": "button",
+              "options": {
+                "name": "Delete"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "input": "await expect(page.getByText('Welcome')).toBeVisible();",
+      "output": {
+        "id": "step1",
+        "keyword": "assertVisible",
+        "locator": {
+          "strategy": "text",
+          "value": "Welcome"
+        }
+      }
+    },
+    {
+      "input": "await expect(page.getByRole('button')).toHaveText('Submit');",
+      "output": {
+        "id": "step1",
+        "keyword": "assertHaveText",
+        "locator": {
+          "strategy": "role",
+          "value": "button"
+        },
+        "value": "Submit"
+      }
+    }
+  ],
+  "uiKeywords": [
+    "click", "fill", "check", "uncheck", "select", "hover", "press",
+    "goto", "waitForTimeout", "screenshot", "dragAndDrop",
+    "assertVisible", "assertHidden", "assertHaveText", "assertHaveCount",
+    "assertEnabled", "assertDisabled", "assertChecked", "assertUnchecked"
+  ],
+  "locatorStrategies": {
+    "getByRole": "role",
+    "getByLabel": "label", 
+    "getByText": "text",
+    "getByTestId": "testId",
+    "getByPlaceholder": "placeholder",
+    "getByAltText": "altText",
+    "getByTitle": "title",
+    "locator": "css"
+  },
+  "filterTypes": ["hasText", "has", "hasNot"],
+  "conversionRules": {
+    "actions": {
+      "click()": "click",
+      "fill(value)": "fill",
+      "check()": "check", 
+      "uncheck()": "uncheck",
+      "selectOption(value)": "select",
+      "hover()": "hover",
+      "press(key)": "press",
+      "goto(url)": "goto",
+      "screenshot(options)": "screenshot",
+      "waitForTimeout(ms)": "waitForTimeout"
+    },
+    "assertions": {
+      "toBeVisible()": "assertVisible",
+      "toBeHidden()": "assertHidden", 
+      "toHaveText(text)": "assertHaveText",
+      "toHaveCount(count)": "assertHaveCount",
+      "toBeEnabled()": "assertEnabled",
+      "toBeDisabled()": "assertDisabled",
+      "toBeChecked()": "assertChecked"
+    }
+  }
+}

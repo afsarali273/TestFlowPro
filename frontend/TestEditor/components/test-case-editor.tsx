@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,10 +8,10 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Trash2, Save, X, ArrowLeft, Copy } from "lucide-react"
+import { Plus, Trash2, Save, X, ArrowLeft, Copy, HelpCircle } from "lucide-react"
 import { TestDataEditor } from "@/components/test-data-editor"
-import { TestStepsEditor } from "@/components/test-steps-editor"
 import { type TestCase, type TestData, type TestStep, validateTestCase } from "@/types/test-suite"
+
 import dynamic from "next/dynamic"
 
 const ReactJson = dynamic(() => import("react-json-view"), {
@@ -36,8 +36,7 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
   })
   const [selectedTestData, setSelectedTestData] = useState<TestData | null>(null)
   const [isEditingTestData, setIsEditingTestData] = useState(false)
-  const [selectedTestStep, setSelectedTestStep] = useState<TestStep | null>(null)
-  const [isEditingTestStep, setIsEditingTestStep] = useState(false)
+
   const [testType, setTestType] = useState<"API" | "UI">(editedTestCase.type === "UI" ? "UI" : "API")
   const [activeTab, setActiveTab] = useState("general")
   const [jsonViewMode, setJsonViewMode] = useState<"tree" | "code" | "raw">("tree")
@@ -55,27 +54,18 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
 
   const handleTestTypeChange = (type: "API" | "UI") => {
     setTestType(type)
-    console.log("[v0] Changing test type to:", type)
     if (type === "UI") {
-      setEditedTestCase((prev) => {
-        const updated = {
-          ...prev,
-          type: "UI" as const,
-          testSteps: prev.testSteps || [],
-        }
-        console.log("[v0] Updated test case for UI:", updated.type)
-        return updated
-      })
+      setEditedTestCase((prev) => ({
+        ...prev,
+        type: "UI" as const,
+        testSteps: prev.testSteps || [],
+      }))
     } else {
-      setEditedTestCase((prev) => {
-        const updated = {
-          ...prev,
-          type: "REST" as const, // Default to REST for API tests
-          testData: prev.testData || [],
-        }
-        console.log("[v0] Updated test case for API:", updated.type)
-        return updated
-      })
+      setEditedTestCase((prev) => ({
+        ...prev,
+        type: "REST" as const,
+        testData: prev.testData || [],
+      }))
     }
   }
 
@@ -105,7 +95,7 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
       setEditedTestCase((prev) => ({
         ...prev,
         testData: prev.testData.map((td, i) =>
-            i === testData.index ? ({ ...testData, index: undefined } as TestData) : td,
+          i === testData.index ? ({ ...testData, index: undefined } as TestData) : td,
         ),
       }))
     } else {
@@ -130,7 +120,6 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
       ...JSON.parse(JSON.stringify(testData)),
       name: `${testData.name} - Copy`,
     }
-
     setEditedTestCase((prev) => ({
       ...prev,
       testData: [...prev.testData, clonedTestData],
@@ -144,33 +133,13 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
     }
     setInlineEditingStep(newTestStep)
     setIsAddingNewStep(true)
-    setInlineEditingStepIndex(-1) // -1 indicates new step
+    setInlineEditingStepIndex(-1)
   }
 
   const handleEditTestStep = (testStep: TestStep, index: number) => {
     setInlineEditingStep({ ...testStep })
     setInlineEditingStepIndex(index)
     setIsAddingNewStep(false)
-  }
-
-  const handleSaveTestStep = (testStep: TestStep & { index?: number }) => {
-    if (typeof testStep.index === "number") {
-      setEditedTestCase((prev) => ({
-        ...prev,
-        testSteps:
-            prev.testSteps?.map((ts, i) =>
-                i === testStep.index ? ({ ...testStep, index: undefined } as TestStep) : ts,
-            ) || [],
-      }))
-    } else {
-      setEditedTestCase((prev) => ({
-        ...prev,
-        testSteps: [...(prev.testSteps || []), testStep as TestStep],
-      }))
-      setActiveTab("teststeps")
-    }
-    setIsEditingTestStep(false)
-    setSelectedTestStep(null)
   }
 
   const handleDeleteTestStep = (index: number) => {
@@ -185,7 +154,6 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
       ...JSON.parse(JSON.stringify(testStep)),
       id: `${testStep.id}_copy`,
     }
-
     setEditedTestCase((prev) => ({
       ...prev,
       testSteps: [...(prev.testSteps || []), clonedTestStep],
@@ -198,8 +166,6 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
       ...validatedTestCase,
       index: editedTestCase.index,
     }
-
-    console.log("[v0] Saving validated test case with type:", finalTestCase.type)
     if (testType === "UI") {
       setActiveTab("teststeps")
     }
@@ -262,621 +228,1075 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
   }
 
   const handleInlineStepChange = (field: keyof TestStep, value: any) => {
-    setInlineEditingStep((prev) => (prev ? { ...prev, [field]: value } : null))
+    setInlineEditingStep((prev) => {
+      if (!prev) return null
+      
+      // If changing keyword, clear incompatible fields
+      if (field === 'keyword') {
+        const newStep: TestStep = { ...prev, [field]: value }
+        
+        // Keywords that don't need locators
+        const noLocatorKeywords = [
+          'openBrowser', 'closeBrowser', 'closePage', 'maximize', 'minimize', 
+          'switchToMainFrame', 'acceptAlert', 'dismissAlert', 'getAlertText',
+          'waitForNavigation', 'reload', 'goBack', 'goForward', 'refresh',
+          'screenshot', 'scrollUp', 'scrollDown', 'getTitle', 'getUrl'
+        ]
+        
+        // Keywords that don't need values
+        const noValueKeywords = [
+          'openBrowser', 'closeBrowser', 'closePage', 'maximize', 'minimize',
+          'switchToMainFrame', 'acceptAlert', 'dismissAlert', 'getAlertText',
+          'waitForNavigation', 'reload', 'goBack', 'goForward', 'refresh',
+          'click', 'dblClick', 'rightClick', 'clear', 'check', 'uncheck',
+          'hover', 'focus', 'scrollIntoViewIfNeeded', 'dragAndDrop',
+          'assertVisible', 'assertHidden', 'assertEnabled', 'assertDisabled',
+          'screenshot', 'scrollUp', 'scrollDown', 'getText', 'getTitle', 'getUrl'
+        ]
+        
+        // Clear locator if new keyword doesn't support it
+        if (noLocatorKeywords.includes(value)) {
+          delete newStep.locator
+        }
+        
+        // Clear value if new keyword doesn't support it
+        if (noValueKeywords.includes(value)) {
+          delete newStep.value
+        }
+        
+        return newStep
+      }
+      
+      return { ...prev, [field]: value }
+    })
   }
 
   const handleInlineLocatorChange = (field: "strategy" | "value", value: string) => {
     setInlineEditingStep((prev) =>
-        prev
-            ? {
-              ...prev,
-              locator: {
-                strategy: prev.locator?.strategy || "css",
-                value: prev.locator?.value || "",
-                [field]: value,
-              },
-            }
-            : null,
-    )
-  }
-
-  if (isEditingTestStep && selectedTestStep) {
-    return (
-        <TestStepsEditor
-            testStep={selectedTestStep}
-            onSave={handleSaveTestStep}
-            onCancel={() => {
-              setIsEditingTestStep(false)
-              setSelectedTestStep(null)
-            }}
-        />
+      prev
+        ? {
+          ...prev,
+          locator: {
+            strategy: prev.locator?.strategy || "css",
+            value: prev.locator?.value || "",
+            [field]: value,
+          },
+        }
+        : null
     )
   }
 
   if (isEditingTestData && selectedTestData) {
     return (
-        <TestDataEditor
-            testData={selectedTestData}
-            testCaseType={editedTestCase.type || "REST"}
-            onSave={handleSaveTestData}
-            onCancel={() => {
-              setIsEditingTestData(false)
-              setSelectedTestData(null)
-            }}
-        />
+      <TestDataEditor
+        testData={selectedTestData}
+        testCaseType={editedTestCase.type || "REST"}
+        onSave={handleSaveTestData}
+        onCancel={() => {
+          setIsEditingTestData(false)
+          setSelectedTestData(null)
+        }}
+      />
     )
   }
 
   return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" onClick={onCancel}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              <h1 className="text-2xl font-bold">Edit Test Case</h1>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={onCancel}>
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-              <Button onClick={handleSave}>
-                <Save className="h-4 w-4 mr-2" />
-                Save Test Case
-              </Button>
-            </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={onCancel}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <h1 className="text-2xl font-bold">Edit Test Case</h1>
           </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onCancel}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button onClick={handleSave}>
+              <Save className="h-4 w-4 mr-2" />
+              Save Test Case
+            </Button>
+          </div>
+        </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="general">General</TabsTrigger>
-              {testType === "API" ? (
-                  <TabsTrigger value="testdata">Test Data ({editedTestCase.testData?.length || 0})</TabsTrigger>
-              ) : (
-                  <TabsTrigger value="teststeps">Test Steps ({editedTestCase.testSteps?.length || 0})</TabsTrigger>
-              )}
-              <TabsTrigger value="json">JSON View</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="general">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Test Case Information</CardTitle>
-                  <CardDescription>Configure the basic information for your test case</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Test Case Name</Label>
-                      <Input
-                          id="name"
-                          value={editedTestCase.name}
-                          onChange={(e) => handleTestCaseChange("name", e.target.value)}
-                          placeholder="Enter test case name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Status</Label>
-                      <Select
-                          value={editedTestCase.status}
-                          onValueChange={(value) => handleTestCaseChange("status", value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Not Started">Not Started</SelectItem>
-                          <SelectItem value="Running">Running</SelectItem>
-                          <SelectItem value="Passed">Passed</SelectItem>
-                          <SelectItem value="Failed">Failed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <Label>Test Type</Label>
-                    <div className="flex gap-6">
-                      <div className="flex items-center space-x-2">
-                        <input
-                            type="radio"
-                            id="api-test"
-                            name="testType"
-                            value="API"
-                            checked={testType === "API"}
-                            onChange={(e) => handleTestTypeChange("API")}
-                            className="h-4 w-4"
-                        />
-                        <Label htmlFor="api-test" className="font-normal">
-                          API Test
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input
-                            type="radio"
-                            id="ui-test"
-                            name="testType"
-                            value="UI"
-                            checked={testType === "UI"}
-                            onChange={(e) => handleTestTypeChange("UI")}
-                            className="h-4 w-4"
-                        />
-                        <Label htmlFor="ui-test" className="font-normal">
-                          UI Test
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {testType === "API" && (
-                      <div className="space-y-2">
-                        <Label htmlFor="type">API Type</Label>
-                        <Select
-                            value={editedTestCase.type || "REST"}
-                            onValueChange={(value) => handleTestCaseChange("type", value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="REST">REST API</SelectItem>
-                            <SelectItem value="SOAP">SOAP API</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                  )}
-
-                  <div className="flex justify-end pt-4 border-t">
-                    <Button onClick={() => setActiveTab(testType === "API" ? "testdata" : "teststeps")} size="lg">
-                      Next: {testType === "API" ? "Test Data" : "Test Steps"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {testType === "API" && (
-                <TabsContent value="testdata">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-semibold">Test Data</h3>
-                      <Button onClick={handleAddTestData}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Test Data
-                      </Button>
-                    </div>
-
-                    <div className="grid gap-4">
-                      {(editedTestCase.testData || []).map((testData: TestData, index: number) => (
-                          <Card key={index}>
-                            <CardHeader>
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <CardTitle className="text-base">{testData.name}</CardTitle>
-                                  <CardDescription>
-                                    {testData.method} {testData.endpoint}
-                                  </CardDescription>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Button size="sm" variant="outline" onClick={() => handleEditTestData(testData, index)}>
-                                    Edit
-                                  </Button>
-                                  <Button size="sm" variant="outline" onClick={() => handleCloneTestData(testData, index)}>
-                                    <Copy className="h-3 w-3" />
-                                  </Button>
-                                  <Button size="sm" variant="destructive" onClick={() => handleDeleteTestData(index)}>
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </CardHeader>
-                          </Card>
-                      ))}
-
-                      {(!editedTestCase.testData || editedTestCase.testData.length === 0) && (
-                          <Card>
-                            <CardContent className="text-center py-8">
-                              <p className="text-gray-500 mb-4">No test data defined yet</p>
-                              <Button onClick={handleAddTestData}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Your First Test Data
-                              </Button>
-                            </CardContent>
-                          </Card>
-                      )}
-                    </div>
-                  </div>
-                </TabsContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="general">General</TabsTrigger>
+            {testType === "API" ? (
+              <TabsTrigger value="testdata">Test Data ({editedTestCase.testData?.length || 0})</TabsTrigger>
+            ) : (
+              <TabsTrigger value="teststeps">Test Steps ({editedTestCase.testSteps?.length || 0})</TabsTrigger>
             )}
+            <TabsTrigger value="json">JSON View</TabsTrigger>
+          </TabsList>
 
-            {testType === "UI" && (
-                <TabsContent value="teststeps">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-semibold">Test Steps</h3>
-                      <Button onClick={handleAddTestStep}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Test Step
-                      </Button>
+          <TabsContent value="general">
+            <Card>
+              <CardHeader>
+                <CardTitle>Test Case Information</CardTitle>
+                <CardDescription>Configure the basic information for your test case</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Test Case Name</Label>
+                    <Input
+                      id="name"
+                      value={editedTestCase.name}
+                      onChange={(e) => handleTestCaseChange("name", e.target.value)}
+                      placeholder="Enter test case name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={editedTestCase.status}
+                      onValueChange={(value) => handleTestCaseChange("status", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Not Started">Not Started</SelectItem>
+                        <SelectItem value="Running">Running</SelectItem>
+                        <SelectItem value="Passed">Passed</SelectItem>
+                        <SelectItem value="Failed">Failed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <Label>Test Type</Label>
+                  <div className="flex gap-6">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="api-test"
+                        name="testType"
+                        value="API"
+                        checked={testType === "API"}
+                        onChange={() => handleTestTypeChange("API")}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="api-test" className="font-normal">
+                        API Test
+                      </Label>
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="ui-test"
+                        name="testType"
+                        value="UI"
+                        checked={testType === "UI"}
+                        onChange={() => handleTestTypeChange("UI")}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="ui-test" className="font-normal">
+                        UI Test
+                      </Label>
+                    </div>
+                  </div>
+                </div>
 
-                    <div className="grid gap-4">
-                      {(editedTestCase.testSteps || []).map((testStep: TestStep, index: number) => (
-                          <Card key={index}>
-                            {inlineEditingStepIndex === index ? (
-                                <CardContent className="p-6">
-                                  <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div className="space-y-2">
-                                        <Label>Step ID</Label>
-                                        <Input
-                                            value={inlineEditingStep?.id || ""}
-                                            onChange={(e) => handleInlineStepChange("id", e.target.value)}
-                                            placeholder="Enter step ID"
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label>Keyword</Label>
-                                        <Select
-                                            value={inlineEditingStep?.keyword || "openBrowser"}
-                                            onValueChange={(value) => handleInlineStepChange("keyword", value)}
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="openBrowser">Open Browser</SelectItem>
-                                            <SelectItem value="goto">Go To</SelectItem>
-                                            <SelectItem value="click">Click</SelectItem>
-                                            <SelectItem value="type">Type</SelectItem>
-                                            <SelectItem value="select">Select</SelectItem>
-                                            <SelectItem value="waitFor">Wait For</SelectItem>
-                                            <SelectItem value="assertText">Assert Text</SelectItem>
-                                            <SelectItem value="assertVisible">Assert Visible</SelectItem>
-                                            <SelectItem value="screenshot">Screenshot</SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-                                    </div>
+                {testType === "API" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="type">API Type</Label>
+                    <Select
+                      value={editedTestCase.type || "REST"}
+                      onValueChange={(value) => handleTestCaseChange("type", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="REST">REST API</SelectItem>
+                        <SelectItem value="SOAP">SOAP API</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
-                                    {inlineEditingStep?.keyword !== "openBrowser" &&
-                                        inlineEditingStep?.keyword !== "screenshot" && (
-                                            <div className="space-y-2">
-                                              <Label>Value</Label>
-                                              <Input
-                                                  value={inlineEditingStep?.value || ""}
-                                                  onChange={(e) => handleInlineStepChange("value", e.target.value)}
-                                                  placeholder="Enter value"
-                                              />
-                                            </div>
-                                        )}
+                <div className="flex justify-end pt-4 border-t">
+                  <Button onClick={() => setActiveTab(testType === "API" ? "testdata" : "teststeps")} size="lg">
+                    Next: {testType === "API" ? "Test Data" : "Test Steps"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                                    {["click", "type", "select", "assertText", "assertVisible"].includes(
-                                        inlineEditingStep?.keyword || "",
-                                    ) && (
-                                        <div className="space-y-4">
-                                          <Label>Locator</Label>
-                                          <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                              <Label>Strategy</Label>
-                                              <Select
-                                                  value={inlineEditingStep?.locator?.strategy || "css"}
-                                                  onValueChange={(value) => handleInlineLocatorChange("strategy", value)}
-                                              >
-                                                <SelectTrigger>
-                                                  <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                  <SelectItem value="role">Role</SelectItem>
-                                                  <SelectItem value="label">Label</SelectItem>
-                                                  <SelectItem value="text">Text</SelectItem>
-                                                  <SelectItem value="placeholder">Placeholder</SelectItem>
-                                                  <SelectItem value="altText">Alt Text</SelectItem>
-                                                  <SelectItem value="testId">Test ID</SelectItem>
-                                                  <SelectItem value="css">CSS Selector</SelectItem>
-                                                </SelectContent>
-                                              </Select>
-                                            </div>
-                                            <div className="space-y-2">
-                                              <Label>Value</Label>
-                                              <Input
-                                                  value={inlineEditingStep?.locator?.value || ""}
-                                                  onChange={(e) => handleInlineLocatorChange("value", e.target.value)}
-                                                  placeholder="Enter locator value"
-                                              />
-                                            </div>
-                                          </div>
-                                        </div>
-                                    )}
+          {testType === "API" && (
+            <TabsContent value="testdata">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Test Data</h3>
+                  <Button onClick={handleAddTestData}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Test Data
+                  </Button>
+                </div>
 
-                                    <div className="flex justify-end gap-2">
-                                      <Button variant="outline" onClick={handleInlineCancelTestStep}>
-                                        Cancel
-                                      </Button>
-                                      <Button onClick={handleInlineSaveTestStep}>
-                                        <Save className="h-4 w-4 mr-2" />
-                                        Save Step
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                            ) : (
-                                <CardHeader>
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <CardTitle className="text-base">
-                                        Step {index + 1}: {testStep.keyword}
-                                      </CardTitle>
-                                      <CardDescription>
-                                        {testStep.value && `Value: ${testStep.value}`}
-                                        {testStep.locator &&
-                                            ` | Locator: ${testStep.locator.strategy} = "${testStep.locator.value}"`}
-                                      </CardDescription>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Button size="sm" variant="outline" onClick={() => handleEditTestStep(testStep, index)}>
-                                        <Plus className="h-3 w-3 mr-1" />
-                                        Edit
-                                      </Button>
-                                      <Button size="sm" variant="outline" onClick={() => handleCloneTestStep(testStep, index)}>
-                                        <Copy className="h-3 w-3" />
-                                      </Button>
-                                      <Button size="sm" variant="destructive" onClick={() => handleDeleteTestStep(index)}>
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </CardHeader>
+                <div className="grid gap-4">
+                  {(editedTestCase.testData || []).map((testData: TestData, index: number) => (
+                    <Card key={index}>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-base">{testData.name}</CardTitle>
+                            <CardDescription>
+                              {testData.method} {testData.endpoint}
+                            </CardDescription>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline" onClick={() => handleEditTestData(testData, index)}>
+                              Edit
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => handleCloneTestData(testData, index)}>
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDeleteTestData(index)}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                    </Card>
+                  ))}
+
+                  {(!editedTestCase.testData || editedTestCase.testData.length === 0) && (
+                    <Card>
+                      <CardContent className="text-center py-8">
+                        <p className="text-gray-500 mb-4">No test data defined yet</p>
+                        <Button onClick={handleAddTestData}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Your First Test Data
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+          )}
+
+          {testType === "UI" && (
+            <TabsContent value="teststeps">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Test Steps</h3>
+                  <Button onClick={handleAddTestStep}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Test Step
+                  </Button>
+                </div>
+
+                <div className="grid gap-4">
+                  {(editedTestCase.testSteps || []).map((testStep: TestStep, index: number) => (
+                    <Card key={testStep.id}>
+                      {inlineEditingStepIndex === index ? (
+                        <CardContent className="p-6">
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Step ID</Label>
+                                <Input
+                                  value={inlineEditingStep?.id || ""}
+                                  onChange={(e) => handleInlineStepChange("id", e.target.value)}
+                                  placeholder="Enter step ID"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Keyword</Label>
+                                <Select
+                                  value={inlineEditingStep?.keyword || "openBrowser"}
+                                  onValueChange={(value) => handleInlineStepChange("keyword", value)}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="max-h-80">
+                                    <SelectItem value="openBrowser">[Browser] Open Browser</SelectItem>
+                                    <SelectItem value="closeBrowser">[Browser] Close Browser</SelectItem>
+                                    <SelectItem value="closePage">[Browser] Close Page</SelectItem>
+                                    <SelectItem value="maximize">[Browser] Maximize Window</SelectItem>
+                                    <SelectItem value="minimize">[Browser] Minimize Window</SelectItem>
+                                    <SelectItem value="setViewportSize">[Browser] Set Viewport Size</SelectItem>
+                                    <SelectItem value="switchToFrame">[Browser] Switch To Frame</SelectItem>
+                                    <SelectItem value="switchToMainFrame">[Browser] Switch To Main Frame</SelectItem>
+                                    <SelectItem value="acceptAlert">[Browser] Accept Alert</SelectItem>
+                                    <SelectItem value="dismissAlert">[Browser] Dismiss Alert</SelectItem>
+                                    <SelectItem value="getAlertText">[Browser] Get Alert Text</SelectItem>
+                                    <SelectItem value="goto">[Navigation] Go To URL</SelectItem>
+                                    <SelectItem value="waitForNavigation">[Navigation] Wait For Navigation</SelectItem>
+                                    <SelectItem value="reload">[Navigation] Reload Page</SelectItem>
+                                    <SelectItem value="goBack">[Navigation] Go Back</SelectItem>
+                                    <SelectItem value="goForward">[Navigation] Go Forward</SelectItem>
+                                    <SelectItem value="refresh">[Navigation] Refresh Page</SelectItem>
+                                    <SelectItem value="click">[Actions] Click</SelectItem>
+                                    <SelectItem value="dblClick">[Actions] Double Click</SelectItem>
+                                    <SelectItem value="rightClick">[Actions] Right Click</SelectItem>
+                                    <SelectItem value="type">[Actions] Type Text</SelectItem>
+                                    <SelectItem value="fill">[Actions] Fill Input</SelectItem>
+                                    <SelectItem value="press">[Actions] Press Key</SelectItem>
+                                    <SelectItem value="clear">[Actions] Clear Input</SelectItem>
+                                    <SelectItem value="select">[Actions] Select Option</SelectItem>
+                                    <SelectItem value="check">[Actions] Check Checkbox</SelectItem>
+                                    <SelectItem value="uncheck">[Actions] Uncheck Checkbox</SelectItem>
+                                    <SelectItem value="setChecked">[Actions] Set Checked State</SelectItem>
+                                    <SelectItem value="hover">[Actions] Hover</SelectItem>
+                                    <SelectItem value="focus">[Actions] Focus Element</SelectItem>
+                                    <SelectItem value="scrollIntoViewIfNeeded">[Actions] Scroll Into View</SelectItem>
+                                    <SelectItem value="dragAndDrop">[Actions] Drag and Drop</SelectItem>
+                                    <SelectItem value="uploadFile">[Actions] Upload File</SelectItem>
+                                    <SelectItem value="downloadFile">[Actions] Download File</SelectItem>
+                                    <SelectItem value="waitForSelector">[Wait] Wait For Selector</SelectItem>
+                                    <SelectItem value="waitForTimeout">[Wait] Wait For Timeout</SelectItem>
+                                    <SelectItem value="waitForFunction">[Wait] Wait For Function</SelectItem>
+                                    <SelectItem value="assertText">[Assertions] Assert Text</SelectItem>
+                                    <SelectItem value="assertVisible">[Assertions] Assert Visible</SelectItem>
+                                    <SelectItem value="assertHidden">[Assertions] Assert Hidden</SelectItem>
+                                    <SelectItem value="assertEnabled">[Assertions] Assert Enabled</SelectItem>
+                                    <SelectItem value="assertDisabled">[Assertions] Assert Disabled</SelectItem>
+                                    <SelectItem value="assertCount">[Assertions] Assert Count</SelectItem>
+                                    <SelectItem value="assertValue">[Assertions] Assert Value</SelectItem>
+                                    <SelectItem value="assertAttribute">[Assertions] Assert Attribute</SelectItem>
+                                    <SelectItem value="screenshot">[Utilities] Take Screenshot</SelectItem>
+                                    <SelectItem value="scrollTo">[Utilities] Scroll To Position</SelectItem>
+                                    <SelectItem value="scrollUp">[Utilities] Scroll Up</SelectItem>
+                                    <SelectItem value="scrollDown">[Utilities] Scroll Down</SelectItem>
+                                    <SelectItem value="getText">[Utilities] Get Text</SelectItem>
+                                    <SelectItem value="getAttribute">[Utilities] Get Attribute</SelectItem>
+                                    <SelectItem value="getTitle">[Utilities] Get Page Title</SelectItem>
+                                    <SelectItem value="getUrl">[Utilities] Get Current URL</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+
+                            {["goto", "type", "fill", "press", "select", "setChecked", "assertText", "assertValue", "assertCount", "assertAttribute", "waitForSelector", "waitForTimeout", "waitForFunction", "setViewportSize", "scrollTo", "switchToFrame", "uploadFile", "getAttribute"].includes(inlineEditingStep?.keyword || "") && (
+                              <div className="space-y-2">
+                                <Label>Value</Label>
+                                <Input
+                                  value={inlineEditingStep?.value || ""}
+                                  onChange={(e) => handleInlineStepChange("value", e.target.value)}
+                                  placeholder={
+                                    inlineEditingStep?.keyword === "goto" ? "Enter URL" :
+                                    ["type", "fill"].includes(inlineEditingStep?.keyword || "") ? "Enter text to type" :
+                                    inlineEditingStep?.keyword === "press" ? "Enter key (e.g., Enter, Tab, Escape)" :
+                                    "Enter value"
+                                  }
+                                />
+                              </div>
                             )}
-                          </Card>
-                      ))}
 
-                      {isAddingNewStep && inlineEditingStep && (
-                          <Card className="border-2 border-blue-200 bg-blue-50/50">
-                            <CardContent className="p-6">
+                            {["click", "dblClick", "rightClick", "type", "fill", "press", "clear", "select", "check", "uncheck", "setChecked", "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop", "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", "assertCount", "assertValue", "assertAttribute", "uploadFile", "downloadFile", "getText", "getAttribute"].includes(inlineEditingStep?.keyword || "") && (
                               <div className="space-y-4">
-                                <h4 className="font-medium text-blue-900">Add New Test Step</h4>
-
+                                <Label>Element Locator</Label>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                    <Label>Step ID</Label>
-                                    <Input
-                                        value={inlineEditingStep.id}
-                                        onChange={(e) => handleInlineStepChange("id", e.target.value)}
-                                        placeholder="Enter step ID"
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label>Keyword</Label>
+                                    <div className="flex items-center gap-2">
+                                      <Label>Strategy</Label>
+                                      <div className="group relative">
+                                        <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
+                                        <div className="absolute left-0 top-6 w-80 p-4 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                          <div className="font-semibold mb-2 text-blue-300">🎯 Locator Strategies</div>
+                                          <div className="space-y-2">
+                                            <div><span className="text-green-300">role:</span> <code className="text-yellow-200">"button"</code> - Semantic elements</div>
+                                            <div><span className="text-green-300">testId:</span> <code className="text-yellow-200">"submit-btn"</code> - data-testid attribute</div>
+                                            <div><span className="text-green-300">text:</span> <code className="text-yellow-200">"Sign Up"</code> - Exact text content</div>
+                                            <div><span className="text-green-300">css:</span> <code className="text-yellow-200">".btn-primary"</code> - CSS selectors</div>
+                                            <div><span className="text-green-300">xpath:</span> <code className="text-yellow-200">"//button[text()='OK']"</code> - XPath expressions</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
                                     <Select
-                                        value={inlineEditingStep.keyword}
-                                        onValueChange={(value) => handleInlineStepChange("keyword", value)}
+                                      value={inlineEditingStep?.locator?.strategy || "role"}
+                                      onValueChange={(value) => handleInlineLocatorChange("strategy", value)}
                                     >
                                       <SelectTrigger>
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="openBrowser">Open Browser</SelectItem>
-                                        <SelectItem value="goto">Go To</SelectItem>
-                                        <SelectItem value="click">Click</SelectItem>
-                                        <SelectItem value="type">Type</SelectItem>
-                                        <SelectItem value="select">Select</SelectItem>
-                                        <SelectItem value="waitFor">Wait For</SelectItem>
-                                        <SelectItem value="assertText">Assert Text</SelectItem>
-                                        <SelectItem value="assertVisible">Assert Visible</SelectItem>
-                                        <SelectItem value="screenshot">Screenshot</SelectItem>
+                                        <SelectItem value="role">Role (button, link, textbox, etc.)</SelectItem>
+                                        <SelectItem value="label">Label Text</SelectItem>
+                                        <SelectItem value="text">Text Content</SelectItem>
+                                        <SelectItem value="placeholder">Placeholder Text</SelectItem>
+                                        <SelectItem value="altText">Alt Text</SelectItem>
+                                        <SelectItem value="title">Title Attribute</SelectItem>
+                                        <SelectItem value="testId">Test ID</SelectItem>
+                                        <SelectItem value="css">CSS Selector</SelectItem>
+                                        <SelectItem value="xpath">XPath</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>
+                                  <div className="space-y-2">
+                                    <Label>Locator Value</Label>
+                                    <Input
+                                      value={inlineEditingStep?.locator?.value || ""}
+                                      onChange={(e) => handleInlineLocatorChange("value", e.target.value)}
+                                      placeholder={
+                                        inlineEditingStep?.locator?.strategy === "role"
+                                          ? "button, link, textbox, heading, etc."
+                                          : inlineEditingStep?.locator?.strategy === "css"
+                                            ? ".class, #id, element"
+                                            : inlineEditingStep?.locator?.strategy === "xpath"
+                                              ? "//div[@class='example']"
+                                              : "Enter locator value"
+                                      }
+                                    />
+                                  </div>
                                 </div>
-
-                                {inlineEditingStep.keyword !== "openBrowser" &&
-                                    inlineEditingStep.keyword !== "screenshot" && (
+                                
+                                {/* Locator Options */}
+                                <div className="space-y-3 border-t pt-3">
+                                  <div className="flex items-center gap-2">
+                                    <Label className="text-sm font-medium text-gray-600">Locator Options (Optional)</Label>
+                                    <div className="group relative">
+                                      <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
+                                      <div className="absolute left-0 top-4 w-96 p-4 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                        <div className="font-semibold mb-2 text-blue-300">🔍 Locator Filters</div>
                                         <div className="space-y-2">
-                                          <Label>Value</Label>
-                                          <Input
-                                              value={inlineEditingStep.value || ""}
-                                              onChange={(e) => handleInlineStepChange("value", e.target.value)}
-                                              placeholder="Enter value"
-                                          />
-                                        </div>
-                                    )}
-
-                                {["click", "type", "select", "assertText", "assertVisible"].includes(
-                                    inlineEditingStep.keyword,
-                                ) && (
-                                    <div className="space-y-4">
-                                      <Label>Locator</Label>
-                                      <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                          <Label>Strategy</Label>
-                                          <Select
-                                              value={inlineEditingStep.locator?.strategy || "css"}
-                                              onValueChange={(value) => handleInlineLocatorChange("strategy", value)}
-                                          >
-                                            <SelectTrigger>
-                                              <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              <SelectItem value="role">Role</SelectItem>
-                                              <SelectItem value="label">Label</SelectItem>
-                                              <SelectItem value="text">Text</SelectItem>
-                                              <SelectItem value="placeholder">Placeholder</SelectItem>
-                                              <SelectItem value="altText">Alt Text</SelectItem>
-                                              <SelectItem value="testId">Test ID</SelectItem>
-                                              <SelectItem value="css">CSS Selector</SelectItem>
-                                            </SelectContent>
-                                          </Select>
-                                        </div>
-                                        <div className="space-y-2">
-                                          <Label>Value</Label>
-                                          <Input
-                                              value={inlineEditingStep.locator?.value || ""}
-                                              onChange={(e) => handleInlineLocatorChange("value", e.target.value)}
-                                              placeholder="Enter locator value"
-                                          />
+                                          <div><span className="text-green-300">name:</span> <code className="text-yellow-200">"Subscribe"</code> - Accessible name</div>
+                                          <div><span className="text-green-300">hasText:</span> <code className="text-yellow-200">"Welcome"</code> - Contains text</div>
+                                          <div><span className="text-green-300">exact:</span> <code className="text-yellow-200">true</code> - Exact text match</div>
+                                          <div><span className="text-green-300">checked:</span> <code className="text-yellow-200">true</code> - Checkbox/radio state</div>
+                                          <div className="text-gray-300 mt-2">💡 Combine with any locator strategy for precise targeting</div>
                                         </div>
                                       </div>
                                     </div>
-                                )}
-
-                                <div className="flex justify-end gap-2">
-                                  <Button variant="outline" onClick={handleInlineCancelTestStep}>
-                                    Cancel
-                                  </Button>
-                                  <Button onClick={handleInlineSaveTestStep}>
-                                    <Save className="h-4 w-4 mr-2" />
-                                    Save Step
-                                  </Button>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-1">
+                                        <Label className="text-xs">Name</Label>
+                                        <div className="group relative">
+                                          <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
+                                          <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                            <div className="font-semibold mb-2 text-blue-300">🏷️ Accessible Name</div>
+                                            <div className="space-y-1">
+                                              <div><code className="text-yellow-200">{".getByRole('button', { name: 'Subscribe' })"}</code></div>
+                                              <div><code className="text-yellow-200">{".getByRole('button', { name: /submit/i })"}</code></div>
+                                              <div className="text-gray-300 mt-2">💡 Matches accessible name or aria-label</div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <Input
+                                        className="h-8 text-sm"
+                                        value={typeof inlineEditingStep?.locator?.options?.name === 'object' ? JSON.stringify(inlineEditingStep.locator.options.name) : (inlineEditingStep?.locator?.options?.name?.toString() || "")}
+                                        onChange={(e) => {
+                                          if (!inlineEditingStep) return
+                                          const newStep: TestStep = { ...inlineEditingStep }
+                                          if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
+                                          if (!newStep.locator.options) newStep.locator.options = {}
+                                          newStep.locator.options.name = e.target.value || undefined
+                                          handleInlineStepChange("locator", newStep.locator)
+                                        }}
+                                        placeholder="Subscribe, /Welcome.*/"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-1">
+                                        <Label className="text-xs">Exact Match</Label>
+                                        <div className="group relative">
+                                          <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
+                                          <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                            <div className="font-semibold mb-2 text-blue-300">🎯 Exact Text Matching</div>
+                                            <div className="space-y-1">
+                                              <div><span className="text-green-300">Exact:</span> <code className="text-yellow-200">{".getByText('Sign up', { exact: true })"}</code></div>
+                                              <div><span className="text-green-300">Partial:</span> <code className="text-yellow-200">{".getByText('Sign up')"}</code> (default)</div>
+                                              <div className="text-gray-300 mt-2">💡 Controls whether text matching is exact or partial</div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center space-x-2 h-8">
+                                        <input
+                                          type="checkbox"
+                                          id="exact-match-edit"
+                                          className="h-4 w-4"
+                                          checked={!!inlineEditingStep?.locator?.options?.exact}
+                                          onChange={(e) => {
+                                            if (!inlineEditingStep) return
+                                            const newStep: TestStep = { ...inlineEditingStep }
+                                            if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
+                                            if (!newStep.locator.options) newStep.locator.options = {}
+                                            newStep.locator.options.exact = e.target.checked ? true : undefined
+                                            handleInlineStepChange("locator", newStep.locator)
+                                          }}
+                                        />
+                                        <Label htmlFor="exact-match-edit" className="text-xs">Enable exact matching</Label>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-1">
+                                        <Label className="text-xs">Has Text</Label>
+                                        <div className="group relative">
+                                          <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
+                                          <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                            <div className="font-semibold mb-2 text-blue-300">✅ Contains Text Filter</div>
+                                            <div className="space-y-1">
+                                              <div><code className="text-yellow-200">{".getByRole('button').filter({ hasText: 'Save' })"}</code></div>
+                                              <div><code className="text-yellow-200">{".locator('div').filter({ hasText: /product/i })"}</code></div>
+                                              <div className="text-gray-300 mt-2">💡 Filters elements that contain specific text</div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <Input
+                                        className="h-8 text-sm"
+                                        value={typeof inlineEditingStep?.locator?.options?.hasText === 'object' ? JSON.stringify(inlineEditingStep.locator.options.hasText) : (inlineEditingStep?.locator?.options?.hasText?.toString() || "")}
+                                        onChange={(e) => {
+                                          if (!inlineEditingStep) return
+                                          const newStep: TestStep = { ...inlineEditingStep }
+                                          if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
+                                          if (!newStep.locator.options) newStep.locator.options = {}
+                                          newStep.locator.options.hasText = e.target.value || undefined
+                                          handleInlineStepChange("locator", newStep.locator)
+                                        }}
+                                        placeholder="Text content or /regex/"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-1">
+                                        <Label className="text-xs">Has Not Text</Label>
+                                        <div className="group relative">
+                                          <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
+                                          <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                            <div className="font-semibold mb-2 text-blue-300">❌ Excludes Text Filter</div>
+                                            <div className="space-y-1">
+                                              <div><code className="text-yellow-200">{".getByRole('button').filter({ hasNotText: 'Disabled' })"}</code></div>
+                                              <div><code className="text-yellow-200">{".locator('div').filter({ hasNotText: /error/i })"}</code></div>
+                                              <div className="text-gray-300 mt-2">💡 Filters out elements that contain specific text</div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <Input
+                                        className="h-8 text-sm"
+                                        value={typeof inlineEditingStep?.locator?.options?.hasNotText === 'object' ? JSON.stringify(inlineEditingStep.locator.options.hasNotText) : (inlineEditingStep?.locator?.options?.hasNotText?.toString() || "")}
+                                        onChange={(e) => {
+                                          if (!inlineEditingStep) return
+                                          const newStep: TestStep = { ...inlineEditingStep }
+                                          if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
+                                          if (!newStep.locator.options) newStep.locator.options = {}
+                                          newStep.locator.options.hasNotText = e.target.value || undefined
+                                          handleInlineStepChange("locator", newStep.locator)
+                                        }}
+                                        placeholder="Text to exclude"
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            </CardContent>
-                          </Card>
-                      )}
+                            )}
 
-                      {(!editedTestCase.testSteps || editedTestCase.testSteps.length === 0) && !isAddingNewStep && (
-                          <Card>
-                            <CardContent className="text-center py-8">
-                              <p className="text-gray-500 mb-4">No test steps defined yet</p>
-                              <Button onClick={handleAddTestStep}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Your First Test Step
+                            <div className="flex justify-end gap-2">
+                              <Button variant="outline" onClick={handleInlineCancelTestStep}>
+                                Cancel
                               </Button>
-                            </CardContent>
-                          </Card>
+                              <Button onClick={handleInlineSaveTestStep}>
+                                <Save className="h-4 w-4 mr-2" />
+                                Save Step
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      ) : (
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <CardTitle className="text-base">
+                                Step {index + 1}: {testStep.keyword}
+                              </CardTitle>
+                              <CardDescription>
+                                {testStep.value && `Value: ${testStep.value}`}
+                                {testStep.locator && ` | Locator: ${testStep.locator.strategy} = "${testStep.locator.value}"`}
+                              </CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="outline" onClick={() => handleEditTestStep(testStep, index)}>
+                                Edit
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => handleCloneTestStep(testStep, index)}>
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleDeleteTestStep(index)}>
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardHeader>
                       )}
-                    </div>
+                    </Card>
+                  ))}
 
-                    {(editedTestCase.testSteps?.length || 0) > 0 && (
-                        <div className="flex justify-end pt-4 border-t">
-                          <Button onClick={handleSave} size="lg">
-                            <Save className="h-4 w-4 mr-2" />
-                            Save All Changes
-                          </Button>
+                  {isAddingNewStep && inlineEditingStep && (
+                    <Card className="border-2 border-blue-200 bg-blue-50/50">
+                      <CardContent className="p-6">
+                        <div className="space-y-4">
+                          <h4 className="font-medium text-blue-900">Add New Test Step</h4>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Step ID</Label>
+                              <Input
+                                value={inlineEditingStep.id}
+                                onChange={(e) => handleInlineStepChange("id", e.target.value)}
+                                placeholder="Enter step ID"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Keyword</Label>
+                              <Select
+                                value={inlineEditingStep.keyword}
+                                onValueChange={(value) => handleInlineStepChange("keyword", value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-80">
+                                  <SelectItem value="openBrowser">[Browser] Open Browser</SelectItem>
+                                  <SelectItem value="closeBrowser">[Browser] Close Browser</SelectItem>
+                                  <SelectItem value="closePage">[Browser] Close Page</SelectItem>
+                                  <SelectItem value="maximize">[Browser] Maximize Window</SelectItem>
+                                  <SelectItem value="minimize">[Browser] Minimize Window</SelectItem>
+                                  <SelectItem value="setViewportSize">[Browser] Set Viewport Size</SelectItem>
+                                  <SelectItem value="switchToFrame">[Browser] Switch To Frame</SelectItem>
+                                  <SelectItem value="switchToMainFrame">[Browser] Switch To Main Frame</SelectItem>
+                                  <SelectItem value="acceptAlert">[Browser] Accept Alert</SelectItem>
+                                  <SelectItem value="dismissAlert">[Browser] Dismiss Alert</SelectItem>
+                                  <SelectItem value="getAlertText">[Browser] Get Alert Text</SelectItem>
+                                  <SelectItem value="goto">[Navigation] Go To URL</SelectItem>
+                                  <SelectItem value="waitForNavigation">[Navigation] Wait For Navigation</SelectItem>
+                                  <SelectItem value="reload">[Navigation] Reload Page</SelectItem>
+                                  <SelectItem value="goBack">[Navigation] Go Back</SelectItem>
+                                  <SelectItem value="goForward">[Navigation] Go Forward</SelectItem>
+                                  <SelectItem value="refresh">[Navigation] Refresh Page</SelectItem>
+                                  <SelectItem value="click">[Actions] Click</SelectItem>
+                                  <SelectItem value="dblClick">[Actions] Double Click</SelectItem>
+                                  <SelectItem value="rightClick">[Actions] Right Click</SelectItem>
+                                  <SelectItem value="type">[Actions] Type Text</SelectItem>
+                                  <SelectItem value="fill">[Actions] Fill Input</SelectItem>
+                                  <SelectItem value="press">[Actions] Press Key</SelectItem>
+                                  <SelectItem value="clear">[Actions] Clear Input</SelectItem>
+                                  <SelectItem value="select">[Actions] Select Option</SelectItem>
+                                  <SelectItem value="check">[Actions] Check Checkbox</SelectItem>
+                                  <SelectItem value="uncheck">[Actions] Uncheck Checkbox</SelectItem>
+                                  <SelectItem value="setChecked">[Actions] Set Checked State</SelectItem>
+                                  <SelectItem value="hover">[Actions] Hover</SelectItem>
+                                  <SelectItem value="focus">[Actions] Focus Element</SelectItem>
+                                  <SelectItem value="scrollIntoViewIfNeeded">[Actions] Scroll Into View</SelectItem>
+                                  <SelectItem value="dragAndDrop">[Actions] Drag and Drop</SelectItem>
+                                  <SelectItem value="uploadFile">[Actions] Upload File</SelectItem>
+                                  <SelectItem value="downloadFile">[Actions] Download File</SelectItem>
+                                  <SelectItem value="waitForSelector">[Wait] Wait For Selector</SelectItem>
+                                  <SelectItem value="waitForTimeout">[Wait] Wait For Timeout</SelectItem>
+                                  <SelectItem value="waitForFunction">[Wait] Wait For Function</SelectItem>
+                                  <SelectItem value="assertText">[Assertions] Assert Text</SelectItem>
+                                  <SelectItem value="assertVisible">[Assertions] Assert Visible</SelectItem>
+                                  <SelectItem value="assertHidden">[Assertions] Assert Hidden</SelectItem>
+                                  <SelectItem value="assertEnabled">[Assertions] Assert Enabled</SelectItem>
+                                  <SelectItem value="assertDisabled">[Assertions] Assert Disabled</SelectItem>
+                                  <SelectItem value="assertCount">[Assertions] Assert Count</SelectItem>
+                                  <SelectItem value="assertValue">[Assertions] Assert Value</SelectItem>
+                                  <SelectItem value="assertAttribute">[Assertions] Assert Attribute</SelectItem>
+                                  <SelectItem value="screenshot">[Utilities] Take Screenshot</SelectItem>
+                                  <SelectItem value="scrollTo">[Utilities] Scroll To Position</SelectItem>
+                                  <SelectItem value="scrollUp">[Utilities] Scroll Up</SelectItem>
+                                  <SelectItem value="scrollDown">[Utilities] Scroll Down</SelectItem>
+                                  <SelectItem value="getText">[Utilities] Get Text</SelectItem>
+                                  <SelectItem value="getAttribute">[Utilities] Get Attribute</SelectItem>
+                                  <SelectItem value="getTitle">[Utilities] Get Page Title</SelectItem>
+                                  <SelectItem value="getUrl">[Utilities] Get Current URL</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          {["goto", "type", "fill", "press", "select", "setChecked", "assertText", "assertValue", "assertCount", "assertAttribute", "waitForSelector", "waitForTimeout", "waitForFunction", "setViewportSize", "scrollTo", "switchToFrame", "uploadFile", "getAttribute"].includes(inlineEditingStep.keyword) && (
+                            <div className="space-y-2">
+                              <Label>Value</Label>
+                              <Input
+                                value={inlineEditingStep.value || ""}
+                                onChange={(e) => handleInlineStepChange("value", e.target.value)}
+                                placeholder={
+                                  inlineEditingStep.keyword === "goto" ? "Enter URL" :
+                                  ["type", "fill"].includes(inlineEditingStep.keyword) ? "Enter text to type" :
+                                  inlineEditingStep.keyword === "press" ? "Enter key (e.g., Enter, Tab, Escape)" :
+                                  "Enter value"
+                                }
+                              />
+                            </div>
+                          )}
+
+                          {["click", "dblClick", "rightClick", "type", "fill", "press", "clear", "select", "check", "uncheck", "setChecked", "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop", "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", "assertCount", "assertValue", "assertAttribute", "uploadFile", "downloadFile", "getText", "getAttribute"].includes(inlineEditingStep.keyword) && (
+                            <div className="space-y-4">
+                              <Label>Element Locator</Label>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <Label>Strategy</Label>
+                                    <div className="group relative">
+                                      <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
+                                      <div className="absolute left-0 top-6 w-80 p-4 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                        <div className="font-semibold mb-2 text-blue-300">🎯 Locator Strategies</div>
+                                        <div className="space-y-2">
+                                          <div><span className="text-green-300">role:</span> <code className="text-yellow-200">"button"</code> - Semantic elements</div>
+                                          <div><span className="text-green-300">testId:</span> <code className="text-yellow-200">"submit-btn"</code> - data-testid attribute</div>
+                                          <div><span className="text-green-300">text:</span> <code className="text-yellow-200">"Sign Up"</code> - Exact text content</div>
+                                          <div><span className="text-green-300">css:</span> <code className="text-yellow-200">".btn-primary"</code> - CSS selectors</div>
+                                          <div><span className="text-green-300">xpath:</span> <code className="text-yellow-200">"//button[text()='OK']"</code> - XPath expressions</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <Select
+                                    value={inlineEditingStep.locator?.strategy || "role"}
+                                    onValueChange={(value) => handleInlineLocatorChange("strategy", value)}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="role">Role (button, link, textbox, etc.)</SelectItem>
+                                      <SelectItem value="label">Label Text</SelectItem>
+                                      <SelectItem value="text">Text Content</SelectItem>
+                                      <SelectItem value="placeholder">Placeholder Text</SelectItem>
+                                      <SelectItem value="altText">Alt Text</SelectItem>
+                                      <SelectItem value="title">Title Attribute</SelectItem>
+                                      <SelectItem value="testId">Test ID</SelectItem>
+                                      <SelectItem value="css">CSS Selector</SelectItem>
+                                      <SelectItem value="xpath">XPath</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Locator Value</Label>
+                                  <Input
+                                    value={inlineEditingStep.locator?.value || ""}
+                                    onChange={(e) => handleInlineLocatorChange("value", e.target.value)}
+                                    placeholder={
+                                      inlineEditingStep.locator?.strategy === "role"
+                                        ? "button, link, textbox, heading, etc."
+                                        : inlineEditingStep.locator?.strategy === "css"
+                                          ? ".class, #id, element"
+                                          : inlineEditingStep.locator?.strategy === "xpath"
+                                            ? "//div[@class='example']"
+                                            : "Enter locator value"
+                                    }
+                                  />
+                                </div>
+                              </div>
+                              
+                              {/* Locator Options */}
+                              <div className="space-y-3 border-t pt-3">
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-sm font-medium text-gray-600">Locator Options (Optional)</Label>
+                                  <div className="group relative">
+                                    <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
+                                    <div className="absolute left-0 top-4 w-96 p-4 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                      <div className="font-semibold mb-2 text-blue-300">🔍 Locator Filters</div>
+                                      <div className="space-y-2">
+                                        <div><span className="text-green-300">name:</span> <code className="text-yellow-200">"Subscribe"</code> - Accessible name</div>
+                                        <div><span className="text-green-300">hasText:</span> <code className="text-yellow-200">"Welcome"</code> - Contains text</div>
+                                        <div><span className="text-green-300">exact:</span> <code className="text-yellow-200">true</code> - Exact text match</div>
+                                        <div><span className="text-green-300">checked:</span> <code className="text-yellow-200">true</code> - Checkbox/radio state</div>
+                                        <div className="text-gray-300 mt-2">💡 Combine with any locator strategy for precise targeting</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-1">
+                                      <Label className="text-xs">Name</Label>
+                                      <div className="group relative">
+                                        <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
+                                        <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                          <div className="font-semibold mb-2 text-blue-300">🏷️ Accessible Name</div>
+                                          <div className="space-y-1">
+                                            <div><code className="text-yellow-200">{".getByRole('button', { name: 'Subscribe' })"}</code></div>
+                                            <div><code className="text-yellow-200">{".getByRole('button', { name: /submit/i })"}</code></div>
+                                            <div className="text-gray-300 mt-2">💡 Matches accessible name or aria-label</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <Input
+                                      className="h-8 text-sm"
+                                      value={typeof inlineEditingStep.locator?.options?.name === 'object' ? JSON.stringify(inlineEditingStep.locator.options.name) : (inlineEditingStep.locator?.options?.name?.toString() || "")}
+                                      onChange={(e) => {
+                                        if (!inlineEditingStep) return
+                                        const newStep: TestStep = { ...inlineEditingStep }
+                                        if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
+                                        if (!newStep.locator.options) newStep.locator.options = {}
+                                        newStep.locator.options.name = e.target.value || undefined
+                                        handleInlineStepChange("locator", newStep.locator)
+                                      }}
+                                      placeholder="Subscribe, /Welcome.*/"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-1">
+                                      <Label className="text-xs">Exact Match</Label>
+                                      <div className="group relative">
+                                        <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
+                                        <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                          <div className="font-semibold mb-2 text-blue-300">🎯 Exact Text Matching</div>
+                                          <div className="space-y-1">
+                                            <div><span className="text-green-300">Exact:</span> <code className="text-yellow-200">{".getByText('Sign up', { exact: true })"}</code></div>
+                                            <div><span className="text-green-300">Partial:</span> <code className="text-yellow-200">{".getByText('Sign up')"}</code> (default)</div>
+                                            <div className="text-gray-300 mt-2">💡 Controls whether text matching is exact or partial</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center space-x-2 h-8">
+                                      <input
+                                        type="checkbox"
+                                        id="exact-match-add"
+                                        className="h-4 w-4"
+                                        checked={!!inlineEditingStep.locator?.options?.exact}
+                                        onChange={(e) => {
+                                          if (!inlineEditingStep) return
+                                          const newStep: TestStep = { ...inlineEditingStep }
+                                          if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
+                                          if (!newStep.locator.options) newStep.locator.options = {}
+                                          newStep.locator.options.exact = e.target.checked ? true : undefined
+                                          handleInlineStepChange("locator", newStep.locator)
+                                        }}
+                                      />
+                                      <Label htmlFor="exact-match-add" className="text-xs">Enable exact matching</Label>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-1">
+                                      <Label className="text-xs">Has Text</Label>
+                                      <div className="group relative">
+                                        <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
+                                        <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                          <div className="font-semibold mb-2 text-blue-300">✅ Contains Text Filter</div>
+                                          <div className="space-y-1">
+                                            <div><code className="text-yellow-200">{".getByRole('button').filter({ hasText: 'Save' })"}</code></div>
+                                            <div><code className="text-yellow-200">{".locator('div').filter({ hasText: /product/i })"}</code></div>
+                                            <div className="text-gray-300 mt-2">💡 Filters elements that contain specific text</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <Input
+                                      className="h-8 text-sm"
+                                      value={typeof inlineEditingStep.locator?.options?.hasText === 'object' ? JSON.stringify(inlineEditingStep.locator.options.hasText) : (inlineEditingStep.locator?.options?.hasText?.toString() || "")}
+                                      onChange={(e) => {
+                                        if (!inlineEditingStep) return
+                                        const newStep: TestStep = { ...inlineEditingStep }
+                                        if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
+                                        if (!newStep.locator.options) newStep.locator.options = {}
+                                        newStep.locator.options.hasText = e.target.value || undefined
+                                        handleInlineStepChange("locator", newStep.locator)
+                                      }}
+                                      placeholder="Text content or /regex/"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-1">
+                                      <Label className="text-xs">Has Not Text</Label>
+                                      <div className="group relative">
+                                        <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
+                                        <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
+                                          <div className="font-semibold mb-2 text-blue-300">❌ Excludes Text Filter</div>
+                                          <div className="space-y-1">
+                                            <div><code className="text-yellow-200">{".getByRole('button').filter({ hasNotText: 'Disabled' })"}</code></div>
+                                            <div><code className="text-yellow-200">{".locator('div').filter({ hasNotText: /error/i })"}</code></div>
+                                            <div className="text-gray-300 mt-2">💡 Filters out elements that contain specific text</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <Input
+                                      className="h-8 text-sm"
+                                      value={typeof inlineEditingStep.locator?.options?.hasNotText === 'object' ? JSON.stringify(inlineEditingStep.locator.options.hasNotText) : (inlineEditingStep.locator?.options?.hasNotText?.toString() || "")}
+                                      onChange={(e) => {
+                                        if (!inlineEditingStep) return
+                                        const newStep: TestStep = { ...inlineEditingStep }
+                                        if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
+                                        if (!newStep.locator.options) newStep.locator.options = {}
+                                        newStep.locator.options.hasNotText = e.target.value || undefined
+                                        handleInlineStepChange("locator", newStep.locator)
+                                      }}
+                                      placeholder="Text to exclude"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={handleInlineCancelTestStep}>
+                              Cancel
+                            </Button>
+                            <Button onClick={handleInlineSaveTestStep}>
+                              <Save className="h-4 w-4 mr-2" />
+                              Save Step
+                            </Button>
+                          </div>
                         </div>
-                    )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {(!editedTestCase.testSteps || editedTestCase.testSteps.length === 0) && !isAddingNewStep && (
+                    <Card>
+                      <CardContent className="text-center py-8">
+                        <p className="text-gray-500 mb-4">No test steps defined yet</p>
+                        <Button onClick={handleAddTestStep}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Your First Test Step
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+
+                {(editedTestCase.testSteps?.length || 0) > 0 && (
+                  <div className="flex justify-end pt-4 border-t">
+                    <Button onClick={handleSave} size="lg">
+                      <Save className="h-4 w-4 mr-2" />
+                      Save All Changes
+                    </Button>
                   </div>
-                </TabsContent>
-            )}
-
-            <TabsContent value="json">
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">JSON View</CardTitle>
-                      <CardDescription>View and edit the test case structure with rich JSON editors</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                          size="sm"
-                          variant={jsonViewMode === "tree" ? "default" : "outline"}
-                          onClick={() => setJsonViewMode("tree")}
-                          className="h-8"
-                      >
-                        Tree
-                      </Button>
-                      <Button
-                          size="sm"
-                          variant={jsonViewMode === "code" ? "default" : "outline"}
-                          onClick={() => setJsonViewMode("code")}
-                          className="h-8"
-                      >
-                        Editor
-                      </Button>
-                      <Button
-                          size="sm"
-                          variant={jsonViewMode === "raw" ? "default" : "outline"}
-                          onClick={() => setJsonViewMode("raw")}
-                          className="h-8"
-                      >
-                        Raw
-                      </Button>
-                    </div>
-                  </div>
-                  {jsonError && (
-                      <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-700">{jsonError}</p>
-                      </div>
-                  )}
-                </CardHeader>
-
-                <CardContent>
-                  {jsonViewMode === "tree" && (
-                      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 min-h-[500px]">
-                        <ReactJson
-                            src={editedTestCase}
-                            theme="rjv-default"
-                            name="testCase"
-                            collapsed={1}
-                            displayDataTypes={false}
-                            displayObjectSize={false}
-                            enableClipboard={true}
-                            indentWidth={2}
-                            collapseStringsAfterLength={50}
-                            onEdit={handleJsonTreeEdit}
-                            onAdd={handleJsonTreeEdit}
-                            onDelete={handleJsonTreeEdit}
-                            style={{
-                              backgroundColor: "transparent",
-                              fontSize: "13px",
-                              fontFamily:
-                                  'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", monospace',
-                            }}
-                        />
-                      </div>
-                  )}
-
-                  {jsonViewMode === "code" && (
-                      <div className="border border-gray-200 rounded-lg overflow-hidden">
-                        <MonacoEditor
-                            height="500px"
-                            language="json"
-                            theme="vs"
-                            value={JSON.stringify(editedTestCase, null, 2)}
-                            onChange={handleMonacoChange}
-                            options={{
-                              minimap: { enabled: false },
-                              scrollBeyondLastLine: false,
-                              fontSize: 13,
-                              lineNumbers: "on",
-                              roundedSelection: false,
-                              formatOnPaste: true,
-                              formatOnType: true,
-                              automaticLayout: true,
-                              wordWrap: "on",
-                            }}
-                        />
-                      </div>
-                  )}
-
-                  {jsonViewMode === "raw" && (
-                      <Textarea
-                          value={JSON.stringify(editedTestCase, null, 2)}
-                          onChange={(e) => {
-                            try {
-                              const parsed = JSON.parse(e.target.value)
-                              const validated = validateTestCase(parsed)
-                              setEditedTestCase({
-                                ...validated,
-                                index: editedTestCase.index,
-                              })
-                              setJsonError(null)
-                            } catch (error: any) {
-                              setJsonError(`Invalid JSON: ${error.message}`)
-                            }
-                          }}
-                          className="font-mono text-sm min-h-[500px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                      />
-                  )}
-                </CardContent>
-              </Card>
+                )}
+              </div>
             </TabsContent>
-          </Tabs>
-        </div>
+          )}
+
+          <TabsContent value="json">
+            <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">JSON View</CardTitle>
+                    <CardDescription>View and edit the test case structure with rich JSON editors</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant={jsonViewMode === "tree" ? "default" : "outline"}
+                      onClick={() => setJsonViewMode("tree")}
+                      className="h-8"
+                    >
+                      Tree
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={jsonViewMode === "code" ? "default" : "outline"}
+                      onClick={() => setJsonViewMode("code")}
+                      className="h-8"
+                    >
+                      Editor
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={jsonViewMode === "raw" ? "default" : "outline"}
+                      onClick={() => setJsonViewMode("raw")}
+                      className="h-8"
+                    >
+                      Raw
+                    </Button>
+                  </div>
+                </div>
+                {jsonError && (
+                  <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-700">{jsonError}</p>
+                  </div>
+                )}
+              </CardHeader>
+
+              <CardContent>
+                {jsonViewMode === "tree" && (
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 min-h-[500px]">
+                    <ReactJson
+                      src={editedTestCase}
+                      theme="rjv-default"
+                      name="testCase"
+                      collapsed={1}
+                      displayDataTypes={false}
+                      displayObjectSize={false}
+                      enableClipboard={true}
+                      indentWidth={2}
+                      collapseStringsAfterLength={50}
+                      onEdit={handleJsonTreeEdit}
+                      onAdd={handleJsonTreeEdit}
+                      onDelete={handleJsonTreeEdit}
+                      style={{
+                        backgroundColor: "transparent",
+                        fontSize: "13px",
+                        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", monospace',
+                      }}
+                    />
+                  </div>
+                )}
+
+                {jsonViewMode === "code" && (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <MonacoEditor
+                      height="500px"
+                      language="json"
+                      theme="vs"
+                      value={JSON.stringify(editedTestCase, null, 2)}
+                      onChange={handleMonacoChange}
+                      options={{
+                        minimap: { enabled: false },
+                        scrollBeyondLastLine: false,
+                        fontSize: 13,
+                        lineNumbers: "on",
+                        roundedSelection: false,
+                        formatOnPaste: true,
+                        formatOnType: true,
+                        automaticLayout: true,
+                        wordWrap: "on",
+                      }}
+                    />
+                  </div>
+                )}
+
+                {jsonViewMode === "raw" && (
+                  <Textarea
+                    value={JSON.stringify(editedTestCase, null, 2)}
+                    onChange={(e) => {
+                      try {
+                        const parsed = JSON.parse(e.target.value)
+                        const validated = validateTestCase(parsed)
+                        setEditedTestCase({
+                          ...validated,
+                          index: editedTestCase.index,
+                        })
+                        setJsonError(null)
+                      } catch (error: any) {
+                        setJsonError(`Invalid JSON: ${error.message}`)
+                      }
+                    }}
+                    className="font-mono text-sm min-h-[500px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
+    </div>
   )
 }
