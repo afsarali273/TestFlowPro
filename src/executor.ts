@@ -10,6 +10,58 @@ import { runPreProcessors } from "./preProcessor";
 import { loadSchema } from "./utils/loadSchema";
 import {UIRunner} from "./ui-test";
 
+// Console colors
+const colors = {
+    reset: '\x1b[0m',
+    bright: '\x1b[1m',
+    dim: '\x1b[2m',
+    red: '\x1b[31m',
+    green: '\x1b[32m',
+    yellow: '\x1b[33m',
+    blue: '\x1b[34m',
+    magenta: '\x1b[35m',
+    cyan: '\x1b[36m',
+    white: '\x1b[37m',
+    bgRed: '\x1b[41m',
+    bgGreen: '\x1b[42m',
+    bgYellow: '\x1b[43m',
+    bgBlue: '\x1b[44m',
+    bgMagenta: '\x1b[45m',
+    bgCyan: '\x1b[46m'
+};
+
+// Helper functions for simple logging
+function logBox(title: string, content: string, color: string = colors.cyan) {
+    console.log(`${color}${colors.bright}${title}${colors.reset}`);
+    content.split('\n').forEach(line => {
+        console.log(`  ${line}`);
+    });
+}
+
+function logSection(emoji: string, title: string, color: string = colors.cyan) {
+    console.log(`\n${color}${colors.bright}${emoji} ${title}${colors.reset}`);
+}
+
+function logSuccess(message: string) {
+    console.log(`${colors.green}✅ ${message}${colors.reset}`);
+}
+
+function logError(message: string) {
+    console.log(`${colors.red}❌ ${message}${colors.reset}`);
+}
+
+function logWarning(message: string) {
+    console.log(`${colors.yellow}⚠️  ${message}${colors.reset}`);
+}
+
+function logInfo(message: string) {
+    console.log(`${colors.blue}ℹ️  ${message}${colors.reset}`);
+}
+
+function logRequest(method: string, url: string) {
+    console.log(`${colors.magenta}🚀 ${colors.bright}${method}${colors.reset} ${colors.cyan}${url}${colors.reset}`);
+}
+
 const ajv = new Ajv();
 
 function isSoapRequest(headers?: Record<string, string>): boolean {
@@ -22,8 +74,7 @@ function isSoapRequest(headers?: Record<string, string>): boolean {
 }
 
 export async function executeSuite(suite: TestSuite, reporter: Reporter) {
-
-    console.log(`Running Suite: ${suite.suiteName}`);
+    logBox(`🎯 EXECUTING TEST SUITE`, `Suite: ${suite.suiteName}\nType: ${suite.type || 'API'}\nBase URL: ${suite.baseUrl}\nTest Cases: ${suite.testCases.length}`, colors.magenta);
 
     if(suite?.type === 'UI'){
         await runUITests(suite, reporter);
@@ -39,7 +90,7 @@ export async function runUITests(suite: TestSuite, reporter: Reporter) {
     const failedTestCases = new Set<string>();
     
     for (const testCase of orderedTestCases) {
-        console.log(`  TestCase: ${testCase.name}`);
+        logSection('🎭', `UI TEST CASE: ${testCase.name}`, colors.blue);
         
         // Check if dependencies are satisfied
         if (testCase.dependsOn) {
@@ -51,7 +102,7 @@ export async function runUITests(suite: TestSuite, reporter: Reporter) {
                     `Unsatisfied dependencies: ${unsatisfiedDeps.join(', ')}` :
                     `Dependent test cases failed: ${failedDeps.join(', ')}`;
                     
-                console.log(`❌ Skipping ${testCase.name} - ${errorMsg}`);
+                logError(`Skipping ${testCase.name} - ${errorMsg}`);
                 reporter.add({
                     testCase: testCase.name,
                     dataSet: 'UI Steps',
@@ -65,7 +116,7 @@ export async function runUITests(suite: TestSuite, reporter: Reporter) {
                 continue;
             }
             
-            console.log(`✅ Dependencies satisfied for ${testCase.name}: ${testCase.dependsOn.join(', ')}`);
+            logSuccess(`Dependencies satisfied for ${testCase.name}: ${testCase.dependsOn.join(', ')}`);
         }
         
         try {
@@ -73,10 +124,10 @@ export async function runUITests(suite: TestSuite, reporter: Reporter) {
             await runner.runTestCase(testCase);
             await runner.close();
             executedTestCases.add(testCase.name);
-            console.log(`✅ UI test case ${testCase.name} completed successfully`);
+            logSuccess(`UI test case ${testCase.name} completed successfully`);
         } catch (error) {
             failedTestCases.add(testCase.name);
-            console.log(`❌ UI test case ${testCase.name} failed - dependent tests will be skipped`);
+            logError(`UI test case ${testCase.name} failed - dependent tests will be skipped`);
             await runner.close();
         }
     }
@@ -93,7 +144,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
     const failedTestCases = new Set<string>();
     
     for (const testCase of orderedTestCases) {
-        console.log(`  TestCase: ${testCase.name}`);
+        logSection('🔧', `API TEST CASE: ${testCase.name}`, colors.green);
         
         // Check if dependencies are satisfied
         if (testCase.dependsOn) {
@@ -101,7 +152,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
             const failedDeps = testCase.dependsOn.filter((dep: string) => failedTestCases.has(dep));
             
             if (unsatisfiedDeps.length > 0) {
-                console.log(`⏸️ Skipping ${testCase.name} - waiting for dependencies: ${unsatisfiedDeps.join(', ')}`);
+                logWarning(`Skipping ${testCase.name} - waiting for dependencies: ${unsatisfiedDeps.join(', ')}`);
                 reporter.add({
                     testCase: testCase.name,
                     dataSet: 'Dependency Check',
@@ -116,7 +167,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
             }
             
             if (failedDeps.length > 0) {
-                console.log(`❌ Skipping ${testCase.name} - dependent test cases failed: ${failedDeps.join(', ')}`);
+                logError(`Skipping ${testCase.name} - dependent test cases failed: ${failedDeps.join(', ')}`);
                 reporter.add({
                     testCase: testCase.name,
                     dataSet: 'Dependency Check',
@@ -130,7 +181,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                 continue;
             }
             
-            console.log(`✅ Dependencies satisfied for ${testCase.name}: ${testCase.dependsOn.join(', ')}`);
+            logSuccess(`Dependencies satisfied for ${testCase.name}: ${testCase.dependsOn.join(', ')}`);
         }
 
         let testCaseFailed = false;
@@ -144,15 +195,20 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
 
             if (data.preProcess) await runPreProcessors(data.preProcess);
 
-            console.log("================================");
-            console.log(`Request URL: ${fullUrl}`);
-            console.log(`Request Type: ${data.method}`);
-            console.log("Request Body:");
-            console.log(JSON.stringify(data?.body, null, 2));
-
+            logSection('📡', `TEST DATA: ${data.name}`, colors.cyan);
+            console.log(`${colors.blue}🌐 REQUEST DETAILS${colors.reset}`);
+            console.log(`  Method: ${data.method}`);
+            console.log(`  URL: ${fullUrl}`);
+            console.log(`  Type: ${soap ? 'SOAP' : 'REST'}`);
+            
             let body: any;
             try {
                 body = loadRequestBody(data.bodyFile, data.body, soap);
+                
+                if (body) {
+                    console.log(`${colors.yellow}📄 Request Body:${colors.reset}`);
+                    console.log(JSON.stringify(body, null, 2));
+                }
             } catch (err: any) {
                 reporter.add({
                     testCase: testCase.name,
@@ -206,9 +262,15 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
             try {
                 headers = injectVariableInHeaders(headers || {});
                 apiDetails.requestHeaders = headers;
-                console.log("Headers:", headers);
                 
-                console.log(`➡️ Executing HTTP ${data.method} request to ${fullUrl}`);
+                if (Object.keys(headers).length > 0) {
+                    console.log(`${colors.magenta}📋 Headers:${colors.reset}`);
+                    Object.entries(headers).forEach(([key, value]) => {
+                        console.log(`  ${key}: ${value}`);
+                    });
+                }
+                
+                logRequest(data.method, fullUrl);
                 
                 const res = await axios({
                     url: fullUrl,
@@ -222,30 +284,38 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                 apiDetails.responseHeaders = res.headers;
                 apiDetails.responseBody = responseData;
                 
-                console.log(`✅ Request completed with status ${res.status}`);
-                console.log("Response from server:");
+                logSuccess(`Request completed with status ${res.status}`);
+                console.log(`${colors.green}📥 RESPONSE${colors.reset}`);
+                console.log(`  Status: ${res.status}`);
+                console.log(`  Time: ${Date.now() - start}ms`);
+                
+                console.log(`${colors.cyan}📄 Response Body:${colors.reset}`);
                 console.log(JSON.stringify(responseData, null, 2));
 
                 if (!soap && schema) {
-                    console.log(`➡️ Validating response schema...`);
+                    logInfo('Validating response schema...');
                     const validate = ajv.compile(schema);
                     
                     if (!validate(res.data)) {
                         failed++;
                         const schemaError = `Schema validation failed: ${validate.errors?.map(e => `${e.instancePath} ${e.message}`).join('; ')}`;
                         allErrors.push(schemaError);
-                        console.log(`❌ Schema validation failed`);
+                        logError('Schema validation failed');
                         apiDetails.schemaValidation = { status: 'FAIL', error: schemaError };
                     } else {
-                        console.log(`✅ Schema validation passed`);
+                        logSuccess('Schema validation passed');
                         apiDetails.schemaValidation = { status: 'PASS' };
                     }
                 }
 
                 // Run assertions
+                if (data.assertions && data.assertions.length > 0) {
+                    logSection('🔍', 'RUNNING ASSERTIONS', colors.yellow);
+                }
+                
                 for (const assertion of data.assertions || []) {
                     const assertionDesc = `${assertion.type} assertion (${assertion.jsonPath || assertion.xpathExpression || 'N/A'})`;
-                    console.log(`➡️ Running ${assertionDesc}`);
+                    logInfo(`Running ${assertionDesc}`);
                     
                     try {
                         if (soap) {
@@ -254,7 +324,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                             assertJson(res.data, res.status, [assertion]);
                         }
                         passed++;
-                        console.log(`✅ ${assertionDesc} passed`);
+                        logSuccess(`${assertionDesc} passed`);
                         
                         apiDetails.assertions.push({
                             type: assertion.type,
@@ -265,7 +335,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                     } catch (e: any) {
                         failed++;
                         allErrors.push(e.message);
-                        console.log(`❌ ${assertionDesc} failed: ${e.message}`);
+                        logError(`${assertionDesc} failed: ${e.message}`);
                         
                         apiDetails.assertions.push({
                             type: assertion.type,
@@ -278,12 +348,12 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                 }
 
                 // Variable storage
-                if (data.store) {
-                    console.log(`➡️ Storing response variables...`);
+                if (data.store && Object.keys(data.store).length > 0) {
+                    logSection('💾', 'STORING VARIABLES', colors.magenta);
                     
                     try {
                         storeResponseVariables(res.data, data.store);
-                        console.log(`✅ Variables stored successfully`);
+                        logSuccess(`Variables stored: ${Object.keys(data.store).join(', ')}`);
                         
                         apiDetails.variableStorage = {
                             variables: Object.keys(data.store),
@@ -293,7 +363,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                         failed++;
                         const storeError = `Variable store failed: ${err.message}`;
                         allErrors.push(storeError);
-                        console.log(`❌ Variable storage failed: ${err.message}`);
+                        logError(`Variable storage failed: ${err.message}`);
                         
                         apiDetails.variableStorage = {
                             variables: Object.keys(data.store),
@@ -313,8 +383,11 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                     apiDetails.responseHeaders = res.headers;
                     apiDetails.responseBody = responseData;
                     
-                    console.log(`⚠️ Request failed with status ${res.status}`);
-                    console.log("Response from server:");
+                    logWarning(`Request failed with status ${res.status}`);
+                    console.log(`${colors.red}📥 ERROR RESPONSE${colors.reset}`);
+                    console.log(`  Status: ${res.status}`);
+                    console.log(`  Time: ${Date.now() - start}ms`);
+                    console.log(`${colors.cyan}📄 Error Response Body:${colors.reset}`);
                     console.log(JSON.stringify(responseData, null, 2));
 
                     // Still run assertions on error response
@@ -398,7 +471,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                     assertionsPassed: passed,
                     assertionsFailed: failed,
                     responseTimeMs: end - start,
-                    responseBody: status === 'FAIL' ? responseData : undefined,
+                    responseBody: responseData,
                     apiDetails: apiDetails // Add API-specific details
                 });
                 
@@ -411,10 +484,10 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
         // Mark test case as executed or failed
         if (testCaseFailed) {
             failedTestCases.add(testCase.name);
-            console.log(`❌ Test case ${testCase.name} failed - dependent tests will be skipped`);
+            logError(`Test case ${testCase.name} failed - dependent tests will be skipped`);
         } else {
             executedTestCases.add(testCase.name);
-            console.log(`✅ Test case ${testCase.name} completed successfully`);
+            logSuccess(`Test case ${testCase.name} completed successfully`);
         }
     }
 }
@@ -464,7 +537,8 @@ function resolveDependencies(testCases: any[]): any[] {
         }
     }
     
-    console.log(`🔄 Test execution order: ${result.map(tc => tc.name).join(' → ')}`);
+    console.log(`${colors.blue}🔄 EXECUTION ORDER${colors.reset}`);
+    console.log(`  ${result.map(tc => tc.name).join(' → ')}`);
     return result;
 }
 

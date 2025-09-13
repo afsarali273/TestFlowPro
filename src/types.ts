@@ -17,7 +17,7 @@ export type Assertion = {
         | 'exists'
         | 'regex'
         | 'arrayObjectMatch';
-    jsonPath: string;
+    jsonPath?: string;
     xpathExpression?: string;
     expected?: any;
     matchField?: string;
@@ -198,6 +198,7 @@ export interface TestStep {
 export interface TestSuite {
     id: string;
     suiteName: string;
+    applicationName: string;
     type: "UI"| "API";
     tags?: Tag[];
     baseUrl: string;

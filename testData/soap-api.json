@@ -1,5 +1,7 @@
 {
+  "id": "SOAP_Number_Conversion_Suite_L1VzZXJz",
   "suiteName": "SOAP Number Conversion Suite",
+  "applicationName": "soap number conversion",
   "type": "API",
   "baseUrl": "https://www.dataaccess.com/webservicesserver/numberconversion.wso",
   "tags": [
@@ -66,7 +68,6 @@
       "testSteps": []
     }
   ],
-  "id": "SOAP_Number_Conversion_Suite_L1VzZXJz",
   "status": "Not Started",
   "filePath": "/Users/afsarali/Repository/TestFlowPro/testData/soap-api.json"
 }

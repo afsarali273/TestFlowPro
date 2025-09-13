@@ -178,6 +178,8 @@ export interface TestCase {
     name: string
     status?: string
     type: "SOAP" | "REST" | "UI"
+    priority?: number
+    dependsOn?: string[]
     testData: TestData[]
     testSteps: TestStep[]
 }
@@ -219,6 +221,8 @@ export function validateTestCase(testCase: any): TestCase {
         name: testCase.name || "",
         status: testCase.status || "Not Started",
         type: testCase.type === "SOAP" ? "SOAP" : testCase.type === "UI" ? "UI" : "REST",
+        priority: testCase.priority,
+        dependsOn: Array.isArray(testCase.dependsOn) ? testCase.dependsOn : undefined,
         testData: Array.isArray(testCase.testData) ? testCase.testData.map(validateTestData) : [],
         testSteps: Array.isArray(testCase.testSteps) ? testCase.testSteps.map(validateTestStep) : [],
     }

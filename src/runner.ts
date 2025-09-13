@@ -227,12 +227,34 @@ async function runSuiteFromFile(filePath: string, filters: Record<string, string
     await runTarget(filePath, target, filters, runId);
 }
 
+// Generate user-friendly run name: "Run #123 - Today 4:41 PM"
+function generateRunName(): string {
+    const now = new Date();
+    const runNumber = Math.floor(Math.random() * 999) + 1; // Simple counter, could be improved
+    
+    const today = new Date();
+    const isToday = now.toDateString() === today.toDateString();
+    
+    const timeStr = now.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+    });
+    
+    const dateStr = isToday ? 'Today' : now.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+    });
+    
+    return `Run #${runNumber} - ${dateStr} ${timeStr}`;
+}
+
 async function runAllSuitesParallel(filters: Record<string, string>) {
     const files = fs.readdirSync(suitesDir).filter(f => f.endsWith('.json'));
     const limit = pLimit(maxParallel);
-    const runId = `run-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+    const runId = generateRunName();
 
-    console.log(`\n🚀 Starting Test Run: ${runId}`);
+    console.log(`\n🚀 Starting ${runId}`);
 
     const tasks = files.map((file) =>
         limit(() => {
@@ -242,7 +264,7 @@ async function runAllSuitesParallel(filters: Record<string, string>) {
     );
 
     await Promise.all(tasks);
-    console.log(`\n✅ Test Run ${runId} completed with max parallelism = ${maxParallel}`);
+    console.log(`\n✅ ${runId} completed with max parallelism = ${maxParallel}`);
 }
 
 async function findSuiteFile(suiteId: string, suiteName: string): Promise<string | null> {
@@ -267,7 +289,7 @@ async function findSuiteFile(suiteId: string, suiteName: string): Promise<string
 async function main() {
     const argv = minimist(process.argv.slice(2));
     const { file, target, _, ...filters } = argv;
-    const runId = `run-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+    const runId = generateRunName();
 
     if (target) {
         // Target execution with or without file

@@ -42,6 +42,12 @@ import { FolderTree } from "@/components/folder-tree"
 import { AIChat } from "@/components/ai-chat"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { TestCaseView } from "@/components/test-case-view"
+import { CurlImportModal } from "@/components/CurlImportModal"
+import { SwaggerImportModal } from "@/components/SwaggerImportModal"
+import { PostmanImportModal } from "@/components/PostmanImportModal"
+import BrunoImportModal from "@/components/BrunoImportModal"
+import EnvVariablesModal from "@/components/EnvVariablesModal"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 import type { TestSuite } from "@/types/test-suite"
 
@@ -69,6 +75,12 @@ export default function APITestFramework() {
   const [viewTestCaseSource, setViewTestCaseSource] = useState<'dashboard' | 'editor'>('dashboard')
   const [resultsSource, setResultsSource] = useState<'dashboard' | 'editor'>('dashboard')
   const [resultsContext, setResultsContext] = useState<{ suite: TestSuite; testCase: any; testCaseIndex: number } | null>(null)
+  const [selectedApp, setSelectedApp] = useState<string | null>(null)
+  const [showCurlImportModal, setShowCurlImportModal] = useState(false)
+  const [showSwaggerImportModal, setShowSwaggerImportModal] = useState(false)
+  const [showPostmanImportModal, setShowPostmanImportModal] = useState(false)
+  const [showBrunoImportModal, setShowBrunoImportModal] = useState(false)
+  const [showEnvVariablesModal, setShowEnvVariablesModal] = useState(false)
 
 
   // Add path configuration states
@@ -416,7 +428,6 @@ export default function APITestFramework() {
   }
 
   // Filter suites with unique check
-  // Filter suites with unique check
   const filteredSuites = testSuites
       .filter((suite) => {
         // Search term filter (suite name, tags, test names)
@@ -438,7 +449,10 @@ export default function APITestFramework() {
           (activeTab === 'ui' && suite.type === 'UI') ||
           (activeTab === 'api' && suite.type === 'API')
         
-        return matchesSearch && matchesTab
+        // Application filter
+        const matchesApp = !selectedApp || (suite.applicationName || 'Uncategorized') === selectedApp
+        
+        return matchesSearch && matchesTab && matchesApp
       })
       .filter(
           (suite, index, self) => index === self.findIndex((s) => s.id === suite.id), // Remove any remaining duplicates
@@ -505,23 +519,23 @@ export default function APITestFramework() {
   return (
       <>
         {/* ------------ Main Page ------------- */}
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="min-h-screen bg-gray-50">
           {/* Header Section */}
-          <div className="bg-white border-b border-gray-200 shadow-sm">
+          <div className="bg-white border-b border-gray-200 subtle-shadow">
             <div className="max-w-7xl mx-auto px-6 py-6">
               <div className="flex items-center justify-between">
                 {/* Logo and Title Section */}
                 <div className="flex items-center space-x-4">
                   {/* Company Logo */}
-                  <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl shadow-lg">
+                  <div className="flex items-center justify-center w-12 h-12 bg-slate-700 rounded-xl subtle-shadow-lg">
                     <Zap className="h-7 w-7 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                    <h1 className="text-3xl font-bold text-slate-800">
                       TestFlow Pro
                     </h1>
                     <div className="flex items-center gap-3 mt-1">
-                      <p className="text-gray-600 font-medium">Advanced Test Automation Platform</p>
+                      <p className="text-slate-600 font-medium">Advanced Test Automation Platform</p>
                       {testSuitePath && (
                           <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                             📁 {testSuitePath.split("/").pop() || testSuitePath}
@@ -536,50 +550,74 @@ export default function APITestFramework() {
                   <Button
                       variant="outline"
                       onClick={() => setShowResultsDashboard(true)}
-                      className="h-10 px-4 border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200"
+                      className="h-10 px-4 border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200"
                   >
                     <BarChart3 className="h-4 w-4 mr-2" />
-                    Analytics
+                    Test Reports
                   </Button>
 
-                  <div className="flex items-center space-x-2 bg-gray-50 rounded-lg p-1">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsFrameworkConfigOpen(true)}
-                        className="h-8 px-3 hover:bg-white hover:shadow-sm transition-all duration-200"
-                    >
-                      <Settings className="h-3 w-3 mr-1" />
-                      Framework
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsPathConfigOpen(true)}
-                        className="h-8 px-3 hover:bg-white hover:shadow-sm transition-all duration-200"
-                    >
-                      <Settings className="h-3 w-3 mr-1" />
-                      Suites Path
-                    </Button>
-                  </div>
+                  <div className="h-6 w-px bg-slate-300"></div>
 
-                  <div className="h-6 w-px bg-gray-300"></div>
-
-                  <div className="relative">
-                    <Input type="file" accept=".json" onChange={handleImportSuite} className="hidden" id="import-file" />
+                  <div className="flex items-center space-x-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="outline"
+                            className="h-10 px-4 border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200"
+                        >
+                          <Settings className="h-4 w-4 mr-2" />
+                          Settings
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => setIsFrameworkConfigOpen(true)}>
+                          <Settings className="h-4 w-4 mr-2" />
+                          Framework Path
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setIsPathConfigOpen(true)}>
+                          <Settings className="h-4 w-4 mr-2" />
+                          Suites Path
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => document.getElementById("import-file")?.click()}>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Import JSON
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowSwaggerImportModal(true)}>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Import Swagger
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowPostmanImportModal(true)}>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Import Postman
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowBrunoImportModal(true)}>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Import Bruno
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setShowEnvVariablesModal(true)}>
+                          <Settings className="h-4 w-4 mr-2" />
+                          Environment Variables
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    
                     <Button
                         variant="outline"
-                        onClick={() => document.getElementById("import-file")?.click()}
-                        className="h-10 px-4 border-gray-300 hover:border-green-400 hover:bg-green-50 transition-all duration-200"
+                        onClick={() => setShowCurlImportModal(true)}
+                        className="h-10 px-4 border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200"
                     >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Import
+                      <Zap className="h-4 w-4 mr-2" />
+                      cURL
                     </Button>
                   </div>
+                  
+                  <Input type="file" accept=".json" onChange={handleImportSuite} className="hidden" id="import-file" />
 
                   <Button
                       onClick={handleCreateSuite}
-                      className="h-10 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                      className="h-10 px-6 bg-slate-700 hover:bg-slate-800 subtle-shadow-lg hover:shadow-lg transition-all duration-200"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     New Test Suite
@@ -599,17 +637,17 @@ export default function APITestFramework() {
                       placeholder="Search suites, tags, test cases..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-80 h-11 pl-4 pr-4 border-gray-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm"
+                      className="w-80 h-11 pl-4 pr-4 border-slate-300 focus:border-slate-500 focus:ring-slate-500 subtle-shadow"
                   />
                 </div>
                 {filteredSuites.length > 0 && (
                     <div className="flex items-center space-x-4 text-sm text-gray-600">
                   <span className="flex items-center">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                    <div className="w-2 h-2 bg-slate-500 rounded-full mr-2"></div>
                     {filteredSuites.length} suite{filteredSuites.length !== 1 ? "s" : ""}
                   </span>
                       <span className="flex items-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></div>
                         {filteredSuites.reduce((acc, suite) => acc + suite.testCases.length, 0)} test cases
                   </span>
                     </div>
@@ -621,7 +659,7 @@ export default function APITestFramework() {
                   variant="outline"
                   onClick={() => setShowRunAllSuitesModal(true)}
                   disabled={!frameworkPath}
-                  className="h-11 px-6 border-gray-300 hover:border-green-400 hover:bg-green-50 transition-all duration-200 shadow-sm"
+                  className="h-11 px-6 border-slate-300 hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-200 subtle-shadow"
                   title={!frameworkPath ? "Configure framework path first" : "Run all test suites"}
               >
                 <PlayCircle className="h-4 w-4 mr-2" />
@@ -800,11 +838,173 @@ export default function APITestFramework() {
                 </div>
               </div>
             ) : (
-              <div className={viewMode === 'grid' 
-                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
-                : "space-y-4"
-              }>
-              {filteredSuites.map((suite) => {
+              <div className="flex gap-6">
+                {/* Application Navigation Sidebar */}
+                <div className="w-64 bg-white rounded-xl border border-slate-200 subtle-shadow-lg">
+                  <div className="p-4 border-b border-slate-200">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-slate-600 flex items-center justify-center subtle-shadow">
+                          <Folder className="h-3 w-3 text-white" />
+                        </div>
+                        Applications
+                      </div>
+                      <button
+                        onClick={handleCreateSuite}
+                        className="w-6 h-6 rounded-lg bg-emerald-600 flex items-center justify-center subtle-shadow hover:shadow-md transition-all duration-200 hover:scale-105"
+                        title="Create New Test Suite"
+                      >
+                        <Plus className="h-3 w-3 text-white" />
+                      </button>
+                    </h3>
+                  </div>
+                  <div className="p-3 max-h-[calc(100vh-300px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+                    {(() => {
+                      // Group suites by applicationName
+                      const groupedSuites = filteredSuites.reduce((acc, suite) => {
+                        const appName = suite.applicationName || 'Uncategorized'
+                        if (!acc[appName]) {
+                          acc[appName] = []
+                        }
+                        acc[appName].push(suite)
+                        return acc
+                      }, {} as Record<string, typeof filteredSuites>)
+                      
+
+                      
+                      return (
+                        <div className="space-y-2">
+                          {Object.entries(groupedSuites).map(([appName, suites]) => {
+                            const isSelected = selectedApp === appName
+                            const uiCount = suites.filter(s => s.type === 'UI').length
+                            const apiCount = suites.filter(s => s.type === 'API').length
+                            
+                            return (
+                              <div key={appName} className="group">
+                                <button
+                                  onClick={() => setSelectedApp(isSelected ? null : appName)}
+                                  className={`w-full flex items-center justify-between p-3 rounded-xl text-left transition-all duration-300 transform hover:scale-[1.02] ${
+                                    isSelected 
+                                      ? 'bg-slate-50 text-slate-700 border border-slate-300 subtle-shadow-lg' 
+                                      : 'hover:bg-slate-50/50 text-slate-700 hover:shadow-md hover:border-slate-300/50 border border-transparent'
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+                                      isSelected 
+                                        ? 'bg-slate-600 subtle-shadow-lg' 
+                                        : 'bg-slate-100 group-hover:bg-slate-200 group-hover:shadow-md'
+                                    }`}>
+                                      <Folder className={`h-4 w-4 transition-all duration-300 ${
+                                        isSelected ? 'text-white' : 'text-slate-600 group-hover:text-slate-700'
+                                      }`} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <div className={`font-semibold text-sm transition-colors duration-300 mb-1 ${
+                                        isSelected ? 'text-slate-800' : 'text-slate-900 group-hover:text-slate-700'
+                                      }`}>{appName}</div>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <div className={`text-xs transition-colors duration-300 ${
+                                          isSelected ? 'text-slate-600' : 'text-slate-500 group-hover:text-slate-500'
+                                        }`}>
+                                          {suites.length} suite{suites.length !== 1 ? 's' : ''}
+                                        </div>
+                                        {uiCount > 0 && (
+                                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 transition-all duration-300 ${
+                                            isSelected 
+                                              ? 'bg-violet-100 text-violet-800 border-violet-300 subtle-shadow' 
+                                              : 'bg-violet-50 text-violet-700 border-violet-200 group-hover:bg-violet-100 group-hover:shadow-sm'
+                                          }`}>
+                                            UI {uiCount}
+                                          </Badge>
+                                        )}
+                                        {apiCount > 0 && (
+                                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 transition-all duration-300 ${
+                                            isSelected 
+                                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300 subtle-shadow' 
+                                              : 'bg-emerald-50 text-emerald-700 border-emerald-200 group-hover:bg-emerald-100 group-hover:shadow-sm'
+                                          }`}>
+                                            API {apiCount}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center flex-shrink-0 ml-2">
+                                    <div className={`transition-all duration-300 ${
+                                      isSelected ? 'rotate-180' : 'group-hover:rotate-12'
+                                    }`}>
+                                      {isSelected ? (
+                                        <ChevronDown className="h-4 w-4 text-slate-500" />
+                                      ) : (
+                                        <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-500" />
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+                                
+                                {isSelected && (
+                                  <div className="ml-4 mt-3 space-y-2 border-l-2 border-slate-300 pl-4 animate-slideDown">
+                                    {suites.map((suite) => {
+                                      const isUISuite = suite.type === 'UI'
+                                      return (
+                                        <button
+                                          key={suite.id}
+                                          onClick={() => {
+                                            setSelectedSuite(suite)
+                                            setShowTestCasesModal(true)
+                                          }}
+                                          className="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-300 transform hover:scale-[1.02] hover:bg-slate-50 hover:shadow-md hover:border-slate-200 border border-transparent group/suite"
+                                        >
+                                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                                            isUISuite 
+                                              ? 'bg-violet-100 group-hover/suite:bg-violet-200 group-hover/suite:shadow-md' 
+                                              : 'bg-slate-100 group-hover/suite:bg-slate-200 group-hover/suite:shadow-md'
+                                          }`}>
+                                            {isUISuite ? (
+                                              <MousePointer className="h-3 w-3 text-violet-600 group-hover/suite:text-violet-700 transition-colors duration-300" />
+                                            ) : (
+                                              <Globe className="h-3 w-3 text-slate-600 group-hover/suite:text-slate-700 transition-colors duration-300" />
+                                            )}
+                                          </div>
+                                          <div className="min-w-0 flex-1">
+                                            <div className="text-sm font-medium text-slate-900 truncate group-hover/suite:text-slate-800 transition-colors duration-300">
+                                              {suite.suiteName}
+                                            </div>
+                                            <div className="text-xs text-slate-500 group-hover/suite:text-slate-600 transition-colors duration-300">
+                                              {suite.testCases.length} cases
+                                            </div>
+                                          </div>
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                          
+                          {Object.keys(groupedSuites).length === 0 && (
+                            <div className="text-center py-12 text-gray-500">
+                              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
+                                <Folder className="h-8 w-8 opacity-50" />
+                              </div>
+                              <p className="text-sm font-medium">No applications found</p>
+                              <p className="text-xs text-slate-400 mt-1">Create test suites to see them here</p>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </div>
+                
+                {/* Suite Cards Area */}
+                <div className={`flex-1 ${viewMode === 'grid' 
+                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6" 
+                  : "space-y-4"
+                }`}>
+                {filteredSuites.map((suite) => {
                 const isUISuite = suite.type === "UI"
                 const totalSteps = isUISuite 
                   ? suite.testCases.reduce((acc, tc) => acc + (tc.testSteps?.length || 0), 0)
@@ -813,15 +1013,15 @@ export default function APITestFramework() {
                 return (
                   <Card
                       key={suite.id}
-                      className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-white/80 backdrop-blur-sm hover:bg-white ${
-                        isUISuite ? 'border-l-4 border-l-purple-500' : 'border-l-4 border-l-blue-500'
+                      className={`group hover:shadow-lg transition-all duration-300 border subtle-shadow bg-white hover:bg-white ${
+                        isUISuite ? 'border-l-4 border-l-violet-500' : 'border-l-4 border-l-slate-500'
                       } ${viewMode === 'list' ? 'flex flex-row' : ''}`}
                   >
                     <CardHeader className="pb-4">
                       {/* Title Row - Full Width */}
                       <div className="mb-3">
                         <div className="flex items-center justify-between mb-2">
-                          <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200 flex-1">
+                          <CardTitle className="text-lg font-semibold text-slate-900 group-hover:text-slate-700 transition-colors duration-200 flex-1">
                             {suite.suiteName}
                           </CardTitle>
                           <Badge className={`${getStatusBadge(suite.status || "Not Started")} font-medium px-3 py-1 flex-shrink-0 ml-3`}>
@@ -832,8 +1032,8 @@ export default function APITestFramework() {
                           variant="outline" 
                           className={`text-xs font-medium ${
                             isUISuite 
-                              ? 'bg-purple-50 text-purple-700 border-purple-200' 
-                              : 'bg-blue-50 text-blue-700 border-blue-200'
+                              ? 'bg-violet-50 text-violet-700 border-violet-200' 
+                              : 'bg-slate-50 text-slate-700 border-slate-200'
                           }`}
                         >
                           {isUISuite ? '🖱️ UI Tests' : '🌐 API Tests'}
@@ -842,10 +1042,10 @@ export default function APITestFramework() {
                       
                       {/* Details Row */}
                       <div className="flex items-center gap-3">
-                        <div className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-sm group-hover:shadow-md transition-shadow duration-300 ${
+                        <div className={`flex items-center justify-center w-12 h-12 rounded-xl subtle-shadow group-hover:shadow-md transition-shadow duration-300 ${
                           isUISuite 
-                            ? 'bg-gradient-to-br from-purple-500 to-pink-500' 
-                            : 'bg-gradient-to-br from-blue-500 to-indigo-500'
+                            ? 'bg-violet-600' 
+                            : 'bg-slate-600'
                         }`}>
                           {isUISuite ? (
                             <MousePointer className="h-6 w-6 text-white" />
@@ -854,7 +1054,7 @@ export default function APITestFramework() {
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <CardDescription className="text-sm text-gray-600">
+                          <CardDescription className="text-sm text-slate-600">
                             <div className="space-y-1">
                               <div className="flex items-center gap-4">
                                 <span>{suite.testCases.length} test case{suite.testCases.length !== 1 ? "s" : ""}</span>
@@ -862,10 +1062,10 @@ export default function APITestFramework() {
                                 <span>{totalSteps} {isUISuite ? 'step' : 'data item'}{totalSteps !== 1 ? 's' : ''}</span>
                               </div>
                               {suite.fileName && (
-                                  <span className="block text-xs text-gray-500">📄 {suite.fileName}</span>
+                                  <span className="block text-xs text-slate-500">📄 {suite.fileName}</span>
                               )}
                               {suite.baseUrl && (
-                                  <span className="flex items-center text-xs text-blue-600">
+                                  <span className="flex items-center text-xs text-slate-600">
                                 <Globe className="h-3 w-3 mr-1 flex-shrink-0" />
                                 <span className="break-all">{suite.baseUrl}</span>
                               </span>
@@ -1082,7 +1282,8 @@ export default function APITestFramework() {
                     </CardContent>
                   </Card>
                 )
-              })}
+                })}
+                </div>
               </div>
             )}
 
@@ -1182,6 +1383,132 @@ export default function APITestFramework() {
             isDeleting={isDeleting}
           />
         )}
+        
+        {/* cURL Import Modal */}
+        <CurlImportModal
+          isOpen={showCurlImportModal}
+          onClose={() => setShowCurlImportModal(false)}
+          existingSuites={testSuites}
+          onSave={(testSuite) => {
+            // Add the imported suite to the list
+            setTestSuites((prev) => [...prev, testSuite]);
+            // Close the modal
+            setShowCurlImportModal(false);
+            // Show success message
+            toast({
+              title: "cURL Imported",
+              description: "Test suite created from cURL command successfully.",
+            });
+            // Open the editor with the new suite
+            setSelectedSuite(testSuite);
+            setIsEditing(true);
+          }}
+          onAddToExisting={(suiteId, testCase) => {
+            // Add test case to existing suite
+            setTestSuites((prev) => prev.map(suite => 
+              suite.id === suiteId 
+                ? { ...suite, testCases: [...suite.testCases, testCase] }
+                : suite
+            ));
+            // Show success message
+            toast({
+              title: "Test Case Added",
+              description: "Test case added to existing suite successfully.",
+            });
+          }}
+        />
+        
+        {/* Swagger Import Modal */}
+        <SwaggerImportModal
+          isOpen={showSwaggerImportModal}
+          onClose={() => setShowSwaggerImportModal(false)}
+          existingSuites={testSuites}
+          onSave={(testSuite) => {
+            // Add the imported suite to the list
+            setTestSuites((prev) => [...prev, testSuite]);
+            // Close the modal
+            setShowSwaggerImportModal(false);
+            // Show success message
+            toast({
+              title: "Swagger Imported",
+              description: "Test suite created from Swagger specification successfully.",
+            });
+            // Open the editor with the new suite
+            setSelectedSuite(testSuite);
+            setIsEditing(true);
+          }}
+          onAddToExisting={(suiteId, testCase) => {
+            // Add test case to existing suite
+            setTestSuites((prev) => prev.map(suite => 
+              suite.id === suiteId 
+                ? { ...suite, testCases: [...suite.testCases, testCase] }
+                : suite
+            ));
+            // Show success message
+            toast({
+              title: "Test Cases Added",
+              description: "Test cases added to existing suite successfully.",
+            });
+          }}
+        />
+        
+        {/* Postman Import Modal */}
+        <PostmanImportModal
+          isOpen={showPostmanImportModal}
+          onClose={() => setShowPostmanImportModal(false)}
+          existingSuites={testSuites}
+          onSave={(testSuite) => {
+            // Add the imported suite to the list
+            setTestSuites((prev) => [...prev, testSuite]);
+            // Close the modal
+            setShowPostmanImportModal(false);
+            // Show success message
+            toast({
+              title: "Postman Collection Imported",
+              description: "Test suite created from Postman collection successfully.",
+            });
+            // Open the editor with the new suite
+            setSelectedSuite(testSuite);
+            setIsEditing(true);
+          }}
+          onAddToExisting={(suiteId, testCase) => {
+            // Add test cases to existing suite
+            setTestSuites((prev) => prev.map(suite => 
+              suite.id === suiteId 
+                ? { ...suite, testCases: [...suite.testCases, testCase] }
+                : suite
+            ));
+            // Show success message
+            toast({
+              title: "Test Cases Added",
+              description: "Test cases from Postman collection added successfully.",
+            });
+          }}
+        />
+        
+        {/* Bruno Import Modal */}
+        <BrunoImportModal
+          isOpen={showBrunoImportModal}
+          onClose={() => setShowBrunoImportModal(false)}
+          onImport={(testSuite) => {
+            // Add the imported suite to the list
+            setTestSuites((prev) => [...prev, testSuite]);
+            // Show success message
+            toast({
+              title: "Bruno Collection Imported",
+              description: "Test suite created from Bruno collection successfully.",
+            });
+            // Open the editor with the new suite
+            setSelectedSuite(testSuite);
+            setIsEditing(true);
+          }}
+        />
+        
+        {/* Environment Variables Modal */}
+        <EnvVariablesModal
+          isOpen={showEnvVariablesModal}
+          onClose={() => setShowEnvVariablesModal(false)}
+        />
       </>
   )
 }

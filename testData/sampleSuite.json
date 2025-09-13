@@ -1,5 +1,7 @@
 {
+  "id": "User_API_Suite_Demo_L1VzZXJz",
   "suiteName": "User API Suite Demo",
+  "applicationName": "user api suite demo",
   "type": "API",
   "baseUrl": "RESTFUL_API_URL",
   "tags": [
@@ -264,7 +266,6 @@
       "testSteps": []
     }
   ],
-  "id": "User_API_Suite_Demo_L1VzZXJz",
   "status": "Not Started",
   "filePath": "/Users/afsarali/Repository/TestFlowPro/testData/sampleSuite.json"
 }

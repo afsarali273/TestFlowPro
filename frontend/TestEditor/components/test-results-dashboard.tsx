@@ -425,6 +425,226 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
     linkElement.click()
   }
 
+  const exportHtmlReport = (run: TestRun) => {
+    const successRate = calculateSuccessRate(run.totalPassed, run.totalTests)
+    const htmlContent = generateHtmlReport(run, successRate)
+    
+    const blob = new Blob([htmlContent], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `TestReport_${run.runName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.html`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const exportSuiteHtmlReport = (suite: TestResultsData) => {
+    const successRate = calculateSuccessRate(suite.summary.passed, suite.summary.totalDataSets)
+    const htmlContent = generateSuiteHtmlReport(suite, successRate)
+    
+    const blob = new Blob([htmlContent], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${suite.summary.suiteName.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.html`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const generateSuiteHtmlReport = (suite: TestResultsData, successRate: number) => `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>${suite.summary.suiteName} - Test Report</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; border-radius: 12px; margin-bottom: 30px; }
+        .title { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+        .subtitle { font-size: 16px; opacity: 0.9; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin: 30px 0; }
+        .stat { background: rgba(255,255,255,0.15); padding: 20px; border-radius: 8px; text-align: center; }
+        .stat-value { font-size: 28px; font-weight: 700; margin-bottom: 5px; }
+        .stat-label { font-size: 14px; opacity: 0.8; }
+        .progress { background: rgba(255,255,255,0.2); height: 8px; border-radius: 4px; overflow: hidden; margin-top: 20px; }
+        .progress-bar { background: #10b981; height: 100%; width: ${successRate}%; }
+        .content { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; }
+        .section-header { background: #f8fafc; padding: 20px; border-bottom: 1px solid #e2e8f0; }
+        .section-title { font-size: 18px; font-weight: 600; color: #1e293b; }
+        .test-item { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+        .test-item:last-child { border-bottom: none; }
+        .test-info h4 { font-size: 16px; color: #1e293b; margin-bottom: 4px; }
+        .test-info p { font-size: 14px; color: #64748b; }
+        .test-meta { text-align: right; }
+        .status { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .status.pass { background: #dcfce7; color: #166534; }
+        .status.fail { background: #fef2f2; color: #991b1b; }
+        .time { font-size: 12px; color: #64748b; margin-top: 4px; font-family: monospace; }
+        .assertions { font-size: 12px; color: #64748b; margin-top: 2px; }
+        .error { background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px; margin-top: 8px; font-size: 13px; color: #991b1b; }
+        .footer { text-align: center; margin-top: 30px; color: #64748b; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">🎯 ${suite.summary.suiteName}</div>
+            <div class="subtitle">Test Execution Report • ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
+            
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">${successRate}%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${suite.summary.totalDataSets}</div>
+                    <div class="stat-label">Total Tests</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${suite.summary.passed}</div>
+                    <div class="stat-label">Passed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${suite.summary.failed}</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${formatExecutionTime(suite.summary.executionTimeMs)}</div>
+                    <div class="stat-label">Duration</div>
+                </div>
+            </div>
+            
+            <div class="progress">
+                <div class="progress-bar"></div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="section-header">
+                <div class="section-title">Test Results (${suite.results.length} tests)</div>
+            </div>
+            
+            ${suite.results.map(result => `
+                <div class="test-item">
+                    <div class="test-info">
+                        <h4>${result.testCase}</h4>
+                        <p>${result.dataSet}</p>
+                        <div class="assertions">✓ ${result.assertionsPassed} assertions${result.assertionsFailed > 0 ? ` • ✗ ${result.assertionsFailed} failed` : ''}</div>
+                        ${result.error ? `<div class="error">❌ ${result.error}</div>` : ''}
+                    </div>
+                    <div class="test-meta">
+                        <div class="status ${result.status.toLowerCase()}">${result.status}</div>
+                        <div class="time">${formatExecutionTime(result.responseTimeMs)}</div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        
+        <div class="footer">
+            Generated by TestFlow Pro • ${new Date().toISOString()}
+        </div>
+    </div>
+</body>
+</html>`
+
+  const generateHtmlReport = (run: TestRun, successRate: number) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Report - ${run.runName}</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; background: #f8fafc; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .title { font-size: 28px; font-weight: bold; color: #1e293b; margin-bottom: 10px; }
+        .subtitle { color: #64748b; font-size: 16px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat-value { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+        .stat-label { color: #64748b; font-size: 14px; }
+        .success { color: #059669; }
+        .error { color: #dc2626; }
+        .suite-section { background: white; margin: 20px 0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .suite-header { padding: 20px; border-bottom: 1px solid #e2e8f0; }
+        .suite-title { font-size: 18px; font-weight: 600; color: #1e293b; }
+        .test-row { padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        .test-info { flex: 1; }
+        .test-name { font-weight: 500; color: #1e293b; }
+        .test-dataset { color: #64748b; font-size: 14px; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+        .status-pass { background: #dcfce7; color: #166534; }
+        .status-fail { background: #fef2f2; color: #991b1b; }
+        .progress-bar { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #059669; }
+        .error-details { background: #fef2f2; padding: 10px; margin-top: 8px; border-radius: 4px; font-size: 12px; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">🎯 Test Completion Report</div>
+            <div class="subtitle">${run.runName} • Generated ${new Date().toLocaleString()}</div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value success">${successRate}%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${run.totalTests}</div>
+                    <div class="stat-label">Total Tests</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value success">${run.totalPassed}</div>
+                    <div class="stat-label">Passed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value error">${run.totalFailed}</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${successRate}%"></div>
+            </div>
+        </div>
+        
+        ${run.suites.map(suite => `
+            <div class="suite-section">
+                <div class="suite-header">
+                    <div class="suite-title">${suite.summary.suiteName}</div>
+                    <div style="color: #64748b; font-size: 14px; margin-top: 5px;">
+                        ${suite.summary.totalDataSets} tests • ${suite.summary.passed} passed • ${suite.summary.failed} failed
+                    </div>
+                </div>
+                
+                ${suite.results.map(result => `
+                    <div class="test-row">
+                        <div class="test-info">
+                            <div class="test-name">${result.testCase}</div>
+                            <div class="test-dataset">${result.dataSet}</div>
+                            ${result.error ? `<div class="error-details">❌ ${result.error}</div>` : ''}
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="status-badge ${result.status === 'PASS' ? 'status-pass' : 'status-fail'}">
+                                ${result.status}
+                            </div>
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                                ${formatExecutionTime(result.responseTimeMs)}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `).join('')}
+    </div>
+</body>
+</html>`
+
   // Calculate overall statistics
   const overallStats = allRuns.reduce(
     (acc, run) => ({
@@ -574,6 +794,12 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
                 <RefreshCw className="h-4 w-4 mr-1" />
                 Refresh
               </Button>
+              {selectedRun && (
+                <Button size="sm" onClick={() => exportHtmlReport(selectedRun)}>
+                  <Download className="h-4 w-4 mr-1" />
+                  Export Report
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -715,10 +941,16 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
                 <div className="p-3 border-b border-gray-200 flex-shrink-0">
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-lg font-bold text-gray-900">{selectedResult.summary.suiteName}</h2>
-                    <Button variant="outline" size="sm" onClick={() => exportResults(selectedResult)} className="hover:bg-gray-50">
-                      <Download className="h-3 w-3 mr-1" />
-                      Export
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => exportResults(selectedResult)} className="hover:bg-gray-50">
+                        <Download className="h-3 w-3 mr-1" />
+                        JSON
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => exportSuiteHtmlReport(selectedResult)} className="hover:bg-gray-50">
+                        <FileText className="h-3 w-3 mr-1" />
+                        Report
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Compact Summary */}

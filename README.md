@@ -13,6 +13,7 @@ A powerful and flexible API test automation tool built with **TypeScript**, supp
 
 ## 🚀 Features
 
+### Core Testing Features
 * ✅ **Keyword-driven JSON test case authoring**
 * ✅ **Data-driven execution** (within each test case)
 * ✅ **Preprocessing hooks** (`faker`, `encrypt`, `authToken`, `dbQuery`, custom logic)
@@ -24,9 +25,20 @@ A powerful and flexible API test automation tool built with **TypeScript**, supp
 * ✅ **Suite tags** (`@serviceName`, `@suiteType`) with CLI filters
 * ✅ **Environment config via `.env.*` files**
 * ✅ **Parallel test suite execution**
-* ✅ **HTML/JSON reports with summaries**
-* ✅ **Test Designer UI** to edit/create suites and view results
 * ✅ **Database integration** with MySQL, ODBC, DB2
+
+### UI & Import Features
+* ✅ **Test Designer UI** with professional slate color scheme
+* ✅ **Multiple Import Options**: cURL, Swagger/OpenAPI, Postman, Bruno collections
+* ✅ **Environment Variables Manager** - Edit .env files directly from UI
+* ✅ **Test cURL Commands** - Execute and validate before importing
+* ✅ **Real-time Import Preview** - See converted test suites before saving
+
+### Reporting & Export
+* ✅ **HTML/JSON reports with summaries**
+* ✅ **Beautiful HTML Report Export** - Individual suites and complete runs
+* ✅ **Response Body Capture** - Always stored for passed and failed tests
+* ✅ **Test Result Details** - Complete execution information
 
 ---
 
@@ -212,10 +224,58 @@ DB_USERDB_NAME=testflow
 
 ---
 
-## 📊 Test Report
+## 📊 Test Reports
 
-* JSON summary per run
-* Includes stats, failed/assertion logs, and optional full responses
+### JSON Reports
+* **Detailed Summaries**: Complete test execution statistics
+* **Failed/Assertion Logs**: Detailed failure information
+* **Response Bodies**: Always captured for both passed and failed tests
+* **Execution Timing**: Performance metrics and duration tracking
+
+### HTML Reports
+* **Beautiful Export**: Professional HTML reports with styling
+* **Individual Suites**: Export specific test suite results
+* **Complete Runs**: Export entire test run with all suites
+* **Shareable**: Easy to share with stakeholders and teams
+
+---
+
+## 📥 Import Options
+
+### cURL Import
+* **Test cURL Commands**: Execute cURL and see actual results before conversion
+* **Smart Parsing**: Extracts method, headers, body, and URL automatically
+* **Add to Existing**: Import into existing test suites or create new ones
+
+### Swagger/OpenAPI Import
+* **Multiple Input Methods**: URL, file upload, or paste JSON/YAML
+* **Comprehensive Conversion**: Generates positive and negative test scenarios
+* **Schema Validation**: Includes request/response schema validation
+
+### Postman Collection Import
+* **v2.1 Format Support**: Full Postman Collection v2.1 compatibility
+* **Variables & Scripts**: Converts collection variables and test scripts
+* **Folder Structure**: Maintains organization with nested folders
+
+### Bruno Collection Import
+* **File-based Collections**: Import .bru files and environment files
+* **Folder Upload**: Upload entire Bruno collection directories
+* **Environment Variables**: Automatic .env file parsing
+
+---
+
+## 🎨 UI Features
+
+### Professional Interface
+* **Slate Color Scheme**: Professional, eye-strain reducing design
+* **Application Grouping**: Organize test suites by application
+* **Grid/List Views**: Multiple viewing options for test suites
+* **Folder Navigation**: Browse test suites by folder structure
+
+### Environment Management
+* **Visual Editor**: Edit .env.dev, .env.qa, .env.prod files directly
+* **Add/Edit/Delete**: Full CRUD operations for environment variables
+* **Multi-Environment**: Switch between different environments seamlessly
 
 ---
 
@@ -232,9 +292,16 @@ npx ts-node src/runner.ts
 npx ts-node src/runner.ts --serviceName=@UserService --suiteType=@smoke
 
 # Run Frontend UI (React)
+cd frontend/TestEditor
 npm install --legacy-peer-deps
 npm run dev
 ```
+
+### UI Access
+* **Dashboard**: http://localhost:3000
+* **Features**: Create, edit, run test suites with visual interface
+* **Import**: Use UI to import from cURL, Swagger, Postman, Bruno
+* **Environment**: Manage .env files through Settings menu
 
 ---
 

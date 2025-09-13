@@ -1,5 +1,7 @@
 {
+  "id": "Sample_Login_UI_Suite_L1VzZXJz",
   "suiteName": "Sample Login UI Suite",
+  "applicationName": "",
   "type": "UI",
   "baseUrl": "https://the-internet.herokuapp.com",
   "tags": [
@@ -20,13 +22,17 @@
         {
           "id": "step1",
           "keyword": "openBrowser",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "step2",
           "keyword": "goto",
           "value": "https://the-internet.herokuapp.com/login",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "step3",
@@ -36,7 +42,9 @@
             "value": "Username"
           },
           "value": "tomsmith",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "step4",
@@ -46,7 +54,9 @@
             "value": "Password"
           },
           "value": "SuperSecretPassword!",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "step5",
@@ -56,7 +66,9 @@
             "value": "button"
           },
           "value": "bggd",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "step6",
@@ -66,13 +78,17 @@
             "value": ".flash.success"
           },
           "value": "You logged into a secure area!",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "step7",
           "keyword": "screenshot",
           "value": "login-success.png",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         }
       ]
     },
@@ -85,13 +101,17 @@
         {
           "id": "step1",
           "keyword": "openBrowser",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "step2",
           "keyword": "goto",
           "value": "https://the-internet.herokuapp.com/login",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "step3",
@@ -101,7 +121,9 @@
             "value": "Username"
           },
           "value": "invalidUser",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "step4",
@@ -111,7 +133,9 @@
             "value": "Password"
           },
           "value": "wrongPassword",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "step5",
@@ -120,7 +144,9 @@
             "strategy": "role",
             "value": "button"
           },
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "step6",
@@ -130,18 +156,21 @@
             "value": ".flash.error"
           },
           "value": "Your username is invalid!",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "step7",
           "keyword": "screenshot",
           "value": "login-failure.png",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         }
       ]
     }
   ],
-  "id": "Sample_Login_UI_Suite_L1VzZXJz",
   "status": "Not Started",
   "filePath": "/Users/afsarali/Repository/TestFlowPro/testData/web-ui-test.json"
 }

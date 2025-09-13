@@ -244,7 +244,7 @@ export function TestResultDetailModal({ isOpen, onClose, testResult }: TestResul
                 <CardContent>
                   <div className="space-y-3">
                     {testResult.stepResults.map((step, index) => (
-                      <div key={step.stepId} className={`p-4 rounded-lg border ${
+                      <div key={`${step.stepId || 'step'}-${index}`} className={`p-4 rounded-lg border ${
                         step.status === 'PASS' 
                           ? 'bg-green-50 border-green-200' 
                           : 'bg-red-50 border-red-200'
@@ -335,16 +335,16 @@ export function TestResultDetailModal({ isOpen, onClose, testResult }: TestResul
               </Card>
             )}
 
-            {/* Response Body */}
-            {testResult.responseBody && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-blue-500" />
-                    Response Body
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+            {/* Response Body - Always show for both PASS and FAIL */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-blue-500" />
+                  Response Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {testResult.responseBody ? (
                   <ScrollArea className="h-64 w-full border rounded-lg bg-gray-900">
                     <pre className="p-4 text-xs font-mono whitespace-pre-wrap break-words">
                       <code className="text-green-300">
@@ -354,9 +354,13 @@ export function TestResultDetailModal({ isOpen, onClose, testResult }: TestResul
                       </code>
                     </pre>
                   </ScrollArea>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  <div className="p-4 text-sm text-gray-500 bg-gray-50 rounded border">
+                    No response body captured for this test
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </ScrollArea>
       </DialogContent>

@@ -318,11 +318,56 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
   }
 
   const handleAddStoreVariable = () => {
-    const key = prompt("Enter variable name:")
-    const value = prompt(testCaseType === "SOAP" ? "Enter XPath expression:" : "Enter JSON path:")
-    if (key && value) {
-      handleNestedChange("store", key, value)
+    const newStore = { ...editedTestData.store }
+    let newKey = ""
+    let counter = 1
+
+    // Find next available empty key
+    while (newStore[newKey] !== undefined) {
+      newKey = `variable_${counter}`
+      counter++
     }
+
+    newStore[newKey] = ""
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      store: newStore,
+    }))
+  }
+
+  const handleUpdateStoreKey = (oldKey: string, newKey: string) => {
+    if (oldKey === newKey) return
+
+    const newStore = { ...editedTestData.store }
+    const value = newStore[oldKey]
+    delete newStore[oldKey]
+
+    // Avoid duplicate keys
+    let finalKey = newKey
+    let counter = 1
+    while (newStore[finalKey] !== undefined && finalKey !== newKey) {
+      finalKey = `${newKey}_${counter}`
+      counter++
+    }
+
+    newStore[finalKey] = value
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      store: newStore,
+    }))
+  }
+
+  const handleCloneStoreVariable = (key: string, value: string) => {
+    const newKey = `${key}_copy`
+    let finalKey = newKey
+    let counter = 1
+
+    while (editedTestData.store && editedTestData.store[finalKey]) {
+      finalKey = `${newKey}_${counter}`
+      counter++
+    }
+
+    handleNestedChange("store", finalKey, value)
   }
 
   const handleRemoveStoreVariable = (key: string) => {
@@ -1254,7 +1299,7 @@ Example:
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle>Store Variables</CardTitle>
-                      <CardDescription>Store response values for later use</CardDescription>
+                      <CardDescription>Store response values for later use in subsequent requests</CardDescription>
                     </div>
                     <Button
                         onClick={handleAddStoreVariable}
@@ -1272,29 +1317,156 @@ Example:
                             key={key}
                             className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50/50"
                         >
-                          <Input value={key} readOnly className="flex-1 h-10 bg-gray-100" />
-                          <Input
-                              value={value as string}
-                              onChange={(e) => handleNestedChange("store", key, e.target.value)}
-                              className="flex-1 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                              placeholder={testCaseType === "SOAP" ? "XPath Expression" : "JSON Path"}
-                          />
-                          <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleRemoveStoreVariable(key)}
-                              className="h-10 px-3 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          <div className="flex-1 relative">
+                            <Label className="text-xs font-medium text-gray-600 mb-1 block">Variable Name</Label>
+                            <Input
+                                value={key}
+                                onChange={(e) => handleUpdateStoreKey(key, e.target.value)}
+                                placeholder="variableName"
+                                className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="flex-1 relative">
+                            <Label className="text-xs font-medium text-gray-600 mb-1 block">
+                              {testCaseType === "SOAP" ? "XPath Expression" : "JSON Path"}
+                            </Label>
+                            <Input
+                                value={value as string}
+                                onChange={(e) => handleNestedChange("store", key, e.target.value)}
+                                className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                placeholder={testCaseType === "SOAP" ? "//*[local-name()='id']" : "$.id"}
+                            />
+                          </div>
+                          <div className="flex items-end gap-2">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleCloneStoreVariable(key, value as string)}
+                                className="h-10 px-3 border-blue-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
+                                title="Clone variable"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRemoveStoreVariable(key)}
+                                className="h-10 px-3 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                     ))}
+
+                    {/* Quick Add Row */}
+                    <div className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50/30 hover:border-gray-400 hover:bg-gray-50/50 transition-colors">
+                      <div className="flex-1 relative">
+                        <Label className="text-xs font-medium text-gray-600 mb-1 block">Variable Name</Label>
+                        <Input
+                            placeholder="Enter variable name..."
+                            className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            onKeyDown={(e) => {
+                              if (e.key === "Tab" || e.key === "Enter") {
+                                const key = e.currentTarget.value.trim()
+                                if (key) {
+                                  handleNestedChange("store", key, "")
+                                  e.currentTarget.value = ""
+                                  // Focus next input (path field)
+                                  const nextInput = e.currentTarget.parentElement?.parentElement?.querySelector(
+                                      "div:nth-child(2) input",
+                                  ) as HTMLInputElement
+                                  if (nextInput) nextInput.focus()
+                                }
+                              }
+                            }}
+                        />
+                      </div>
+                      <div className="flex-1 relative">
+                        <Label className="text-xs font-medium text-gray-600 mb-1 block">
+                          {testCaseType === "SOAP" ? "XPath Expression" : "JSON Path"}
+                        </Label>
+                        <Input
+                            placeholder={testCaseType === "SOAP" ? "Enter XPath expression..." : "Enter JSON path..."}
+                            className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            onKeyDown={(e) => {
+                              if (e.key === "Tab" || e.key === "Enter") {
+                                const value = e.currentTarget.value.trim()
+                                const keyInput = e.currentTarget.parentElement?.parentElement?.querySelector(
+                                    "div:first-child input",
+                                ) as HTMLInputElement
+                                const key = keyInput?.value.trim()
+
+                                if (key && value) {
+                                  handleNestedChange("store", key, value)
+                                  keyInput.value = ""
+                                  e.currentTarget.value = ""
+                                  keyInput.focus()
+                                }
+                              }
+                            }}
+                        />
+                      </div>
+                      <div className="flex items-end gap-2">
+                        <div className="h-10 px-3 flex items-center text-gray-400">
+                          <Plus className="h-3 w-3" />
+                        </div>
+                        <div className="h-10 px-3 flex items-center text-gray-400">
+                          <span className="text-xs">Tab/Enter to add</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {(!editedTestData.store || Object.keys(editedTestData.store).length === 0) && (
                         <div className="text-center py-8 text-gray-500 bg-gray-50/50 rounded-lg border-2 border-dashed border-gray-200">
                           <p className="text-sm">No store variables defined yet</p>
                           <p className="text-xs mt-1">Store response values to use in subsequent requests</p>
                         </div>
                     )}
+                  </div>
+
+                  {/* Examples Section */}
+                  <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                    <h4 className="font-medium mb-3 text-orange-800">Examples:</h4>
+                    <div className="space-y-3 text-sm">
+                      {testCaseType === "SOAP" ? (
+                        <>
+                          <div>
+                            <p className="font-medium text-orange-700">Extract ID from SOAP response:</p>
+                            <code className="text-xs bg-orange-100 px-2 py-1 rounded block mt-1">
+                              Variable: userId, XPath: //*[local-name()='UserId']/text()
+                            </code>
+                          </div>
+                          <div>
+                            <p className="font-medium text-orange-700">Extract nested element:</p>
+                            <code className="text-xs bg-orange-100 px-2 py-1 rounded block mt-1">
+                              Variable: userName, XPath: //soap:Body//User/Name/text()
+                            </code>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div>
+                            <p className="font-medium text-orange-700">Extract ID from JSON response:</p>
+                            <code className="text-xs bg-orange-100 px-2 py-1 rounded block mt-1">
+                              Variable: userId, JSON Path: $.id
+                            </code>
+                          </div>
+                          <div>
+                            <p className="font-medium text-orange-700">Extract from nested object:</p>
+                            <code className="text-xs bg-orange-100 px-2 py-1 rounded block mt-1">
+                              Variable: userName, JSON Path: $.user.name
+                            </code>
+                          </div>
+                          <div>
+                            <p className="font-medium text-orange-700">Extract from array:</p>
+                            <code className="text-xs bg-orange-100 px-2 py-1 rounded block mt-1">
+                              Variable: firstItem, JSON Path: $[0].id
+                            </code>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-gray-200">

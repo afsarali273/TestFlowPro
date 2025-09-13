@@ -1,6 +1,38 @@
 # API Testing Knowledge Base - Multiple Formats to TestFlowPro JSON
 
-This knowledge base is specifically for **API testing** supporting conversion from cURL, natural language, Swagger/OpenAPI, and Postman to TestFlowPro JSON format.
+This knowledge base is specifically for **API testing** supporting conversion from cURL, natural language, Swagger/OpenAPI, Postman, and Bruno collections to TestFlowPro JSON format.
+
+## 🆕 New Import Features
+
+### Bruno Collection Import
+- **File-based Collections**: Import .bru files and environment files
+- **Folder Upload**: Upload entire Bruno collection directories  
+- **Environment Variables**: Automatic .env file parsing
+- **Git-friendly Format**: Plain text .bru files with version control support
+
+### Enhanced cURL Import
+- **Test Before Import**: Execute cURL commands and see actual API responses
+- **Response Preview**: 160px height response box for better readability
+- **Smart URL Parsing**: Fixed regex to handle quoted and unquoted URLs
+- **Add to Existing**: Choose existing suite or create new one
+
+### Swagger/OpenAPI Import
+- **Multiple Input Methods**: URL, file upload, or paste JSON/YAML
+- **Comprehensive Conversion**: Generates positive and negative test scenarios
+- **Schema Validation**: Includes request/response schema validation
+- **Real-time Preview**: See converted test suite before importing
+
+### Postman Collection Import  
+- **v2.1 Format Support**: Full Postman Collection v2.1 compatibility
+- **Variables & Scripts**: Converts collection variables and test scripts
+- **Folder Structure**: Maintains organization with nested folders
+- **Multiple Scenarios**: Generates positive and negative test cases
+
+### Environment Variables Management
+- **Visual Editor**: Edit .env.dev, .env.qa, .env.prod files directly from UI
+- **Multi-Environment**: Switch between different environments seamlessly
+- **Real-time Editing**: Changes reflected immediately in project files
+- **CRUD Operations**: Add, edit, delete environment variables with forms
 
 ## cURL to TestFlowPro JSON
 
@@ -434,6 +466,182 @@ paths:
 }
 ```
 
+## Bruno Collection to TestFlowPro JSON
+
+### Basic Bruno Request (.bru file)
+```
+meta {
+  name: Get User
+  type: http
+}
+
+get {
+  url: https://api.example.com/users/123
+}
+
+headers {
+  Authorization: Bearer {{token}}
+  Accept: application/json
+}
+```
+```json
+// Complete TestFlowPro Test Suite
+{
+  "id": "bruno-import-1234567890",
+  "suiteName": "Bruno Collection",
+  "type": "API",
+  "baseUrl": "https://api.example.com",
+  "tags": [
+    {"serviceName": "@BrunoImport"},
+    {"suiteType": "@imported"}
+  ],
+  "testCases": [
+    {
+      "name": "Get User",
+      "testData": [
+        {
+          "name": "Get User",
+          "method": "GET",
+          "endpoint": "/users/123",
+          "headers": {
+            "Authorization": "Bearer {{token}}",
+            "Accept": "application/json"
+          },
+          "assertions": [
+            {"type": "statusCode", "expected": 200}
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Bruno POST Request with Body
+```
+meta {
+  name: Create User
+  type: http
+}
+
+post {
+  url: https://api.example.com/users
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{authToken}}
+}
+
+body {
+  {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "user"
+  }
+}
+
+auth {
+  bearer: {{authToken}}
+}
+```
+```json
+// TestFlowPro JSON
+{
+  "name": "Create User",
+  "testData": [
+    {
+      "name": "Create User",
+      "method": "POST",
+      "endpoint": "/users",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer {{authToken}}"
+      },
+      "body": {
+        "name": "John Doe",
+        "email": "john@example.com",
+        "role": "user"
+      },
+      "assertions": [
+        {"type": "statusCode", "expected": 201}
+      ]
+    }
+  ]
+}
+```
+
+### Bruno Environment Variables (.env file)
+```env
+# .env file in Bruno collection
+API_BASE_URL=https://api.example.com
+AUTH_TOKEN=bearer_token_123
+USER_ID=12345
+```
+```json
+// TestFlowPro JSON with variables
+{
+  "suiteName": "Bruno Collection",
+  "baseUrl": "https://api.example.com",
+  "variables": {
+    "API_BASE_URL": "https://api.example.com",
+    "AUTH_TOKEN": "bearer_token_123",
+    "USER_ID": "12345"
+  },
+  "testCases": [...]
+}
+```
+
+## Enhanced Import Features
+
+### cURL Test Execution
+```bash
+# Test this cURL before importing
+curl -X GET "https://jsonplaceholder.typicode.com/users/1" \
+  -H "Accept: application/json"
+```
+**Response Preview (160px height):**
+```json
+{
+  "id": 1,
+  "name": "Leanne Graham",
+  "username": "Bret",
+  "email": "Sincere@april.biz"
+}
+```
+**Converted TestFlowPro:**
+```json
+{
+  "method": "GET",
+  "endpoint": "/users/1",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "assertions": [
+    {"type": "statusCode", "expected": 200}
+  ]
+}
+```
+
+### Environment Variables UI Management
+**Access:** Settings → "Environment Variables"
+
+**Features:**
+- **Multi-Environment Tabs**: Switch between .env.dev, .env.qa, .env.prod
+- **Visual Forms**: Add/edit variables with key-value inputs
+- **Real-time Save**: Direct file writing to project root
+- **Validation**: Prevents empty keys and provides feedback
+
+**Example Usage:**
+```env
+# .env.qa (managed through UI)
+BASE_URL=https://qa-api.example.com
+API_KEY=qa_api_key_123
+DB_HOST=qa-database.example.com
+PARALLEL_THREADS=2
+TIMEOUT=30000
+```
+
 ## Conversion Rules (API Only)
 
 1. **HTTP Method Mapping**:
@@ -733,14 +941,38 @@ paths:
 }
 ```
 
+## UI Features Integration
+
+### Professional Dashboard Design
+- **Slate Color Scheme**: Professional colors replacing bright gradients
+- **Application Grouping**: Test suites organized by applicationName
+- **Grid/List Views**: Multiple viewing options for test suites
+- **Folder Navigation**: Browse test suites by folder structure
+
+### HTML Report Export
+- **Beautiful Styling**: Professional report design with comprehensive details
+- **Individual Suites**: Export specific suite results
+- **Complete Runs**: Export entire test run with all suites
+- **Response Capture**: Always store response body for passed and failed tests
+
+### Import Workflow
+1. **Access Import**: Settings dropdown or dedicated buttons
+2. **Choose Method**: cURL, Swagger, Postman, Bruno
+3. **Test/Preview**: Validate input and see conversion preview
+4. **Import Options**: Create new suite or add to existing
+5. **Edit & Customize**: Use visual editor for further modifications
+
 ## Important Notes
 
 - This knowledge base is **API testing specific** - do not apply these patterns to UI testing
 - All examples focus on HTTP requests, responses, and API validations
-- Supports REST, SOAP, and GraphQL API patterns
+- Supports REST, SOAP, and GraphQL API patterns with Bruno collection support
 - Preprocessing functions are designed for API data preparation
 - Assertions are focused on HTTP status codes and JSON/XML response validation
 - SOAP APIs use POST method with XML body and specific Content-Type headers
 - SOAP responses should be validated for both success elements and fault elements
 - Always include SOAPAction header for SOAP requests
 - SOAP test suites should use "type": "SOAP" in testCases for proper identification
+- **New Import Features**: Bruno collections, enhanced cURL testing, comprehensive Swagger/Postman support
+- **Environment Management**: Direct .env file editing through UI with multi-environment support
+- **Professional UI**: Slate color scheme with improved user experience and visual hierarchy

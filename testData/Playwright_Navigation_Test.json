@@ -1,6 +1,7 @@
 {
   "id": "Playwright_Navigation_Test_L1VzZXJz",
   "suiteName": "Playwright Navigation Test",
+  "applicationName": "playwright navigation suite",
   "type": "UI",
   "baseUrl": "",
   "tags": [],
@@ -15,7 +16,9 @@
           "id": "",
           "keyword": "goto",
           "value": "https://playwright.dev/",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "",
@@ -27,7 +30,9 @@
               "name": "Get started"
             }
           },
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "",
@@ -39,7 +44,9 @@
               "name": "How to install Playwright"
             }
           },
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "",
@@ -51,7 +58,9 @@
               "hasText": "Search (Command+K)"
             }
           },
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "",
@@ -61,13 +70,17 @@
             "value": "searchbox"
           },
           "value": "API",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "",
           "keyword": "press",
           "value": "Enter",
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         },
         {
           "id": "",
@@ -79,7 +92,9 @@
               "name": "Mock browser APIs"
             }
           },
-          "assertions": []
+          "assertions": [],
+          "store": {},
+          "skipOnFailure": false
         }
       ]
     }
