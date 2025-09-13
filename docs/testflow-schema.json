@@ -81,12 +81,19 @@
         "keyword": {
           "type": "string",
           "enum": [
-            "openBrowser", "closeBrowser", "closePage", "goto", "waitForNavigation", "reload",
-            "click", "dblClick", "type", "fill", "press", "clear", "select", "check", "uncheck", "setChecked",
-            "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop",
-            "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", 
+            "openBrowser", "closeBrowser", "closePage", "maximize", "minimize", "setViewportSize",
+            "switchToFrame", "switchToMainFrame", "acceptAlert", "dismissAlert", "getAlertText",
+            "goto", "waitForNavigation", "reload", "goBack", "goForward", "refresh",
+            "click", "dblClick", "rightClick", "type", "fill", "press", "clear",
+            "select", "check", "uncheck", "setChecked", "hover", "focus",
+            "scrollIntoViewIfNeeded", "scrollTo", "scrollUp", "scrollDown",
+            "dragAndDrop", "uploadFile", "downloadFile",
+            "getText", "getAttribute", "getTitle", "getUrl", "getValue", "getCount",
+            "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled",
             "assertCount", "assertValue", "assertAttribute", "assertHaveText", "assertHaveCount",
-            "screenshot", "waitForSelector", "waitForTimeout", "waitForFunction"
+            "assertChecked", "assertUnchecked", "assertContainsText", "assertUrl", "assertTitle",
+            "waitForSelector", "waitForTimeout", "waitForFunction", "waitForElement", "waitForText",
+            "screenshot", "customStep", "customCode"
           ]
         },
         "target": { "type": "string" },
@@ -96,7 +103,13 @@
         "assertions": {
           "type": "array",
           "items": { "$ref": "#/definitions/Assertion" }
-        }
+        },
+        "store": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "skipOnFailure": { "type": "boolean" },
+        "customCode": { "type": "string" }
       },
       "required": ["id", "keyword"],
       "additionalProperties": false
@@ -124,6 +137,7 @@
     "TestCase": {
       "type": "object",
       "properties": {
+        "id": { "type": "string" },
         "name": { "type": "string" },
         "status": { "type": "string" },
         "type": {
@@ -173,6 +187,7 @@
   "properties": {
     "id": { "type": "string" },
     "suiteName": { "type": "string" },
+    "applicationName": { "type": "string" },
     "type": {
       "type": "string",
       "enum": ["UI", "API"]
@@ -193,6 +208,6 @@
     "fileName": { "type": "string" },
     "filePath": { "type": "string" }
   },
-  "required": ["id", "suiteName", "baseUrl", "testCases"],
+  "required": ["id", "suiteName", "applicationName", "baseUrl", "testCases"],
   "additionalProperties": false
 }

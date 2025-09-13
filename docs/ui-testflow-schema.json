@@ -4,9 +4,22 @@
   "description": "JSON Schema for UI test suites using Playwright in TestFlowPro",
   "type": "object",
   "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the test suite"
+    },
     "suiteName": {
       "type": "string",
       "description": "Name of the UI test suite"
+    },
+    "applicationName": {
+      "type": "string",
+      "description": "Name of the application or service being tested"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["UI"],
+      "description": "Type of test suite"
     },
     "baseUrl": {
       "type": "string",
@@ -30,20 +43,30 @@
       }
     }
   },
-  "required": ["suiteName", "testCases"],
+  "required": ["id", "suiteName", "applicationName", "type", "testCases"],
   "definitions": {
     "UITestCase": {
       "type": "object",
       "properties": {
+        "id": {"type": "string"},
         "name": {"type": "string"},
+        "status": {"type": "string"},
+        "type": {
+          "type": "string",
+          "enum": ["UI"]
+        },
         "testData": {
+          "type": "array",
+          "items": {}
+        },
+        "testSteps": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/UITestStep"
           }
         }
       },
-      "required": ["name", "testData"]
+      "required": ["name", "type", "testData", "testSteps"]
     },
     "UITestStep": {
       "type": "object",
@@ -86,6 +109,10 @@
             }
           },
           "additionalProperties": false
+        },
+        "skipOnFailure": {
+          "type": "boolean",
+          "description": "Skip this step if previous steps failed"
         }
       },
       "required": ["keyword"],

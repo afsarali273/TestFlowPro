@@ -4,9 +4,22 @@
   "description": "JSON Schema for API test suites in TestFlowPro",
   "type": "object",
   "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the test suite"
+    },
     "suiteName": {
       "type": "string",
       "description": "Name of the API test suite"
+    },
+    "applicationName": {
+      "type": "string",
+      "description": "Name of the application or service being tested"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["API"],
+      "description": "Type of test suite"
     },
     "baseUrl": {
       "type": "string",
@@ -30,20 +43,30 @@
       }
     }
   },
-  "required": ["suiteName", "baseUrl", "testCases"],
+  "required": ["id", "suiteName", "applicationName", "type", "baseUrl", "testCases"],
   "definitions": {
     "APITestCase": {
       "type": "object",
       "properties": {
+        "id": {"type": "string"},
         "name": {"type": "string"},
+        "status": {"type": "string"},
+        "type": {
+          "type": "string",
+          "enum": ["REST", "SOAP"]
+        },
         "testData": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/APITestData"
           }
+        },
+        "testSteps": {
+          "type": "array",
+          "items": {}
         }
       },
-      "required": ["name", "testData"]
+      "required": ["name", "type", "testData", "testSteps"]
     },
     "APITestData": {
       "type": "object",

@@ -122,64 +122,13 @@ const formatApiError = (errorString: string) => {
 
 // Helper function to format Playwright errors
 const formatPlaywrightError = (errorString: string) => {
-  const cleanError = errorString.replace(/\x1B\[[0-9;]*m/g, '')
-  
-  // Extract key information
-  const locatorMatch = cleanError.match(/Locator:([^\n]+)/)
-  const errorTypeMatch = cleanError.match(/locator\.[^:]+: Error: ([^\n]+)/)
-  const elementCountMatch = cleanError.match(/resolved to (\d+) elements/)
-  
   return (
-    <div className="space-y-3">
-      {/* Main Error */}
-      {errorTypeMatch && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <div className="text-sm font-semibold text-red-800 mb-1">Error Type</div>
-          <div className="text-sm text-red-700">{errorTypeMatch[1]}</div>
-        </div>
-      )}
-      
-      {/* Locator Info */}
-      {locatorMatch && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="text-sm font-semibold text-blue-800 mb-1">Locator</div>
-          <code className="text-sm text-blue-700 bg-blue-100 px-2 py-1 rounded">
-            {locatorMatch[1].trim()}
-          </code>
-        </div>
-      )}
-      
-      {/* Element Count */}
-      {elementCountMatch && (
-        <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-          <div className="text-sm font-semibold text-orange-800 mb-1">Elements Found</div>
-          <div className="text-sm text-orange-700">
-            Found {elementCountMatch[1]} matching elements (expected 1)
-          </div>
-        </div>
-      )}
-      
-      {/* Suggestions */}
-      {elementCountMatch && parseInt(elementCountMatch[1]) > 1 && (
-        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="text-sm font-semibold text-yellow-800 mb-1">💡 Suggestions</div>
-          <div className="text-sm text-yellow-700 space-y-1">
-            <div>• Use .first() to select the first element</div>
-            <div>• Use .nth(index) to select a specific element</div>
-            <div>• Make the locator more specific</div>
-            <div>• Add additional filters or attributes</div>
-          </div>
-        </div>
-      )}
-      
-      {/* Raw Error (collapsed) */}
-      <details className="text-xs">
-        <summary className="cursor-pointer text-gray-600 hover:text-gray-800">View Raw Error</summary>
-        <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto max-h-32">
-          {cleanError}
-        </pre>
-      </details>
-    </div>
+    <details className="text-xs">
+      <summary className="cursor-pointer text-gray-600 hover:text-gray-800 font-medium">🔍 View Raw Error Details</summary>
+      <div className="mt-3 p-3 bg-gray-900 text-green-300 rounded font-mono text-xs overflow-auto max-h-40">
+        <pre className="whitespace-pre-wrap">{errorString}</pre>
+      </div>
+    </details>
   )
 }
 
@@ -344,12 +293,14 @@ export function TestResultDetailModal({ isOpen, onClose, testResult }: TestResul
                         )}
                         
                         {step.error && (
-                          <Alert className="mt-2">
-                            <AlertTriangle className="h-4 w-4" />
-                            <AlertDescription className="text-xs">
-                              {step.error}
-                            </AlertDescription>
-                          </Alert>
+                          <div className="mt-2">
+                            <details className="text-xs">
+                              <summary className="cursor-pointer text-gray-600 hover:text-gray-800 font-medium">🔍 View Raw Error Details</summary>
+                              <div className="mt-2 p-3 bg-gray-900 text-green-300 rounded font-mono text-xs overflow-auto max-h-40">
+                                <pre className="whitespace-pre-wrap">{step.error}</pre>
+                              </div>
+                            </details>
+                          </div>
                         )}
                         
                         {step.screenshotPath && (

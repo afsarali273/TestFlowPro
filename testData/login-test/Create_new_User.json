@@ -1,5 +1,7 @@
 {
+  "id": "User_Registration_Suite_L1VzZXJz",
   "suiteName": "User Registration Suite",
+  "applicationName": "",
   "type": "API",
   "baseUrl": "https://www.abibliadigital.com.br",
   "tags": [
@@ -134,7 +136,6 @@
       "testSteps": []
     }
   ],
-  "id": "User_Registration_Suite_L1VzZXJz",
   "status": "Not Started",
-  "filePath": "/Users/afsarali/Repository/TestFlowPro/testData/Create_new_User.json"
+  "filePath": "/Users/afsarali/Repository/TestFlowPro/testData/login-test/Create_new_User.json"
 }

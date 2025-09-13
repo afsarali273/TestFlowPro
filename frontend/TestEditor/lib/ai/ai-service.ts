@@ -65,19 +65,62 @@ User Request: {input}
 Generate a valid JSON test suite that STRICTLY follows this schema:
 
 FOR API TESTS:
-- id: Generate unique string based on context (e.g., "user-api-tests-2024", "payment-service-regression")
-- suiteName: Generate descriptive name based on context (e.g., "User Management API Tests", "Payment Service Regression Suite")
-- type: "API", baseUrl: string
-- testCases: [{{name, type: "REST"|"SOAP", testData: [{{name, method, endpoint, headers, body, assertions, store}}]}}]
+{{
+  "id": "unique-suite-id",
+  "suiteName": "Descriptive Suite Name",
+  "applicationName": "Application or Service Name",
+  "type": "API",
+  "baseUrl": "https://api.example.com",
+  "tags": [{{"serviceName": "@ServiceName"}}, {{"suiteType": "@regression"}}],
+  "testCases": [{{
+    "id": "optional-test-case-id",
+    "name": "Test Case Name",
+    "type": "REST",
+    "status": "Not Started",
+    "testData": [{{
+      "name": "Test Data Name",
+      "method": "POST",
+      "endpoint": "/api/endpoint",
+      "headers": {{"Content-Type": "application/json"}},
+      "body": {{"key": "value"}},
+      "assertions": [{{"type": "statusCode", "expected": 200}}],
+      "store": {{"variableName": "$.jsonPath"}}
+    }}],
+    "testSteps": []
+  }}]
+}}
 - Assertions: statusCode, exists, equals, contains, greaterThan, lessThan, in, notIn, length, type, regex
 - PreProcess: faker.email, faker.uuid, date.now, encrypt, custom.authToken, dbQuery
 - Variable usage: {{"value": "{{variableName}}"}}
 
 FOR UI TESTS:
-- id: Generate unique string based on context (e.g., "login-flow-ui-test", "checkout-e2e-automation")
-- suiteName: Generate descriptive name based on context (e.g., "Login Flow UI Test", "E2E Checkout Automation")
-- type: "UI", baseUrl: string (optional)
-- testCases: [{{name, type: "UI", testSteps: [{{id, keyword, locator, value, store, skipOnFailure}}]}}]
+{{
+  "id": "unique-suite-id",
+  "suiteName": "Descriptive Suite Name",
+  "applicationName": "Application or Service Name",
+  "type": "UI",
+  "baseUrl": "https://example.com",
+  "tags": [{{"serviceName": "@UIService"}}, {{"suiteType": "@e2e"}}],
+  "testCases": [{{
+    "id": "optional-test-case-id",
+    "name": "Test Case Name",
+    "type": "UI",
+    "status": "Not Started",
+    "testData": [],
+    "testSteps": [{{
+      "id": "step-id-123",
+      "keyword": "click",
+      "locator": {{
+        "strategy": "role",
+        "value": "button",
+        "options": {{"name": "Submit"}}
+      }},
+      "value": "optional-value",
+      "store": {{"variableName": "$text"}},
+      "skipOnFailure": false
+    }}]
+  }}]
+}}
 - Keywords: goto, click, fill, getText, assertVisible, screenshot, customCode, etc.
 - Locators: {{strategy: "role|text|css|xpath", value: "...", options: {{name, exact}}}}
 - Variable storage: {{"store": {{"varName": "$text|$attribute|$title|$url|$value|$count"}}}}
@@ -120,9 +163,12 @@ Required JSON Schema:
   "type": "API",
   "baseUrl": "https://domain.com",
   "timeout": 30000,
+  "tags": [{{"serviceName": "@APIService"}}, {{"suiteType": "@regression"}}],
   "testCases": [{{
+    "id": "optional-test-case-id",
     "name": "Test Case Name",
     "type": "REST",
+    "status": "Not Started",
     "testData": [{{
       "name": "Test Step Name",
       "method": "GET|POST|PUT|DELETE",
@@ -132,7 +178,8 @@ Required JSON Schema:
       "assertions": [
         {{"type": "statusCode", "jsonPath": "$", "expected": 200}}
       ]
-    }}]
+    }}],
+    "testSteps": []
   }}]
 }}
 
@@ -211,7 +258,21 @@ SUITE NAMING FROM PLAYWRIGHT CODE:
 - Include timestamp if needed for uniqueness
 
 Return complete JSON:
-{{"id":"generate-from-context","suiteName":"Generate from context","type":"UI","baseUrl":"","testCases":[{{"name":"Test Case","type":"UI","testSteps":[...ALL_STEPS...]}}]}}`
+{{
+  "id": "generate-from-context",
+  "suiteName": "Generate from context",
+  "type": "UI",
+  "baseUrl": "",
+  "tags": [{{"serviceName": "@UIService"}}, {{"suiteType": "@e2e"}}],
+  "testCases": [{{
+    "id": "optional-test-case-id",
+    "name": "Test Case",
+    "type": "UI",
+    "status": "Not Started",
+    "testData": [],
+    "testSteps": [...ALL_STEPS_WITH_IDS...]
+  }}]
+}}`
 
     return {
       general: RunnableSequence.from([
@@ -552,8 +613,19 @@ Return ONLY this JSON structure with NO explanations:
           // Fix options placement if needed
           rawSuite = this.fixOptionsPlacement(rawSuite)
           
-          // Fix missing step IDs
-          rawSuite.testCases?.forEach((testCase: any) => {
+          // Fix missing IDs
+          if (!rawSuite.id) {
+            rawSuite.id = `generated-suite-${Date.now()}`
+          }
+          
+          rawSuite.testCases?.forEach((testCase: any, tcIndex: number) => {
+            if (!testCase.id) {
+              testCase.id = `test-case-${tcIndex + 1}`
+            }
+            if (!testCase.status) {
+              testCase.status = 'Not Started'
+            }
+            
             testCase.testSteps?.forEach((step: any, index: number) => {
               if (!step.id || step.id === '') {
                 step.id = `step-${index + 1}`

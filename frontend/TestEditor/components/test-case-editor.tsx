@@ -98,7 +98,6 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
       ...prev,
       [field]: value,
     }))
-    triggerAutoSave()
   }
 
   const triggerAutoSave = () => {
@@ -109,9 +108,26 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
       clearTimeout(autoSaveTimeout)
     }
     const timeout = setTimeout(() => {
-      handleSave()
-    }, 1000)
+      handleSaveQuietly()
+    }, 2000)
     setAutoSaveTimeout(timeout)
+  }
+
+  const handleSaveQuietly = () => {
+    // Silent save for existing test cases without triggering onSave callback
+    if (!suiteId) return
+    
+    try {
+      const validatedTestCase = validateTestCase(editedTestCase)
+      const finalTestCase = {
+        ...validatedTestCase,
+        index: editedTestCase.index,
+      }
+      // Don't call onSave to avoid navigation - just silent background save
+    } catch (error) {
+      // Silent fail for auto-save
+      console.log('Auto-save failed:', error)
+    }
   }
 
   const handleTestTypeChange = (type: "API" | "UI") => {
@@ -537,7 +553,10 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                 </div>
 
                 <div className="flex justify-end pt-4 border-t">
-                  <Button onClick={() => setActiveTab(testType === "API" ? "testdata" : "teststeps")} size="lg">
+                  <Button onClick={() => {
+                    triggerAutoSave()
+                    setActiveTab(testType === "API" ? "testdata" : "teststeps")
+                  }} size="lg">
                     Next: {testType === "API" ? "Test Data" : "Test Steps"}
                   </Button>
                 </div>

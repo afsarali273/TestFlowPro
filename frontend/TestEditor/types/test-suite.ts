@@ -174,6 +174,7 @@ export interface TestStep {
 }
 
 export interface TestCase {
+    id?: string
     name: string
     status?: string
     type: "SOAP" | "REST" | "UI"
@@ -188,6 +189,7 @@ export interface Tag {
 export interface TestSuite {
     id: string
     suiteName: string
+    applicationName: string
     type?: "UI" | "API"
     tags?: Tag[]
     baseUrl: string
@@ -201,6 +203,7 @@ export function validateTestSuite(suite: any): TestSuite {
     const validated: TestSuite = {
         id: suite.id || "",
         suiteName: suite.suiteName || "",
+        applicationName: suite.applicationName || "",
         type: suite.type === "UI" ? "UI" : "API",
         baseUrl: suite.baseUrl || "",
         tags: Array.isArray(suite.tags) ? suite.tags : [],
@@ -212,6 +215,7 @@ export function validateTestSuite(suite: any): TestSuite {
 
 export function validateTestCase(testCase: any): TestCase {
     const validated: TestCase = {
+        id: testCase.id,
         name: testCase.name || "",
         status: testCase.status || "Not Started",
         type: testCase.type === "SOAP" ? "SOAP" : testCase.type === "UI" ? "UI" : "REST",

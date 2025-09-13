@@ -111,7 +111,31 @@ export class RAGKnowledgeBase {
     // Add only relevant documents based on intent
     if (intent.type === 'api' || userInput.includes('curl') || userInput.includes('POST') || userInput.includes('GET')) {
       docs.push(new Document({
-        pageContent: `API: testData=[{name,method,endpoint,headers,body,assertions}]
+        pageContent: `API Schema:
+{
+  "id": "unique-suite-id",
+  "suiteName": "Descriptive Suite Name",
+  "type": "API",
+  "baseUrl": "https://api.example.com",
+  "tags": [{"serviceName": "@ServiceName"}, {"suiteType": "@regression"}],
+  "testCases": [{
+    "id": "optional-test-case-id",
+    "name": "Test Case Name",
+    "type": "REST",
+    "status": "Not Started",
+    "testData": [{
+      "name": "Test Data Name",
+      "method": "POST",
+      "endpoint": "/api/endpoint",
+      "headers": {"Content-Type": "application/json"},
+      "body": {"key": "value"},
+      "assertions": [{"type": "statusCode", "expected": 200}],
+      "store": {"variableName": "$.jsonPath"}
+    }],
+    "testSteps": []
+  }]
+}
+
 Suite Naming: Generate unique id from URL/service context (e.g., "user-api-tests", "payment-service-v1")
 Create descriptive suiteName from endpoint context (e.g., "User Management API Tests", "Payment Service Tests")`,
         metadata: { type: 'api-format' }
@@ -129,7 +153,35 @@ Generate suiteName from endpoint (e.g., "User API Tests", "Product Service Tests
     
     if (intent.type === 'ui' || userInput.includes('playwright') || userInput.includes('page.')) {
       docs.push(new Document({
-        pageContent: `UI Examples:
+        pageContent: `UI Schema:
+{
+  "id": "unique-suite-id",
+  "suiteName": "Descriptive Suite Name",
+  "type": "UI",
+  "baseUrl": "https://example.com",
+  "tags": [{"serviceName": "@UIService"}, {"suiteType": "@e2e"}],
+  "testCases": [{
+    "id": "optional-test-case-id",
+    "name": "Test Case Name",
+    "type": "UI",
+    "status": "Not Started",
+    "testData": [],
+    "testSteps": [{
+      "id": "step-id-123",
+      "keyword": "click",
+      "locator": {
+        "strategy": "role",
+        "value": "button",
+        "options": {"name": "Submit"}
+      },
+      "value": "optional-value",
+      "store": {"variableName": "$text"},
+      "skipOnFailure": false
+    }]
+  }]
+}
+
+UI Examples:
 page.goto('url') → {"keyword":"goto","value":"url"}
 page.getByRole('button',{name:'Submit'}) → {"keyword":"click","locator":{"strategy":"role","value":"button","options":{"name":"Submit"}}}
 page.locator('#id') → {"keyword":"click","locator":{"strategy":"css","value":"#id"}}
@@ -147,7 +199,10 @@ All operations after clickAndWaitForPopup happen in new tab automatically
 
 Custom Code (complex operations):
 await page.locator('.item').nth(0).click(); await page.locator('.item').nth(1).click(); → {"keyword":"customCode","customCode":"await page.locator('.item').nth(0).click();\nawait page.locator('.item').nth(1).click();"}
-const count = await page.locator('.product').count(); expect(count).toBeGreaterThan(5); → {"keyword":"customCode","customCode":"const count = await page.locator('.product').count();\nexpect(count).toBeGreaterThan(5);"}
+const count = await page.locator('.product').count(); expect(count).toBeGreaterThan(5); → {"keyword":"customCode","customCode":"const count = await page.locator('.product').count();\nexpected(count).toBeGreaterThan(5);"}
+
+Skip on Failure:
+Add "skipOnFailure": true to skip step if previous steps failed
 
 Suite Naming Guidelines:
 - Generate unique id from context: "login-flow-test", "checkout-e2e-automation"
@@ -181,24 +236,48 @@ Suite Naming Guidelines:
   
   static getConversionRules(type: ConversionType): Document | null {
     const rules = {
-      playwright: `Complete Examples:
-page.getByRole('button',{name:'Submit'}).click() → {"keyword":"click","locator":{"strategy":"role","value":"button","options":{"name":"Submit"}}}
-page.locator('#submit-btn').click() → {"keyword":"click","locator":{"strategy":"css","value":"#submit-btn"}}
-page.getByText('Welcome').toBeVisible() → {"keyword":"assertVisible","locator":{"strategy":"text","value":"Welcome"}}
+      playwright: `Complete Schema with IDs:
+{
+  "id": "login-flow-test",
+  "suiteName": "Login Flow Test",
+  "type": "UI",
+  "testCases": [{
+    "id": "login-test-case",
+    "name": "User Login Test",
+    "type": "UI",
+    "testSteps": [{
+      "id": "step-goto-login",
+      "keyword": "goto",
+      "value": "https://example.com/login"
+    }, {
+      "id": "step-fill-username",
+      "keyword": "fill",
+      "locator": {"strategy": "css", "value": "#username"},
+      "value": "testuser"
+    }]
+  }]
+}
+
+Complete Examples:
+page.getByRole('button',{name:'Submit'}).click() → {"id":"step-click-submit","keyword":"click","locator":{"strategy":"role","value":"button","options":{"name":"Submit"}}}
+page.locator('#submit-btn').click() → {"id":"step-click-btn","keyword":"click","locator":{"strategy":"css","value":"#submit-btn"}}
+page.getByText('Welcome').toBeVisible() → {"id":"step-assert-welcome","keyword":"assertVisible","locator":{"strategy":"text","value":"Welcome"}}
 
 Variable Storage:
-const title = await page.locator('h1').textContent() → {"keyword":"getText","locator":{"strategy":"css","value":"h1"},"store":{"pageTitle":"$text"}}
-const userId = await page.locator('#user').getAttribute('data-id') → {"keyword":"getAttribute","value":"data-id","locator":{"strategy":"css","value":"#user"},"store":{"userId":"$attribute"}}
-page.fill('#search', title) → {"keyword":"fill","value":"{{pageTitle}}","locator":{"strategy":"css","value":"#search"}}
+const title = await page.locator('h1').textContent() → {"id":"step-get-title","keyword":"getText","locator":{"strategy":"css","value":"h1"},"store":{"pageTitle":"$text"}}
+const userId = await page.locator('#user').getAttribute('data-id') → {"id":"step-get-userid","keyword":"getAttribute","value":"data-id","locator":{"strategy":"css","value":"#user"},"store":{"userId":"$attribute"}}
+page.fill('#search', title) → {"id":"step-search","keyword":"fill","value":"{{pageTitle}}","locator":{"strategy":"css","value":"#search"}}
 
 Tab/Popup Handling:
-const page1Promise = page.waitForEvent('popup'); await locator.click(); const page1 = await page1Promise; → {"keyword":"clickAndWaitForPopup","locator":{"strategy":"css","value":".selector"}}
-Switch tabs: {"keyword":"switchToTab","value":"0"} (0=first, 1=second)
+const page1Promise = page.waitForEvent('popup'); await locator.click(); const page1 = await page1Promise; → {"id":"step-popup","keyword":"clickAndWaitForPopup","locator":{"strategy":"css","value":".selector"}}
+Switch tabs: {"id":"step-switch","keyword":"switchToTab","value":"0"} (0=first, 1=second)
 
 Raw Playwright Code:
-await page.locator('.item').nth(0).click(); await page.locator('.item').nth(1).click(); → {"keyword":"customCode","customCode":"await page.locator('.item').nth(0).click();\nawait page.locator('.item').nth(1).click();"}
-const count = await page.locator('.product').count(); expect(count).toBeGreaterThan(5); → {"keyword":"customCode","customCode":"const count = await page.locator('.product').count();\nexpect(count).toBeGreaterThan(5);"}
-await page.waitForFunction(() => document.querySelectorAll('.loaded').length > 3); → {"keyword":"customCode","customCode":"await page.waitForFunction(() => {\n  return document.querySelectorAll('.loaded').length > 3;\n});"}
+await page.locator('.item').nth(0).click(); await page.locator('.item').nth(1).click(); → {"id":"step-custom","keyword":"customCode","customCode":"await page.locator('.item').nth(0).click();\nawait page.locator('.item').nth(1).click();"}
+const count = await page.locator('.product').count(); expect(count).toBeGreaterThan(5); → {"id":"step-count-check","keyword":"customCode","customCode":"const count = await page.locator('.product').count();\nexpect(count).toBeGreaterThan(5);"}
+
+Skip on Failure:
+{"id":"step-optional","keyword":"click","locator":{...},"skipOnFailure":true}
 
 Suite Naming: Generate unique id from context ("login-flow-test", "checkout-e2e"), descriptive suiteName ("Login Flow Test", "E2E Checkout")`,
       curl: `curl -X METHOD url -H header -d body → {method,endpoint,headers,body}`,

@@ -86,7 +86,6 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
       ...prev,
       [field]: value,
     }))
-    triggerAutoSave()
   }
 
   const triggerAutoSave = () => {
@@ -97,9 +96,41 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
       clearTimeout(autoSaveTimeout)
     }
     const timeout = setTimeout(() => {
-      handleSave()
-    }, 1000)
+      handleSaveQuietly()
+    }, 2000)
     setAutoSaveTimeout(timeout)
+  }
+
+  const handleSaveQuietly = async () => {
+    // Silent save for existing suites without popups
+    if (!editedSuite.filePath) return
+    
+    try {
+      const validatedSuite = validateTestSuite(editedSuite)
+      const finalSuite = {
+        ...validatedSuite,
+        id: editedSuite.id,
+        status: editedSuite.status,
+        filePath: editedSuite.filePath,
+      }
+
+      const response = await fetch("/api/test-suites", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          testSuite: finalSuite,
+          filePath: editedSuite.filePath,
+          forceReplace: true,
+        }),
+      })
+
+      // Don't call onSave to avoid navigation - just silent background save
+    } catch (error) {
+      // Silent fail for auto-save
+      console.log('Auto-save failed:', error)
+    }
   }
 
   const handleAddTag = () => {
@@ -129,7 +160,6 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
         return tag
       }),
     }))
-    triggerAutoSave()
   }
 
   const handleAddTestCase = () => {
@@ -502,6 +532,21 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
                       />
                     </div>
                     <div className="space-y-2">
+                      <Label htmlFor="applicationName" className="text-sm font-medium text-gray-700">
+                        Application Name
+                      </Label>
+                      <Input
+                          id="applicationName"
+                          value={editedSuite.applicationName || ""}
+                          onChange={(e) => handleSuiteChange("applicationName", e.target.value)}
+                          placeholder="Enter application name"
+                          className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-2">
                       <Label htmlFor="status" className="text-sm font-medium text-gray-700">
                         Status
                       </Label>
@@ -520,6 +565,7 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
                         </SelectContent>
                       </Select>
                     </div>
+                    <div></div>
                   </div>
 
                   {/* Base URL Section */}
@@ -656,7 +702,10 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
                   </div>
                   <div className="flex justify-end pt-4 border-t border-gray-200">
                     <Button
-                        onClick={() => setActiveTab("testcases")}
+                        onClick={() => {
+                          triggerAutoSave()
+                          setActiveTab("testcases")
+                        }}
                         className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
                     >
                       Next: Test Cases

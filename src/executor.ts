@@ -223,7 +223,8 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                 apiDetails.responseBody = responseData;
                 
                 console.log(`✅ Request completed with status ${res.status}`);
-                console.log("Response from server:", responseData);
+                console.log("Response from server:");
+                console.log(JSON.stringify(responseData, null, 2));
 
                 if (!soap && schema) {
                     console.log(`➡️ Validating response schema...`);
@@ -313,7 +314,8 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                     apiDetails.responseBody = responseData;
                     
                     console.log(`⚠️ Request failed with status ${res.status}`);
-                    console.log("Response from server", responseData);
+                    console.log("Response from server:");
+                    console.log(JSON.stringify(responseData, null, 2));
 
                     // Still run assertions on error response
                     for (const assertion of data.assertions || []) {
