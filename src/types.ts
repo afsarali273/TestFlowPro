@@ -46,6 +46,7 @@ export interface TestData {
 }
 
 export interface TestCase {
+    id?: string;
     name: string;
     status?: string;
     "type": "SOAP" | "REST" | "UI";
@@ -195,6 +196,7 @@ export interface TestStep {
 
 
 export interface TestSuite {
+    id: string;
     suiteName: string;
     type: "UI"| "API";
     tags?: Tag[];

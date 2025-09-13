@@ -109,4 +109,20 @@ export class Reporter {
         fs.writeFileSync(fullPath, JSON.stringify(output, null, 2), 'utf-8');
         console.log(`\n📄 Report written to: ${fullPath}`);
     }
+    
+    getSummary() {
+        const totalTestCases = new Set(this.report.map((r) => r.testCase)).size;
+        const totalDataSets = this.report.length;
+        const passed = this.report.filter((r) => r.status === 'PASS').length;
+        const failed = this.report.filter((r) => r.status === 'FAIL').length;
+        const executionTimeMs = Date.now() - this.startTime;
+        
+        return {
+            totalTestCases,
+            totalDataSets,
+            passed,
+            failed,
+            executionTimeMs
+        };
+    }
 }

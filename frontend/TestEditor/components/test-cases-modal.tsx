@@ -20,16 +20,52 @@ import {
   Eye,
   Camera,
   Play,
+  Loader2,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useToast } from "@/hooks/use-toast"
+import { useState } from "react"
 
 interface TestCasesModalProps {
   suite: any
   isOpen: boolean
   onClose: () => void
+  onRunTestCase?: (suite: any, testCase: any) => void
 }
 
-export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) {
+export function TestCasesModal({ suite, isOpen, onClose, onRunTestCase }: TestCasesModalProps) {
+  const { toast } = useToast()
+
+  const handleRunTestCase = (testCase: any) => {
+    if (!suite.filePath) {
+      toast({
+        title: "Cannot Run Test Case",
+        description: "Please save the test suite first before running individual test cases.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Create a temporary suite with only the selected test case
+    const tempSuite = {
+      ...suite,
+      testCases: [testCase],
+      suiteName: `${suite.suiteName} > ${testCase.name}`,
+      _executionTarget: {
+        type: 'testcase',
+        suiteId: suite.id,
+        suiteName: suite.suiteName,
+        testCaseId: testCase.id,
+        testCaseName: testCase.name
+      }
+    }
+
+    // Close this modal and open the suite runner modal
+    onClose()
+    if (onRunTestCase) {
+      onRunTestCase(tempSuite, testCase)
+    }
+  }
   const getStatusIcon = (status: string) => {
     switch (status?.toLowerCase()) {
       case "passed":
@@ -362,7 +398,19 @@ export function TestCasesModal({ suite, isOpen, onClose }: TestCasesModalProps) 
                                     : `${testCase.testData?.length || 0} test data item${testCase.testData?.length !== 1 ? "s" : ""}`}
                               </CardDescription>
                             </div>
-                            <Badge className={getStatusColor(testCase.status)}>{testCase.status}</Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge className={getStatusColor(testCase.status)}>{testCase.status}</Badge>
+                              <Button
+                                size="sm"
+                                onClick={() => handleRunTestCase(testCase)}
+                                disabled={!suite.filePath}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                title={!suite.filePath ? "Save the suite first" : "Run this test case"}
+                              >
+                                <Play className="h-3 w-3 mr-1" />
+                                Run
+                              </Button>
+                            </div>
                           </div>
                         </CardHeader>
 

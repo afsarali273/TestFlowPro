@@ -1,5 +1,6 @@
 "use client"
 
+// Updated with detailed test summary in status section
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +11,8 @@ import { Play, Square, CheckCircle, XCircle, Clock, Terminal, AlertCircle, Setti
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface SuiteRunnerModalProps {
-  suite: any
+  suite?: any
+  target?: string
   isOpen: boolean
   onClose: () => void
 }
@@ -22,13 +24,14 @@ interface LogEntry {
   data?: any
 }
 
-export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalProps) {
+export function SuiteRunnerModal({ suite, target, isOpen, onClose }: SuiteRunnerModalProps) {
   const [isRunning, setIsRunning] = useState(false)
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [executionResult, setExecutionResult] = useState<{
     success: boolean
     exitCode?: number
     completed: boolean
+    stats?: { passed: number; failed: number; total: number }
   }>({ success: false, completed: false })
   const [frameworkPath, setFrameworkPath] = useState<string>("")
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -60,7 +63,7 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
       return
     }
 
-    if (!suite.filePath) {
+    if (!suite?.filePath && !target) {
       addLog("error", "Suite file path not available. Please save the suite first.")
       return
     }
@@ -72,20 +75,42 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
     // Create abort controller for cancellation
     abortControllerRef.current = new AbortController()
 
-    addLog("info", `🚀 Starting test suite execution...`)
+    const isTestCaseExecution = suite?._executionTarget?.type === 'testcase' || !!target
+    
+    if (isTestCaseExecution) {
+      addLog("info", `🚀 Starting test case execution...`)
+      if (target) {
+        addLog("info", `📋 Target: ${target}`)
+      } else {
+        addLog("info", `📋 Test Case: ${suite?._executionTarget?.testCaseName}`)
+      }
+    } else {
+      addLog("info", `🚀 Starting test suite execution...`)
+    }
     addLog("info", `📁 Framework Path: ${frameworkPath}`)
-    addLog("info", `📄 Suite File: ${suite.filePath}`)
+    if (suite?.filePath) {
+      addLog("info", `📄 Suite File: ${suite.filePath}`)
+    }
 
     try {
-      const response = await fetch("/api/execute-suite", {
+      // Determine API endpoint and payload based on execution type
+      const isTestCaseExecution = suite?._executionTarget?.type === 'testcase' || !!target
+      const apiEndpoint = isTestCaseExecution ? "/api/run-testcase" : "/api/execute-suite"
+      
+      const requestBody = isTestCaseExecution ? {
+        target: target || `${suite?._executionTarget?.suiteId}:${suite?._executionTarget?.suiteName} > ${suite?._executionTarget?.testCaseId}:${suite?._executionTarget?.testCaseName}`,
+        frameworkPath
+      } : {
+        frameworkPath,
+        suiteFilePath: suite?.filePath,
+      }
+
+      const response = await fetch(apiEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          frameworkPath,
-          suiteFilePath: suite.filePath,
-        }),
+        body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal,
       })
 
@@ -121,15 +146,20 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
                 case "exit":
                   if (data.success) {
                     addLog("info", `✅ Test execution completed successfully (exit code: ${data.exitCode})`)
-                    setExecutionResult({ success: true, exitCode: data.exitCode, completed: true })
+                    setExecutionResult({ success: true, exitCode: data.exitCode, completed: true, stats: data.stats })
                   } else {
                     addLog("error", `❌ Test execution failed (exit code: ${data.exitCode})`)
-                    setExecutionResult({ success: false, exitCode: data.exitCode, completed: true })
+                    setExecutionResult({ success: false, exitCode: data.exitCode, completed: true, stats: data.stats })
                   }
+                  break
+                case "stats":
+                  // Update stats during execution
+                  setExecutionResult(prev => ({ ...prev, stats: data.stats }))
+                  addLog("info", `📊 Progress: ${data.stats.passed} passed, ${data.stats.failed} failed (${data.stats.passed + data.stats.failed}/${data.stats.total})`)
                   break
                 case "error":
                   addLog("error", `❌ Execution error: ${data.error}`)
-                  setExecutionResult({ success: false, completed: true })
+                  setExecutionResult(prev => ({ success: false, completed: true, stats: prev.stats }))
                   break
               }
             } catch (e) {
@@ -212,106 +242,126 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Terminal className="h-5 w-5" />
-            Test Suite Runner - {suite.suiteName}
+            Test Suite Runner - {target ? target.split(' > ')[0]?.split(':')[1] || 'Test Case' : suite?.suiteName || suite?._executionTarget?.suiteName || 'Unnamed Suite'}
           </DialogTitle>
           <DialogDescription>Execute the test suite using the configured automation framework</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 flex flex-col space-y-4 min-h-0 overflow-hidden">
           {/* Status and Controls */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg flex-shrink-0">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                {isRunning ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                ) : executionResult.completed ? (
-                  executionResult.success ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+          <div className="p-4 bg-gray-50 rounded-lg flex-shrink-0 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  {isRunning ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                  ) : executionResult.completed ? (
+                    executionResult.success ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    )
                   ) : (
-                    <XCircle className="h-4 w-4 text-red-500" />
-                  )
-                ) : (
-                  <Clock className="h-4 w-4 text-gray-400" />
+                    <Clock className="h-4 w-4 text-gray-400" />
+                  )}
+                  <span className="font-medium">
+                    {isRunning
+                      ? "Running..."
+                      : executionResult.completed
+                        ? executionResult.success
+                          ? "Completed Successfully"
+                          : "Failed"
+                        : "Ready to Run"}
+                  </span>
+                </div>
+
+                {executionResult.stats && (
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-green-100 text-green-800">
+                      ✓ {executionResult.stats.passed} Passed
+                    </Badge>
+                    {executionResult.stats.failed > 0 && (
+                      <Badge className="bg-red-100 text-red-800">
+                        ✗ {executionResult.stats.failed} Failed
+                      </Badge>
+                    )}
+                    <Badge variant="outline">
+                      {executionResult.stats.passed + executionResult.stats.failed}/{executionResult.stats.total} Complete
+                    </Badge>
+                  </div>
                 )}
-                <span className="font-medium">
-                  {isRunning
-                    ? "Running..."
-                    : executionResult.completed
-                      ? executionResult.success
-                        ? "Completed Successfully"
-                        : "Failed"
-                      : "Ready to Run"}
-                </span>
+                
+                {executionResult.completed && !executionResult.stats && (
+                  <Badge
+                    variant={executionResult.success ? "default" : "destructive"}
+                    className={executionResult.success ? "bg-green-100 text-green-800" : ""}
+                  >
+                    Exit Code: {executionResult.exitCode}
+                  </Badge>
+                )}
               </div>
 
-              {executionResult.completed && (
-                <Badge
-                  variant={executionResult.success ? "default" : "destructive"}
-                  className={executionResult.success ? "bg-green-100 text-green-800" : ""}
-                >
-                  Exit Code: {executionResult.exitCode}
-                </Badge>
-              )}
+              <div className="flex items-center gap-2">
+                {!frameworkPath && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // This would open framework config - for now just show alert
+                      alert("Please configure framework path in the main settings")
+                    }}
+                  >
+                    <Settings className="h-3 w-3 mr-1" />
+                    Configure
+                  </Button>
+                )}
+
+                {/* View Results Button - Show when execution is completed */}
+                {executionResult.completed && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={navigateToResults}
+                    className="bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700"
+                  >
+                    <BarChart3 className="h-3 w-3 mr-1" />
+                    View Results
+                  </Button>
+                )}
+
+                <Button variant="outline" size="sm" onClick={clearLogs} disabled={isRunning}>
+                  Clear Logs
+                </Button>
+
+                {!isRunning ? (
+                  <Button
+                    onClick={runSuite}
+                    disabled={!frameworkPath || (!suite?.filePath && !target)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    {(suite?._executionTarget?.type === 'testcase' || target) ? 'Run Test Case' : 'Run Suite'}
+                  </Button>
+                ) : (
+                  <Button variant="destructive" onClick={stopExecution}>
+                    <Square className="h-4 w-4 mr-2" />
+                    Stop
+                  </Button>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {!frameworkPath && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    // This would open framework config - for now just show alert
-                    alert("Please configure framework path in the main settings")
-                  }}
-                >
-                  <Settings className="h-3 w-3 mr-1" />
-                  Configure
-                </Button>
-              )}
 
-              {/* View Results Button - Show when execution is completed */}
-              {executionResult.completed && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={navigateToResults}
-                  className="bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700"
-                >
-                  <BarChart3 className="h-3 w-3 mr-1" />
-                  View Results
-                </Button>
-              )}
-
-              <Button variant="outline" size="sm" onClick={clearLogs} disabled={isRunning}>
-                Clear Logs
-              </Button>
-
-              {!isRunning ? (
-                <Button
-                  onClick={runSuite}
-                  disabled={!frameworkPath || !suite.filePath}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <Play className="h-4 w-4 mr-2" />
-                  Run Suite
-                </Button>
-              ) : (
-                <Button variant="destructive" onClick={stopExecution}>
-                  <Square className="h-4 w-4 mr-2" />
-                  Stop
-                </Button>
-              )}
-            </div>
           </div>
 
           {/* Prerequisites Check */}
-          {(!frameworkPath || !suite.filePath) && (
+          {(!frameworkPath || (!suite?.filePath && !target)) && (
             <Alert className="border-yellow-200 bg-yellow-50 flex-shrink-0">
               <AlertCircle className="h-4 w-4 text-yellow-600" />
               <AlertDescription className="text-yellow-800">
                 <div className="space-y-1">
                   {!frameworkPath && <div>• Framework path is not configured</div>}
-                  {!suite.filePath && <div>• Suite file path is not available (save the suite first)</div>}
+                  {!suite?.filePath && !target && <div>• Suite file path is not available (save the suite first)</div>}
                 </div>
               </AlertDescription>
             </Alert>
@@ -322,22 +372,28 @@ export function SuiteRunnerModal({ suite, isOpen, onClose }: SuiteRunnerModalPro
             <CardContent className="p-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="font-medium text-gray-600">Suite Name:</span>
-                  <span className="ml-2">{suite.suiteName}</span>
+                  <span className="font-medium text-gray-600">{target ? 'Target:' : 'Suite Name:'}</span>
+                  <span className="ml-2">{target || suite?.suiteName || suite?._executionTarget?.suiteName || 'Unnamed Suite'}</span>
                 </div>
-                <div>
-                  <span className="font-medium text-gray-600">Test Cases:</span>
-                  <span className="ml-2">{suite.testCases?.length || 0}</span>
-                </div>
+                {!target && (
+                  <div>
+                    <span className="font-medium text-gray-600">Test Cases:</span>
+                    <span className="ml-2">{suite?.testCases?.length || 0}</span>
+                  </div>
+                )}
                 <div>
                   <span className="font-medium text-gray-600">Framework Path:</span>
                   <span className="ml-2 text-xs break-all">{frameworkPath || "Not configured"}</span>
                 </div>
-                <div>
-                  <span className="font-medium text-gray-600">Suite File:</span>
-                  <span className="ml-2 text-xs break-all">{suite.filePath || "Not saved"}</span>
-                </div>
+                {suite?.filePath && (
+                  <div>
+                    <span className="font-medium text-gray-600">Suite File:</span>
+                    <span className="ml-2 text-xs break-all">{suite.filePath}</span>
+                  </div>
+                )}
               </div>
+
+
             </CardContent>
           </Card>
 

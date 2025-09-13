@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Trash2, Save, X, ArrowLeft, Copy, HelpCircle } from "lucide-react"
+import { Plus, Trash2, Save, X, ArrowLeft, Copy, HelpCircle, Play } from "lucide-react"
 import { TestDataEditor } from "@/components/test-data-editor"
+import { SuiteRunnerModal } from "@/components/suite-runner-modal"
 import { type TestCase, type TestData, type TestStep, validateTestCase } from "@/types/test-suite"
 
 import dynamic from "next/dynamic"
@@ -22,16 +23,20 @@ import MonacoEditor from "@monaco-editor/react"
 
 interface TestCaseEditorProps {
   testCase: TestCase & { index?: number }
+  suiteId?: string
+  suiteName?: string
   onSave: (testCase: TestCase & { index?: number }) => void
   onCancel: () => void
 }
 
-export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorProps) {
+export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel }: TestCaseEditorProps) {
   const [editedTestCase, setEditedTestCase] = useState<TestCase & { index?: number }>(() => {
     const validated = validateTestCase(testCase)
     return {
       ...validated,
       index: testCase.index,
+      // Auto-generate ID if missing for run functionality
+      id: validated.id || `tc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     }
   })
   const [selectedTestData, setSelectedTestData] = useState<TestData | null>(null)
@@ -46,12 +51,67 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
   const [isAddingNewStep, setIsAddingNewStep] = useState(false)
   const [keywordSearch, setKeywordSearch] = useState("")
   const [showKeywordDropdown, setShowKeywordDropdown] = useState(false)
+  const [showRunnerModal, setShowRunnerModal] = useState(false)
+  const [runTarget, setRunTarget] = useState<string | null>(null)
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null)
+
+  // Check for test data edit context on mount
+  React.useEffect(() => {
+    const testDataIndex = sessionStorage.getItem('editTestDataIndex')
+    if (testDataIndex && editedTestCase.testData) {
+      const index = parseInt(testDataIndex)
+      sessionStorage.removeItem('editTestDataIndex')
+      
+      if (editedTestCase.testData[index]) {
+        handleEditTestData(editedTestCase.testData[index], index)
+      }
+    }
+  }, [editedTestCase])
+
+  // Handle navigation to results
+  React.useEffect(() => {
+    const handleNavigateToResults = (event: any) => {
+      // Prevent the event from bubbling to avoid double handling
+      event.stopPropagation()
+      // Close the test case editor first
+      onCancel()
+      // Then dispatch a new event after a delay with context
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('navigate-to-results-from-editor', {
+          detail: {
+            suite: { id: suiteId, suiteName: suiteName },
+            testCase: editedTestCase,
+            testCaseIndex: editedTestCase.index || 0
+          }
+        }))
+      }, 200)
+    }
+
+    window.addEventListener("navigate-to-results", handleNavigateToResults)
+    return () => {
+      window.removeEventListener("navigate-to-results", handleNavigateToResults)
+    }
+  }, [onCancel, suiteId, suiteName, editedTestCase])
 
   const handleTestCaseChange = (field: keyof TestCase, value: any) => {
     setEditedTestCase((prev) => ({
       ...prev,
       [field]: value,
     }))
+    triggerAutoSave()
+  }
+
+  const triggerAutoSave = () => {
+    // Only auto-save if we have suite context (not a new standalone test case)
+    if (!suiteId) return
+    
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout)
+    }
+    const timeout = setTimeout(() => {
+      handleSave()
+    }, 1000)
+    setAutoSaveTimeout(timeout)
   }
 
   const handleTestTypeChange = (type: "API" | "UI") => {
@@ -108,6 +168,7 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
     }
     setIsEditingTestData(false)
     setSelectedTestData(null)
+    triggerAutoSave()
   }
 
   const handleDeleteTestData = (index: number) => {
@@ -115,6 +176,7 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
       ...prev,
       testData: prev.testData.filter((_, i) => i !== index),
     }))
+    triggerAutoSave()
   }
 
   const handleCloneTestData = (testData: TestData, index: number) => {
@@ -126,6 +188,7 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
       ...prev,
       testData: [...prev.testData, clonedTestData],
     }))
+    triggerAutoSave()
   }
 
   const handleAddTestStep = () => {
@@ -158,6 +221,7 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
       ...prev,
       testSteps: prev.testSteps?.filter((_, i) => i !== index) || [],
     }))
+    triggerAutoSave()
   }
 
   const handleCloneTestStep = (testStep: TestStep, index: number) => {
@@ -169,6 +233,7 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
       ...prev,
       testSteps: [...(prev.testSteps || []), clonedTestStep],
     }))
+    triggerAutoSave()
   }
 
   const handleSave = () => {
@@ -230,6 +295,7 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
     setInlineEditingStep(null)
     setInlineEditingStepIndex(null)
     setIsAddingNewStep(false)
+    triggerAutoSave()
   }
 
   const handleInlineCancelTestStep = () => {
@@ -484,10 +550,25 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold">Test Data</h3>
-                  <Button onClick={handleAddTestData}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Test Data
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        if (suiteId) {
+                          setRunTarget(`${suiteId}:${suiteName || 'Suite'} > ${editedTestCase.id}:${editedTestCase.name}`)
+                          setShowRunnerModal(true)
+                        }
+                      }}
+                      disabled={!suiteId}
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Run Test Case
+                    </Button>
+                    <Button onClick={handleAddTestData}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Test Data
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="grid gap-4">
@@ -502,6 +583,20 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                             </CardDescription>
                           </div>
                           <div className="flex items-center gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => {
+                                if (suiteId) {
+                                  setRunTarget(`${suiteId}:${suiteName || 'Suite'} > ${editedTestCase.id}:${editedTestCase.name} > ${index}:${testData.name}`)
+                                  setShowRunnerModal(true)
+                                }
+                              }}
+                              disabled={!suiteId}
+                            >
+                              <Play className="h-3 w-3 mr-1" />
+                              Run
+                            </Button>
                             <Button size="sm" variant="outline" onClick={() => handleEditTestData(testData, index)}>
                               Edit
                             </Button>
@@ -1762,6 +1857,19 @@ await page.waitForFunction(() => {
           </TabsContent>
         </Tabs>
       </div>
+      
+
+      
+      {showRunnerModal && runTarget && (
+        <SuiteRunnerModal
+          isOpen={showRunnerModal}
+          onClose={() => {
+            setShowRunnerModal(false)
+            setRunTarget(null)
+          }}
+          target={runTarget}
+        />
+      )}
     </div>
   )
 }

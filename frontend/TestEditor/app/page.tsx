@@ -41,6 +41,7 @@ import { RunAllSuitesModal } from "@/components/run-all-suites-modal"
 import { FolderTree } from "@/components/folder-tree"
 import { AIChat } from "@/components/ai-chat"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
+import { TestCaseView } from "@/components/test-case-view"
 
 import type { TestSuite } from "@/types/test-suite"
 
@@ -53,6 +54,7 @@ export default function APITestFramework() {
   const [showResultsDashboard, setShowResultsDashboard] = useState(false)
   const [showTestCasesModal, setShowTestCasesModal] = useState(false)
   const [showSuiteRunnerModal, setShowSuiteRunnerModal] = useState(false)
+  const [selectedTestCase, setSelectedTestCase] = useState<any>(null)
   const [showRunAllSuitesModal, setShowRunAllSuitesModal] = useState(false)
   const [expandedSuites, setExpandedSuites] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'all' | 'ui' | 'api'>('all')
@@ -62,6 +64,11 @@ export default function APITestFramework() {
   const [showFolderView, setShowFolderView] = useState(false)
   const [suiteToDelete, setSuiteToDelete] = useState<TestSuite | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showTestCaseView, setShowTestCaseView] = useState(false)
+  const [viewTestCase, setViewTestCase] = useState<{ suite: TestSuite; testCase: any; testCaseIndex: number } | null>(null)
+  const [viewTestCaseSource, setViewTestCaseSource] = useState<'dashboard' | 'editor'>('dashboard')
+  const [resultsSource, setResultsSource] = useState<'dashboard' | 'editor'>('dashboard')
+  const [resultsContext, setResultsContext] = useState<{ suite: TestSuite; testCase: any; testCaseIndex: number } | null>(null)
 
 
   // Add path configuration states
@@ -93,18 +100,88 @@ export default function APITestFramework() {
     }
   }, [])
 
-  // Add event listener for navigation to results
+  // Add event listeners for navigation
   useEffect(() => {
     const handleNavigateToResults = () => {
+      setResultsSource('dashboard')
+      setResultsContext(null)
       setShowResultsDashboard(true)
     }
 
+    const handleNavigateToResultsFromEditor = (event: any) => {
+      // Store context for back navigation from event detail
+      setResultsSource('editor')
+      
+      // Capture and enhance context from the event detail
+      if (event.detail) {
+        // Find the complete suite from testSuites array
+        const fullSuite = testSuites.find(s => s.id === event.detail.suite.id) || event.detail.suite
+        
+        setResultsContext({
+          ...event.detail,
+          suite: fullSuite
+        })
+      }
+      
+      // Clear all states and show results
+      setIsEditing(false)
+      setSelectedSuite(null)
+      setShowTestCaseView(false)
+      setViewTestCase(null)
+      setShowResultsDashboard(true)
+    }
+
+    const handleNavigateToTestCaseView = (event: any) => {
+      console.log('handleNavigateToTestCaseView called', event.detail)
+      const { suite, testCase, testCaseIndex } = event.detail
+      setViewTestCase({ suite, testCase, testCaseIndex })
+      setShowTestCaseView(true)
+    }
+
+    const handleRunTestCase = (event: any) => {
+      const { target, suite, testCase } = event.detail
+      // Clear all modal states first
+      setShowTestCasesModal(false)
+      setShowTestCaseView(false)
+      setShowRunAllSuitesModal(false)
+      setIsPathConfigOpen(false)
+      setIsFrameworkConfigOpen(false)
+      setViewTestCase(null)
+      
+      // Then set the run state
+      setSelectedSuite(suite)
+      setSelectedTestCase(testCase)
+      setShowSuiteRunnerModal(true)
+    }
+
+    const handleNavigateToTestCaseEdit = (event: any) => {
+      const { suite, testCase, testCaseIndex, testDataIndex } = event.detail
+      // Clear view states
+      setShowTestCaseView(false)
+      setViewTestCase(null)
+      
+      // Navigate to test suite editor and trigger test data editing
+      setSelectedSuite(suite)
+      setIsEditing(true)
+      
+      // Store the edit context for the TestSuiteEditor to handle
+      sessionStorage.setItem('editTestData', JSON.stringify({ testCaseIndex, testDataIndex }))
+    }
+
     window.addEventListener("navigate-to-results", handleNavigateToResults)
+    window.addEventListener("navigate-to-results-from-editor", handleNavigateToResultsFromEditor)
+    window.addEventListener("navigate-to-test-case-view", handleNavigateToTestCaseView)
+    window.addEventListener("run-test-case", handleRunTestCase)
+    window.addEventListener("navigate-to-test-case-edit", handleNavigateToTestCaseEdit)
 
     return () => {
       window.removeEventListener("navigate-to-results", handleNavigateToResults)
+      window.removeEventListener("navigate-to-results-from-editor", handleNavigateToResultsFromEditor)
+      window.removeEventListener("navigate-to-test-case-view", handleNavigateToTestCaseView)
+      window.removeEventListener("run-test-case", handleRunTestCase)
+      window.removeEventListener("navigate-to-test-case-edit", handleNavigateToTestCaseEdit)
     }
-  }, [])
+  }, [testSuites])
 
   // Update the loadTestSuitesFromPath function to handle IDs more consistently
   const loadTestSuitesFromPath = async (path: string) => {
@@ -285,8 +362,52 @@ export default function APITestFramework() {
   }
 
   const handleRunSuite = (suite: TestSuite) => {
+    // Clear all modal states first
+    setShowTestCasesModal(false)
+    setShowTestCaseView(false)
+    setShowRunAllSuitesModal(false)
+    setIsPathConfigOpen(false)
+    setIsFrameworkConfigOpen(false)
+    setViewTestCase(null)
+    
+    // Then set the run state
     setSelectedSuite(suite)
+    setSelectedTestCase(null)
     setShowSuiteRunnerModal(true)
+  }
+
+  const handleRunTestCase = (suite: TestSuite, testCase: any) => {
+    // Clear all modal states first
+    setShowTestCasesModal(false)
+    setShowTestCaseView(false)
+    setShowRunAllSuitesModal(false)
+    setIsPathConfigOpen(false)
+    setIsFrameworkConfigOpen(false)
+    setViewTestCase(null)
+    
+    // Then set the run state
+    setSelectedSuite(suite)
+    setSelectedTestCase(testCase)
+    setShowSuiteRunnerModal(true)
+  }
+
+  const handleViewTestCase = (suite: TestSuite, testCase: any, testCaseIndex: number) => {
+    // Clear all modal states first
+    setShowTestCasesModal(false)
+    setShowSuiteRunnerModal(false)
+    setShowRunAllSuitesModal(false)
+    setIsPathConfigOpen(false)
+    setIsFrameworkConfigOpen(false)
+    setSelectedSuite(null)
+    setSelectedTestCase(null)
+    
+    // Determine source - if we're currently editing, it's from editor
+    const source = isEditing ? 'editor' : 'dashboard'
+    setViewTestCaseSource(source)
+    
+    // Then set the view state
+    setViewTestCase({ suite, testCase, testCaseIndex })
+    setShowTestCaseView(true)
   }
 
   const handleFolderSelect = (folderPath: string, suites: TestSuite[]) => {
@@ -326,7 +447,14 @@ export default function APITestFramework() {
   /* ------------------------------------------------------------------ */
 
   if (isEditing && selectedSuite) {
-    return <TestSuiteEditor suite={selectedSuite} onSave={handleSaveSuite} onCancel={() => setIsEditing(false)} />
+    return (
+      <TestSuiteEditor 
+        suite={selectedSuite} 
+        onSave={handleSaveSuite} 
+        onCancel={() => setIsEditing(false)}
+        onViewTestCase={handleViewTestCase}
+      />
+    )
   }
 
   if (isRunning && selectedSuite) {
@@ -334,7 +462,44 @@ export default function APITestFramework() {
   }
 
   if (showResultsDashboard) {
-    return <TestResultsDashboard onClose={() => setShowResultsDashboard(false)} />
+    return (
+      <TestResultsDashboard 
+        onClose={() => {
+          setShowResultsDashboard(false)
+          
+          // Navigate back to appropriate component
+          if (resultsSource === 'editor' && resultsContext) {
+            // Navigate back to TestCaseView component
+            setViewTestCase(resultsContext)
+            setViewTestCaseSource('editor')
+            setShowTestCaseView(true)
+          }
+          setResultsSource('dashboard')
+          setResultsContext(null)
+        }} 
+      />
+    )
+  }
+
+  if (showTestCaseView && viewTestCase) {
+    return (
+      <TestCaseView
+        suite={viewTestCase.suite}
+        testCase={viewTestCase.testCase}
+        testCaseIndex={viewTestCase.testCaseIndex}
+        onBack={() => {
+          setShowTestCaseView(false)
+          setViewTestCase(null)
+          
+          // Navigate back to appropriate component
+          if (viewTestCaseSource === 'editor' && viewTestCase) {
+            setSelectedSuite(viewTestCase.suite)
+            setIsEditing(true)
+          }
+          setViewTestCaseSource('dashboard')
+        }}
+      />
+    )
   }
 
   return (
@@ -968,6 +1133,7 @@ export default function APITestFramework() {
                   setShowTestCasesModal(false)
                   setSelectedSuite(null)
                 }}
+                onRunTestCase={handleRunTestCase}
             />
         )}
 

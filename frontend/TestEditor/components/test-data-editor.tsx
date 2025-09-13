@@ -45,6 +45,7 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
   const [rawSchemaJson, setRawSchemaJson] = useState("")
   const [bodyJsonError, setBodyJsonError] = useState("")
   const [schemaJsonError, setSchemaJsonError] = useState("")
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null)
 
   const [activeTab, setActiveTab] = useState("general")
 
@@ -95,6 +96,21 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
       ...prev,
       [field]: value,
     }))
+    triggerAutoSave()
+  }
+
+  const triggerAutoSave = () => {
+    // Only auto-save if we're editing existing test data (has onSave callback)
+    // For new test data, user must manually save first
+    if (!testData || !testData.name || testData.name === "New Test Data") return
+    
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout)
+    }
+    const timeout = setTimeout(() => {
+      handleSave()
+    }, 1000)
+    setAutoSaveTimeout(timeout)
   }
 
   const handleNestedChange = (parent: string, field: string, value: any) => {
@@ -105,6 +121,7 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
         [field]: value,
       },
     }))
+    triggerAutoSave()
   }
 
   const handleAddHeader = () => {

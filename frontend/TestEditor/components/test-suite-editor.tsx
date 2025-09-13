@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -23,6 +23,7 @@ import {
   Eye,
   Edit3,
   ArrowRight,
+  Play,
 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { TestCaseEditor } from "@/components/test-case-editor"
@@ -35,9 +36,10 @@ interface TestSuiteEditorProps {
   suite: TestSuite & { id?: string; status?: string; filePath?: string }
   onSave: (suite: TestSuite & { id?: string; status?: string; filePath?: string }) => void
   onCancel: () => void
+  onViewTestCase?: (suite: TestSuite, testCase: any, testCaseIndex: number) => void
 }
 
-export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProps) {
+export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: TestSuiteEditorProps) {
   const [editedSuite, setEditedSuite] = useState<TestSuite & { id?: string; status?: string; filePath?: string }>(
       () => {
         const validated = validateTestSuite(suite)
@@ -57,12 +59,47 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
   const [showFileConflictDialog, setShowFileConflictDialog] = useState(false)
   const [conflictFilePath, setConflictFilePath] = useState<string>("")
   const [pendingSuite, setPendingSuite] = useState<any>(null)
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [showSaveBeforeViewDialog, setShowSaveBeforeViewDialog] = useState(false)
+  const [pendingViewTestCase, setPendingViewTestCase] = useState<{ testCase: any; index: number } | null>(null)
+
+  // Check for test data edit context on mount
+  React.useEffect(() => {
+    const editContext = sessionStorage.getItem('editTestData')
+    if (editContext) {
+      const { testCaseIndex, testDataIndex } = JSON.parse(editContext)
+      sessionStorage.removeItem('editTestData')
+      
+      // Open the specific test case for editing
+      if (editedSuite.testCases[testCaseIndex]) {
+        const testCase = editedSuite.testCases[testCaseIndex]
+        handleEditTestCase(testCase, testCaseIndex)
+        
+        // Store the test data index to edit in the TestCaseEditor
+        sessionStorage.setItem('editTestDataIndex', testDataIndex.toString())
+      }
+    }
+  }, [editedSuite])
 
   const handleSuiteChange = (field: keyof TestSuite, value: any) => {
     setEditedSuite((prev) => ({
       ...prev,
       [field]: value,
     }))
+    triggerAutoSave()
+  }
+
+  const triggerAutoSave = () => {
+    // Only auto-save if suite has a filePath (existing suite)
+    if (!editedSuite.filePath) return
+    
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout)
+    }
+    const timeout = setTimeout(() => {
+      handleSave()
+    }, 1000)
+    setAutoSaveTimeout(timeout)
   }
 
   const handleAddTag = () => {
@@ -92,6 +129,7 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
         return tag
       }),
     }))
+    triggerAutoSave()
   }
 
   const handleAddTestCase = () => {
@@ -129,6 +167,7 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
     }
     setIsEditingTestCase(false)
     setSelectedTestCase(null)
+    triggerAutoSave()
   }
 
   const handleDeleteTestCase = (index: number) => {
@@ -136,6 +175,7 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
       ...prev,
       testCases: prev.testCases.filter((_, i) => i !== index),
     }))
+    triggerAutoSave()
   }
 
   const handleCloneTestCase = (testCase: TestCase, index: number) => {
@@ -149,6 +189,7 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
       ...prev,
       testCases: [...prev.testCases, clonedTestCase],
     }))
+    triggerAutoSave()
   }
 
   const saveToFile = async (suiteData: any, filePath: string, forceReplace = false) => {
@@ -284,6 +325,8 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
     return (
         <TestCaseEditor
             testCase={selectedTestCase}
+            suiteId={editedSuite.id}
+            suiteName={editedSuite.suiteName}
             onSave={handleSaveTestCase}
             onCancel={() => {
               setIsEditingTestCase(false)
@@ -316,6 +359,53 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
                   </Button>
                   <Button onClick={handleFileConflictReplace} className="bg-red-600 hover:bg-red-700 text-white">
                     Replace File
+                  </Button>
+                </div>
+              </div>
+            </div>
+        )}
+
+        {showSaveBeforeViewDialog && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Save Before Viewing</h3>
+                <p className="text-gray-600 mb-6">
+                  You need to save the test suite before viewing test cases. Would you like to save now?
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowSaveBeforeViewDialog(false)
+                      setPendingViewTestCase(null)
+                    }}
+                    className="hover:bg-gray-50"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={async () => {
+                      try {
+                        await handleSave()
+                        
+                        // Close dialog first
+                        setShowSaveBeforeViewDialog(false)
+                        
+                        // Small delay to ensure modal is fully closed
+                        setTimeout(() => {
+                          if (pendingViewTestCase && onViewTestCase) {
+                            onViewTestCase(editedSuite, pendingViewTestCase.testCase, pendingViewTestCase.index)
+                          }
+                          setPendingViewTestCase(null)
+                        }, 100)
+                      } catch (error) {
+                        console.error('Error saving suite:', error)
+                        // Keep dialog open on error
+                      }
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Save & View
                   </Button>
                 </div>
               </div>
@@ -613,16 +703,39 @@ export function TestSuiteEditor({ suite, onSave, onCancel }: TestSuiteEditorProp
                               <Button
                                   size="sm"
                                   variant="outline"
+                                  onClick={() => {
+                                    // Check if suite has unsaved changes
+                                    if (!editedSuite.filePath) {
+                                      // Show save dialog first
+                                      setPendingViewTestCase({ testCase, index })
+                                      setShowSaveBeforeViewDialog(true)
+                                    } else {
+                                      // Navigate directly
+                                      if (onViewTestCase) {
+                                        onViewTestCase(editedSuite, testCase, index)
+                                      }
+                                    }
+                                  }}
+                                  className="hover:bg-purple-50 hover:border-purple-400 hover:text-purple-700"
+                              >
+                                <Eye className="h-3 w-3 mr-1" />
+                                View
+                              </Button>
+
+                              <Button
+                                  size="sm"
+                                  variant="outline"
                                   onClick={() => handleEditTestCase(testCase, index)}
                                   className="hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700"
                               >
+                                <Edit3 className="h-3 w-3 mr-1" />
                                 Edit
                               </Button>
                               <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handleCloneTestCase(testCase, index)}
-                                  className="hover:bg-green-50 hover:border-green-400 hover:text-green-700"
+                                  className="hover:bg-orange-50 hover:border-orange-400 hover:text-orange-700"
                                   title="Clone test case"
                               >
                                 <Copy className="h-3 w-3" />
