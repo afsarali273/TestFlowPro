@@ -1,6 +1,18 @@
 import fs from 'fs';
 import path from 'path';
 
+export interface StepResult {
+    stepId: string;
+    keyword: string;
+    locator?: any;
+    value?: string;
+    status: 'PASS' | 'FAIL' | 'SKIPPED';
+    error?: string;
+    screenshotPath?: string;
+    executionTimeMs: number;
+    timestamp: string;
+}
+
 export interface ReportEntry {
     testCase: string;
     dataSet: string;
@@ -10,6 +22,8 @@ export interface ReportEntry {
     assertionsFailed?: number;
     responseTimeMs?: number;
     responseBody?: any;
+    stepResults?: StepResult[];
+    apiDetails?: any;
 }
 
 export interface Tag {
@@ -48,6 +62,13 @@ export class Reporter {
         const totalDataSets = this.report.length;
         const passed = this.report.filter((r) => r.status === 'PASS').length;
         const failed = this.report.filter((r) => r.status === 'FAIL').length;
+        
+        // Calculate step-level statistics
+        const allSteps = this.report.flatMap(r => r.stepResults || []);
+        const stepsTotal = allSteps.length;
+        const stepsPassed = allSteps.filter(s => s.status === 'PASS').length;
+        const stepsFailed = allSteps.filter(s => s.status === 'FAIL').length;
+        const stepsSkipped = allSteps.filter(s => s.status === 'SKIPPED').length;
         const totalAssertionsPassed = this.report.reduce(
             (sum, r) => sum + (r.assertionsPassed || 0),
             0
@@ -70,6 +91,12 @@ export class Reporter {
                 totalAssertionsPassed,
                 totalAssertionsFailed,
                 executionTimeMs,
+                stepStatistics: {
+                    total: stepsTotal,
+                    passed: stepsPassed,
+                    failed: stepsFailed,
+                    skipped: stepsSkipped
+                }
             },
             results: this.report,
         };

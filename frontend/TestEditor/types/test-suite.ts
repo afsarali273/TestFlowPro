@@ -83,6 +83,13 @@ export interface LocatorDefinition {
     filter?: FilterDefinition
 }
 
+// Custom step function interface
+export interface CustomStepFunction {
+    function: string
+    args?: any[]
+    mapTo?: { [variableName: string]: string }
+}
+
 // Supported UI actions
 export type TestStepKeyword =
     | "openBrowser"
@@ -93,6 +100,7 @@ export type TestStepKeyword =
     | "reload"
     | "click"
     | "dblClick"
+    | "rightClick"
     | "type"
     | "fill"
     | "press"
@@ -104,7 +112,18 @@ export type TestStepKeyword =
     | "hover"
     | "focus"
     | "scrollIntoViewIfNeeded"
+    | "scrollTo"
+    | "scrollUp"
+    | "scrollDown"
     | "dragAndDrop"
+    | "uploadFile"
+    | "downloadFile"
+    | "getText"
+    | "getAttribute"
+    | "getTitle"
+    | "getUrl"
+    | "getValue"
+    | "getCount"
     | "assertText"
     | "assertVisible"
     | "assertHidden"
@@ -115,10 +134,30 @@ export type TestStepKeyword =
     | "assertAttribute"
     | "assertHaveText"
     | "assertHaveCount"
+    | "assertChecked"
+    | "assertUnchecked"
+    | "assertContainsText"
+    | "assertUrl"
+    | "assertTitle"
     | "screenshot"
+    | "maximize"
+    | "minimize"
+    | "setViewportSize"
+    | "goBack"
+    | "goForward"
+    | "refresh"
+    | "switchToFrame"
+    | "switchToMainFrame"
+    | "acceptAlert"
+    | "dismissAlert"
+    | "getAlertText"
     | "waitForSelector"
     | "waitForTimeout"
     | "waitForFunction"
+    | "waitForElement"
+    | "waitForText"
+    | "customStep"
+    | "customCode"
 
 export interface TestStep {
     id: string
@@ -128,6 +167,10 @@ export interface TestStep {
     value?: string // input text, URL, expected text, etc.
     options?: any // extra options per keyword
     assertions?: Assertion[]
+    customFunction?: CustomStepFunction // for customStep keyword
+    customCode?: string // raw Playwright code for customCode keyword
+    store?: StoreMap // store variables from UI elements
+    skipOnFailure?: boolean // skip this step if any previous step failed
 }
 
 export interface TestCase {
@@ -213,6 +256,10 @@ export function validateTestStep(testStep: any): TestStep {
         value: testStep.value,
         options: testStep.options,
         assertions: Array.isArray(testStep.assertions) ? testStep.assertions : [],
+        customFunction: testStep.customFunction,
+        customCode: testStep.customCode,
+        store: testStep.store || {},
+        skipOnFailure: testStep.skipOnFailure || false,
     }
 
     return validated

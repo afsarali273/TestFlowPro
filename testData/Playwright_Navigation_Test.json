@@ -45,8 +45,11 @@
           "id": "",
           "keyword": "click",
           "locator": {
-            "strategy": "button",
-            "value": "Search (Command+K)"
+            "strategy": "role",
+            "value": "button",
+            "options": {
+              "hasText": "Search (Command+K)"
+            }
           },
           "assertions": []
         },

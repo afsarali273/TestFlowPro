@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Save, X, ArrowLeft } from "lucide-react"
 import type { TestStep, TestStepKeyword, LocatorDefinition, LocatorOptions } from "@/types/test-suite"
@@ -141,6 +142,10 @@ export function TestStepsEditor({ testStep, onSave, onCancel }: TestStepsEditorP
         { value: "getAttribute", label: "Get Attribute", requiresValue: true, requiresLocator: true, category: "Utilities" },
         { value: "getTitle", label: "Get Page Title", requiresValue: false, requiresLocator: false, category: "Utilities" },
         { value: "getUrl", label: "Get Current URL", requiresValue: false, requiresLocator: false, category: "Utilities" },
+
+        // Custom Functions
+        { value: "customStep", label: "Custom Function", requiresValue: false, requiresLocator: false, category: "Custom" },
+        { value: "customCode", label: "Raw Playwright Code", requiresValue: false, requiresLocator: false, category: "Custom" },
     ]
 
     const locatorStrategies = [
@@ -196,12 +201,27 @@ export function TestStepsEditor({ testStep, onSave, onCancel }: TestStepsEditorP
             cleaned.locator = cleanedLocator
         }
 
+        // Include customFunction for customStep keyword
+        if (step.keyword === "customStep" && step.customFunction) {
+            cleaned.customFunction = step.customFunction
+        }
+
+        // Include customCode for customCode keyword
+        if (step.keyword === "customCode" && step.customCode) {
+            cleaned.customCode = step.customCode
+        }
+
         if (step.target) {
             cleaned.target = step.target
         }
 
         if (step.options && Object.keys(step.options).length > 0) {
             cleaned.options = step.options
+        }
+
+        // Include store for getText/getAttribute keywords
+        if ((step.keyword === "getText" || step.keyword === "getAttribute") && step.store && Object.keys(step.store).length > 0) {
+            cleaned.store = step.store
         }
 
         return cleaned
@@ -500,6 +520,165 @@ export function TestStepsEditor({ testStep, onSave, onCancel }: TestStepsEditorP
                             </div>
                         )}
 
+                        {/* Custom Function Configuration */}
+                        {editedTestStep.keyword === "customStep" && (
+                            <div className="space-y-4 border-t pt-4 bg-gray-50 p-4 rounded-lg">
+                                <Label className="text-sm font-semibold text-gray-700">Custom Function Configuration</Label>
+                                
+                                <div className="space-y-2">
+                                    <Label htmlFor="custom-function">Function Name</Label>
+                                    <Input
+                                        id="custom-function"
+                                        value={editedTestStep.customFunction?.function || ""}
+                                        onChange={(e) => {
+                                            setEditedTestStep(prev => ({
+                                                ...prev,
+                                                customFunction: {
+                                                    ...prev.customFunction,
+                                                    function: e.target.value
+                                                }
+                                            }))
+                                        }}
+                                        placeholder="loginUser, LoginPage.login, UserManagementPage.createUser"
+                                    />
+                                    <div className="text-xs text-gray-500">
+                                        Examples: "loginUser", "LoginPage.login", "EcommercePage.addToCart"
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="custom-args">Arguments (JSON Array)</Label>
+                                    <Input
+                                        id="custom-args"
+                                        value={editedTestStep.customFunction?.args ? JSON.stringify(editedTestStep.customFunction.args) : ""}
+                                        onChange={(e) => {
+                                            try {
+                                                const args = e.target.value ? JSON.parse(e.target.value) : undefined
+                                                setEditedTestStep(prev => ({
+                                                    ...prev,
+                                                    customFunction: {
+                                                        ...prev.customFunction,
+                                                        function: prev.customFunction?.function || "",
+                                                        args
+                                                    }
+                                                }))
+                                            } catch {
+                                                // Invalid JSON, don't update
+                                            }
+                                        }}
+                                        placeholder='["admin", "password123"] or [{"firstName": "John", "lastName": "Doe"}]'
+                                    />
+                                    <div className="text-xs text-gray-500">
+                                        JSON array format: ["arg1", "arg2"] or [{'{ "key": "value" }'}]
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="custom-mapto">Variable Mapping (JSON Object)</Label>
+                                    <Input
+                                        id="custom-mapto"
+                                        value={editedTestStep.customFunction?.mapTo ? JSON.stringify(editedTestStep.customFunction.mapTo) : ""}
+                                        onChange={(e) => {
+                                            try {
+                                                const mapTo = e.target.value ? JSON.parse(e.target.value) : undefined
+                                                setEditedTestStep(prev => ({
+                                                    ...prev,
+                                                    customFunction: {
+                                                        ...prev.customFunction,
+                                                        function: prev.customFunction?.function || "",
+                                                        mapTo
+                                                    }
+                                                }))
+                                            } catch {
+                                                // Invalid JSON, don't update
+                                            }
+                                        }}
+                                        placeholder='{"userId": "userId", "loginSuccess": "success"}'
+                                    />
+                                    <div className="text-xs text-gray-500">
+                                        Maps function result to variables: {'{ "variableName": "resultProperty" }'}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Custom Code Configuration */}
+                        {editedTestStep.keyword === "customCode" && (
+                            <div className="space-y-4 border-t pt-4 bg-gray-50 p-4 rounded-lg">
+                                <Label className="text-sm font-semibold text-gray-700">Raw Playwright Code</Label>
+                                <div className="text-xs text-gray-600 mb-2">
+                                    Write raw Playwright code. Available variables: page, browser, expect, console
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <Label htmlFor="custom-code">Playwright Code</Label>
+                                    <Textarea
+                                        id="custom-code"
+                                        className="font-mono text-sm min-h-[200px]"
+                                        value={editedTestStep.customCode || ""}
+                                        onChange={(e) => handleTestStepChange("customCode", e.target.value)}
+                                        placeholder={`// Example: Click multiple elements
+await page.locator('.item').nth(0).click();
+await page.locator('.item').nth(1).click();
+
+// Example: Complex assertion
+const count = await page.locator('.product').count();
+expect(count).toBeGreaterThan(5);
+
+// Example: Custom wait
+await page.waitForFunction(() => {
+  return document.querySelectorAll('.loaded').length > 3;
+});`}
+                                    />
+                                </div>
+                                
+                                <div className="text-xs text-gray-500 space-y-1">
+                                    <div>💡 <strong>Tips:</strong></div>
+                                    <div>• Use <code>page</code> for page interactions</div>
+                                    <div>• Use <code>expect</code> for assertions</div>
+                                    <div>• Use <code>console.log()</code> for debugging</div>
+                                    <div>• Code runs in async context - no need to wrap in async function</div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Variable Storage Configuration */}
+                        {(editedTestStep.keyword === "getText" || editedTestStep.keyword === "getAttribute") && (
+                            <div className="space-y-4 border-t pt-4 bg-green-50 p-4 rounded-lg">
+                                <Label className="text-sm font-semibold text-green-700">Variable Storage</Label>
+                                <div className="text-xs text-green-600 mb-2">
+                                    Store the extracted value in a variable for later use
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <Label htmlFor="store-variable">Variable Name</Label>
+                                    <Input
+                                        id="store-variable"
+                                        value={editedTestStep.store ? Object.keys(editedTestStep.store)[0] || "" : ""}
+                                        onChange={(e) => {
+                                            const varName = e.target.value
+                                            if (varName) {
+                                                const path = editedTestStep.keyword === "getText" ? "$text" : "$attribute"
+                                                setEditedTestStep(prev => ({
+                                                    ...prev,
+                                                    store: { [varName]: path }
+                                                }))
+                                            } else {
+                                                setEditedTestStep(prev => ({
+                                                    ...prev,
+                                                    store: undefined
+                                                }))
+                                            }
+                                        }}
+                                        placeholder="pageTitle, userId, productName, etc."
+                                    />
+                                    <div className="text-xs text-green-600">
+                                        Use this variable later with {"{{variableName}}"} syntax
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Special Options for Specific Keywords */}
                         {editedTestStep.keyword === "assertAttribute" && (
                             <div className="space-y-2">
@@ -582,10 +761,18 @@ export function TestStepsEditor({ testStep, onSave, onCancel }: TestStepsEditorP
                                         case "rightClick": return `Right click on element: ${locatorStr}`
                                         case "uploadFile": return `Upload file "${step.value || "[file path]"}" to element: ${locatorStr}`
                                         case "downloadFile": return `Download file from element: ${locatorStr}`
-                                        case "getText": return `Get text from element: ${locatorStr}`
-                                        case "getAttribute": return `Get attribute "${step.value || "[attribute]"}" from element: ${locatorStr}`
+                                        case "getText": {
+                                            const storeVar = step.store ? Object.keys(step.store)[0] : null
+                                            return `Get text from element: ${locatorStr}${storeVar ? ` → store as {{${storeVar}}}` : ""}`
+                                        }
+                                        case "getAttribute": {
+                                            const storeVar = step.store ? Object.keys(step.store)[0] : null
+                                            return `Get attribute "${step.value || "[attribute]"}" from element: ${locatorStr}${storeVar ? ` → store as {{${storeVar}}}` : ""}`
+                                        }
                                         case "getTitle": return "Get page title"
                                         case "getUrl": return "Get current page URL"
+                                        case "customStep": return `Execute custom function: ${step.customFunction?.function || "[function]"}`
+                                        case "customCode": return `Execute custom Playwright code: ${step.customCode ? step.customCode.substring(0, 50) + (step.customCode.length > 50 ? '...' : '') : "[code]"}`
                                         default: return `Execute ${step.keyword}`
                                     }
                                 })()}

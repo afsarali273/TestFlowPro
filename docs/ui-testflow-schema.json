@@ -52,17 +52,41 @@
         "keyword": {
           "type": "string",
           "enum": [
-            "click", "fill", "check", "uncheck", "select", "hover", "press",
-            "goto", "waitForTimeout", "screenshot", "dragAndDrop",
-            "assertVisible", "assertHidden", "assertHaveText", "assertHaveCount",
-            "assertEnabled", "assertDisabled", "assertChecked", "assertUnchecked"
+            "openBrowser", "closeBrowser", "closePage", "maximize", "minimize", "setViewportSize",
+            "switchToFrame", "switchToMainFrame", "acceptAlert", "dismissAlert", "getAlertText",
+            "goto", "waitForNavigation", "reload", "goBack", "goForward", "refresh",
+            "click", "dblClick", "rightClick", "type", "fill", "press", "clear",
+            "select", "check", "uncheck", "setChecked", "hover", "focus",
+            "scrollIntoViewIfNeeded", "scrollTo", "scrollUp", "scrollDown",
+            "dragAndDrop", "uploadFile", "downloadFile",
+            "getText", "getAttribute", "getTitle", "getUrl", "getValue", "getCount",
+            "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled",
+            "assertCount", "assertValue", "assertAttribute", "assertHaveText", "assertHaveCount",
+            "assertChecked", "assertUnchecked", "assertContainsText", "assertUrl", "assertTitle",
+            "waitForSelector", "waitForTimeout", "waitForFunction", "waitForElement", "waitForText",
+            "screenshot", "customStep", "customCode"
           ]
         },
         "locator": {
           "$ref": "#/definitions/UILocatorDefinition"
         },
         "value": {"type": "string"},
-        "options": {"type": "object"}
+        "options": {"type": "object"},
+        "customCode": {
+          "type": "string",
+          "description": "Raw Playwright code for customCode keyword"
+        },
+        "store": {
+          "type": "object",
+          "description": "Variable storage for data extraction keywords",
+          "patternProperties": {
+            "^[a-zA-Z][a-zA-Z0-9_]*$": {
+              "type": "string",
+              "enum": ["$text", "$attribute", "$title", "$url", "$value", "$count"]
+            }
+          },
+          "additionalProperties": false
+        }
       },
       "required": ["keyword"],
       "allOf": [
@@ -100,6 +124,54 @@
           },
           "then": {
             "required": ["value"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "keyword": {
+                "const": "getText"
+              }
+            }
+          },
+          "then": {
+            "required": ["locator"],
+            "properties": {
+              "store": {
+                "type": "object",
+                "minProperties": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "keyword": {
+                "const": "getAttribute"
+              }
+            }
+          },
+          "then": {
+            "required": ["locator", "value"],
+            "properties": {
+              "store": {
+                "type": "object",
+                "minProperties": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "keyword": {
+                "const": "customCode"
+              }
+            }
+          },
+          "then": {
+            "required": ["customCode"]
           }
         }
       ]

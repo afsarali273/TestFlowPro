@@ -7,6 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle, XCircle, Clock, AlertTriangle, Activity } from "lucide-react"
 
+interface StepResult {
+  stepId: string
+  keyword: string
+  locator?: any
+  value?: string
+  status: "PASS" | "FAIL"
+  error?: string
+  screenshotPath?: string
+  executionTimeMs: number
+  timestamp: string
+}
+
 interface TestResult {
   testCase: string
   dataSet: string
@@ -16,6 +28,7 @@ interface TestResult {
   assertionsFailed: number
   responseTimeMs: number
   responseBody?: any
+  stepResults?: StepResult[]
 }
 
 interface TestResultDetailModalProps {
@@ -110,67 +123,62 @@ const formatApiError = (errorString: string) => {
 // Helper function to format Playwright errors
 const formatPlaywrightError = (errorString: string) => {
   const cleanError = errorString.replace(/\x1B\[[0-9;]*m/g, '')
-  const sections = cleanError.split('\n\n')
+  
+  // Extract key information
+  const locatorMatch = cleanError.match(/Locator:([^\n]+)/)
+  const errorTypeMatch = cleanError.match(/locator\.[^:]+: Error: ([^\n]+)/)
+  const elementCountMatch = cleanError.match(/resolved to (\d+) elements/)
   
   return (
-    <div className="space-y-3 font-mono text-sm">
-      {sections.map((section, index) => {
-        const lines = section.split('\n')
-        
-        return (
-          <div key={index} className="space-y-1">
-            {lines.map((line, lineIndex) => {
-              if (line.includes('expect(') && line.includes('failed')) {
-                return (
-                  <div key={lineIndex} className="text-red-600 font-semibold">
-                    {line}
-                  </div>
-                )
-              }
-              
-              if (line.includes('Locator:')) {
-                return (
-                  <div key={lineIndex} className="text-blue-600">
-                    {line}
-                  </div>
-                )
-              }
-              
-              if (line.startsWith('- ')) {
-                return (
-                  <div key={lineIndex} className="text-red-500 bg-red-50 px-2 py-1 rounded">
-                    <span className="text-red-700 font-bold">- </span>
-                    {line.substring(2)}
-                  </div>
-                )
-              }
-              
-              if (line.startsWith('+ ')) {
-                return (
-                  <div key={lineIndex} className="text-green-600 bg-green-50 px-2 py-1 rounded">
-                    <span className="text-green-700 font-bold">+ </span>
-                    {line.substring(2)}
-                  </div>
-                )
-              }
-              
-              if (line.includes('Timeout:')) {
-                return (
-                  <div key={lineIndex} className="text-orange-600 font-medium">
-                    {line}
-                  </div>
-                )
-              }
-              
-              return (
-                <div key={lineIndex} className="text-gray-700">
-                  {line}
-                </div>
-              )
-            })}
+    <div className="space-y-3">
+      {/* Main Error */}
+      {errorTypeMatch && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div className="text-sm font-semibold text-red-800 mb-1">Error Type</div>
+          <div className="text-sm text-red-700">{errorTypeMatch[1]}</div>
+        </div>
+      )}
+      
+      {/* Locator Info */}
+      {locatorMatch && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="text-sm font-semibold text-blue-800 mb-1">Locator</div>
+          <code className="text-sm text-blue-700 bg-blue-100 px-2 py-1 rounded">
+            {locatorMatch[1].trim()}
+          </code>
+        </div>
+      )}
+      
+      {/* Element Count */}
+      {elementCountMatch && (
+        <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+          <div className="text-sm font-semibold text-orange-800 mb-1">Elements Found</div>
+          <div className="text-sm text-orange-700">
+            Found {elementCountMatch[1]} matching elements (expected 1)
           </div>
-        )
-      })}
+        </div>
+      )}
+      
+      {/* Suggestions */}
+      {elementCountMatch && parseInt(elementCountMatch[1]) > 1 && (
+        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="text-sm font-semibold text-yellow-800 mb-1">💡 Suggestions</div>
+          <div className="text-sm text-yellow-700 space-y-1">
+            <div>• Use .first() to select the first element</div>
+            <div>• Use .nth(index) to select a specific element</div>
+            <div>• Make the locator more specific</div>
+            <div>• Add additional filters or attributes</div>
+          </div>
+        </div>
+      )}
+      
+      {/* Raw Error (collapsed) */}
+      <details className="text-xs">
+        <summary className="cursor-pointer text-gray-600 hover:text-gray-800">View Raw Error</summary>
+        <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto max-h-32">
+          {cleanError}
+        </pre>
+      </details>
     </div>
   )
 }
@@ -270,6 +278,107 @@ export function TestResultDetailModal({ isOpen, onClose, testResult }: TestResul
                       ? formatApiError(testResult.error)
                       : formatPlaywrightError(testResult.error)
                     }
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step Results */}
+            {testResult.stepResults && testResult.stepResults.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-blue-500" />
+                    Step Details ({testResult.stepResults.length} steps)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {testResult.stepResults.map((step, index) => (
+                      <div key={step.stepId} className={`p-4 rounded-lg border ${
+                        step.status === 'PASS' 
+                          ? 'bg-green-50 border-green-200' 
+                          : 'bg-red-50 border-red-200'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            {step.status === 'PASS' ? (
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <XCircle className="h-4 w-4 text-red-500" />
+                            )}
+                            <span className="font-medium text-sm">
+                              Step {index + 1}: {step.stepId}
+                            </span>
+                            <Badge variant="outline" className="text-xs">
+                              {step.keyword}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <Clock className="h-3 w-3" />
+                            {formatExecutionTime(step.executionTimeMs)}
+                          </div>
+                        </div>
+                        
+                        {step.locator && (
+                          <div className="text-xs text-gray-600 mb-2">
+                            <span className="font-medium">Locator:</span>
+                            <code className="ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
+                              {step.locator.strategy}: {step.locator.value}
+                              {step.locator.options && (
+                                <span className="text-blue-600">
+                                  {JSON.stringify(step.locator.options)}
+                                </span>
+                              )}
+                            </code>
+                          </div>
+                        )}
+                        
+                        {step.value && (
+                          <div className="text-xs text-gray-600 mb-2">
+                            <span className="font-medium">Value:</span>
+                            <code className="ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
+                              {step.value}
+                            </code>
+                          </div>
+                        )}
+                        
+                        {step.error && (
+                          <Alert className="mt-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertDescription className="text-xs">
+                              {step.error}
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                        
+                        {step.screenshotPath && (
+                          <div className="mt-3">
+                            <div className="text-xs font-medium text-gray-600 mb-2">Screenshot:</div>
+                            <div className="border rounded-lg overflow-hidden bg-gray-50">
+                              <img 
+                                src={`/api/screenshots/${encodeURIComponent(step.screenshotPath)}`}
+                                alt={`Screenshot for ${step.stepId}`}
+                                className="w-full h-auto max-h-96 object-top object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={(e) => {
+                                  const img = e.target as HTMLImageElement;
+                                  window.open(img.src, '_blank');
+                                }}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    parent.innerHTML = '<div class="p-4 text-xs text-gray-500 text-center">Screenshot not available</div>';
+                                  }
+                                }}
+                              />
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1 text-center">Click to view full size</div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>

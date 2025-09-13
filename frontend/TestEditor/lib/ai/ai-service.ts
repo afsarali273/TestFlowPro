@@ -5,6 +5,7 @@ import { StringOutputParser } from '@langchain/core/output_parsers'
 import { MemoryVectorStore } from 'langchain/vectorstores/memory'
 import { OllamaEmbeddings } from '@langchain/ollama'
 import { RAGKnowledgeBase } from './rag-knowledge-base'
+import { SmartContextManager } from './smart-context-manager'
 import { CurlParser } from './curl-parser'
 import { TestSuite, validateTestSuite } from '@/types/test-suite'
 
@@ -39,7 +40,7 @@ export class AIService {
     
     this.embeddings = new OllamaEmbeddings({
       baseUrl: 'http://localhost:11434', 
-      model: 'llama3.1:8b'  // Keep for embeddings (works fine)
+      model: 'mxbai-embed-large'  // High quality embeddings for better context matching
     })
     
     this.ragChains = this.initializeRAGChains()
@@ -47,23 +48,11 @@ export class AIService {
   }
 
   private async initializeVectorStore(testDataPath?: string) {
-    console.log('🚀 Initializing AI Knowledge Base...')
-    const defaultPath = testDataPath || '/Users/afsarali/Repository/TestFlowPro/testData'
-    const docsPath = '/Users/afsarali/Repository/TestFlowPro/docs'
-    console.log(`📂 Using testData path: ${defaultPath}`)
-    console.log(`📂 Using docs path: ${docsPath}`)
-    
-    const frameworkDocs = RAGKnowledgeBase.getFrameworkDocuments()
-    const uiKnowledge = await RAGKnowledgeBase.loadKnowledgeBase(docsPath, 'ui')
-    const apiKnowledge = await RAGKnowledgeBase.loadKnowledgeBase(docsPath, 'api')
-    const exampleDocs = await RAGKnowledgeBase.loadTestSuiteExamples(defaultPath)
-    const conversionRules = RAGKnowledgeBase.getConversionRules()
-    
-    const allDocuments = [...frameworkDocs, ...uiKnowledge, ...apiKnowledge, ...exampleDocs, conversionRules]
-    console.log(`📚 Total documents loaded: ${allDocuments.length} (Framework: ${frameworkDocs.length}, UI: ${uiKnowledge.length}, API: ${apiKnowledge.length}, Examples: ${exampleDocs.length})`)
-    
-    this.vectorStore = await MemoryVectorStore.fromDocuments(allDocuments, this.embeddings)
-    console.log('✅ Vector store initialized successfully')
+    console.log('🚀 Initializing Smart AI Knowledge Base...')
+    // Initialize with minimal base documents for similarity search
+    const baseDocs = RAGKnowledgeBase.getRelevantDocuments('api ui curl conversion')
+    this.vectorStore = await MemoryVectorStore.fromDocuments(baseDocs, this.embeddings)
+    console.log('✅ Smart vector store initialized')
   }
 
   private initializeRAGChains() {
@@ -74,14 +63,32 @@ Context: {context}
 User Request: {input}
 
 Generate a valid JSON test suite that STRICTLY follows this schema:
-- id: string (required)
-- suiteName: string (required)
-- type: "UI" | "API" (required)
-- baseUrl: string (required for API)
-- tags: array of objects with key-value pairs
-- testCases: array with name, type ("SOAP"|"REST"|"UI"), testData (for API), testSteps (for UI)
-- For API: testData with name, method, endpoint, headers, body, assertions (type, jsonPath, expected)
-- For UI: testSteps with id, keyword, target/locator, value, assertions
+
+FOR API TESTS:
+- id: Generate unique string based on context (e.g., "user-api-tests-2024", "payment-service-regression")
+- suiteName: Generate descriptive name based on context (e.g., "User Management API Tests", "Payment Service Regression Suite")
+- type: "API", baseUrl: string
+- testCases: [{{name, type: "REST"|"SOAP", testData: [{{name, method, endpoint, headers, body, assertions, store}}]}}]
+- Assertions: statusCode, exists, equals, contains, greaterThan, lessThan, in, notIn, length, type, regex
+- PreProcess: faker.email, faker.uuid, date.now, encrypt, custom.authToken, dbQuery
+- Variable usage: {{"value": "{{variableName}}"}}
+
+FOR UI TESTS:
+- id: Generate unique string based on context (e.g., "login-flow-ui-test", "checkout-e2e-automation")
+- suiteName: Generate descriptive name based on context (e.g., "Login Flow UI Test", "E2E Checkout Automation")
+- type: "UI", baseUrl: string (optional)
+- testCases: [{{name, type: "UI", testSteps: [{{id, keyword, locator, value, store, skipOnFailure}}]}}]
+- Keywords: goto, click, fill, getText, assertVisible, screenshot, customCode, etc.
+- Locators: {{strategy: "role|text|css|xpath", value: "...", options: {{name, exact}}}}
+- Variable storage: {{"store": {{"varName": "$text|$attribute|$title|$url|$value|$count"}}}}
+- Skip on failure: {{"skipOnFailure": true}}
+
+SUITE NAMING GUIDELINES:
+- Analyze the user request context to generate meaningful id and suiteName
+- For API: Include service/domain name (e.g., "user-service", "payment-api")
+- For UI: Include flow/feature name (e.g., "login-flow", "checkout-process")
+- Add timestamp or version if needed for uniqueness
+- Make suiteName human-readable and descriptive
 
 IMPORTANT: Use double quotes for all strings and property names. Respond ONLY with valid JSON using double quotes.`
 
@@ -99,11 +106,17 @@ STRICT CONVERSION RULES:
 5. Ignore cookies (-b flag) and referer headers
 6. Add timeout: 30000 for slow APIs
 7. Generate descriptive test names from endpoint
+8. Create unique id and suiteName based on URL/endpoint context
+
+SUITE NAMING FROM cURL:
+- Extract domain/service name from URL for id (e.g., "api-example-com-tests")
+- Create descriptive suiteName from endpoint (e.g., "User API Tests", "Product Service Tests")
+- Include HTTP method if relevant (e.g., "POST User Registration Test")
 
 Required JSON Schema:
 {{
-  "id": "unique-string",
-  "suiteName": "Descriptive API Test",
+  "id": "generate-from-url-context",
+  "suiteName": "Generate from endpoint context",
   "type": "API",
   "baseUrl": "https://domain.com",
   "timeout": 30000,
@@ -132,13 +145,19 @@ Context: {context}
 Swagger Spec: {input}
 
 STRICT API SCHEMA REQUIREMENTS:
-- id: generate unique string
-- suiteName: from API title
+- id: Generate from API info.title (e.g., "petstore-api-v1", "user-management-service")
+- suiteName: Use API info.title with "API Tests" suffix (e.g., "Pet Store API Tests", "User Management Service Tests")
 - type: "API"
 - baseUrl: from servers array
 - testCases: array with name, type "REST", testData array with name, method, endpoint, headers, body, assertions
 - Use proper API assertion types: statusCode, exists, equals, contains, greaterThan, lessThan
 - Include API preprocessing functions when needed: faker.email, faker.uuid, custom.authToken
+
+SUITE NAMING FROM SWAGGER:
+- Extract API title from info.title field
+- Convert to kebab-case for id (e.g., "Pet Store API" → "pet-store-api")
+- Keep original title format for suiteName with "Tests" suffix
+- Include version if available (e.g., "pet-store-api-v2")
 
 Respond ONLY with valid JSON using double quotes. No explanations.`
 
@@ -146,20 +165,59 @@ Respond ONLY with valid JSON using double quotes. No explanations.`
 
 {input}
 
-Rules:
-- page.goto(url) → {{"keyword":"goto","value":"url"}}
-- page.getByRole('type', {{name: 'text'}}).click() → {{"keyword":"click","locator":{{"strategy":"role","value":"type","options":{{"name":"text"}}}}}}
-- expect(locator).toBeVisible() → {{"keyword":"assertVisible","locator":{{"strategy":"text","value":"text"}}}}
+SUPPORTED UI KEYWORDS:
+- Browser: openBrowser, closeBrowser, maximize, minimize, setViewportSize, acceptAlert, dismissAlert
+- Navigation: goto, reload, goBack, goForward, refresh
+- Actions: click, dblClick, rightClick, type, fill, press, clear, select, check, uncheck, hover, focus, scrollTo, uploadFile
+- Data Extraction: getText, getAttribute, getTitle, getUrl, getValue, getCount (with store: {{"varName": "$text|$attribute|$title|$url|$value|$count"}})
+- Assertions: assertVisible, assertHidden, assertEnabled, assertDisabled, assertText, assertValue, assertChecked, assertUrl, assertTitle
+- Wait: waitForTimeout, waitForSelector, waitForElement, waitForText, waitForEvent
+- Tab Management: clickAndWaitForPopup, switchToTab
+- Utilities: screenshot, customCode
 
-Return complete JSON with ALL steps:
-{{"id":"playwright-test","suiteName":"Playwright Test","type":"UI","baseUrl":"","testCases":[{{"name":"Test Case","type":"UI","testSteps":[...ALL_STEPS_HERE...]}}]}}`
+CRITICAL LOCATOR RULES:
+- page.goto(url) → {{"keyword":"goto","value":"url"}} (NO locator)
+- page.getByRole('button') → {{"strategy":"role","value":"button"}}
+- page.getByRole('button', {{name: 'Submit'}}) → {{"strategy":"role","value":"button","options":{{"name":"Submit"}}}}
+- page.getByText('Search') → {{"strategy":"text","value":"Search"}}
+- page.getByTestId('submit') → {{"strategy":"testId","value":"submit"}}
+- page.locator('#id') → {{"strategy":"css","value":"#id"}}
+- page.locator('.class') → {{"strategy":"css","value":".class"}}
+- page.locator('xpath=//div') → {{"strategy":"xpath","value":"//div"}}
+- expect().toBeVisible() → {{"keyword":"assertVisible","locator":{{"strategy":"...","value":"..."}}}}
+
+VARIABLE STORAGE:
+- const title = await page.title() → {{"keyword":"getTitle","store":{{"pageTitle":"$title"}}}}
+- const text = await locator.textContent() → {{"keyword":"getText","locator":{{...}},"store":{{"textVar":"$text"}}}}
+- Use variables: {{"value":"{{variableName}}"}}
+
+SKIP ON FAILURE:
+- Add "skipOnFailure": true to skip step if previous step fails
+
+TAB/POPUP HANDLING:
+- const page1Promise = page.waitForEvent('popup'); await locator.click(); const page1 = await page1Promise; → {{"keyword":"clickAndWaitForPopup","locator":{{"strategy":"css","value":".selector"}}}}
+- Switch between tabs: {{"keyword":"switchToTab","value":"0"}} (0=first tab, 1=second tab)
+
+ONLY VALID STRATEGIES: role, text, label, testId, placeholder, altText, title, css, xpath
+
+NEW TAB OPERATIONS:
+After clickAndWaitForPopup, all subsequent operations happen in the new tab automatically
+
+SUITE NAMING FROM PLAYWRIGHT CODE:
+- Analyze code context to generate meaningful names
+- Extract app/feature from URLs or test descriptions (e.g., "login", "checkout", "dashboard")
+- Create id like "login-flow-test", "e2e-checkout-automation"
+- Create suiteName like "Login Flow Test", "E2E Checkout Automation"
+- Include timestamp if needed for uniqueness
+
+Return complete JSON:
+{{"id":"generate-from-context","suiteName":"Generate from context","type":"UI","baseUrl":"","testCases":[{{"name":"Test Case","type":"UI","testSteps":[...ALL_STEPS...]}}]}}`
 
     return {
       general: RunnableSequence.from([
         async (input: { input: string }) => {
-          const context = this.vectorStore 
-            ? (await this.vectorStore.similaritySearch(input.input, 3)).map(doc => doc.pageContent).join('\n\n')
-            : ''
+          const contextDocs = await SmartContextManager.getOptimalContext(input.input)
+          const context = contextDocs.map(doc => doc.pageContent).join('\n\n')
           return { context, input: input.input }
         },
         PromptTemplate.fromTemplate(baseTemplate),
@@ -168,9 +226,8 @@ Return complete JSON with ALL steps:
       ]),
       curl: RunnableSequence.from([
         async (input: { input: string }) => {
-          const context = this.vectorStore 
-            ? (await this.vectorStore.similaritySearch('api-knowledge cURL conversion', 3)).map(doc => doc.pageContent).join('\n\n')
-            : ''
+          const contextDocs = await SmartContextManager.getOptimalContext(`curl conversion ${input.input}`)
+          const context = contextDocs.map(doc => doc.pageContent).join('\n\n')
           return { context, input: input.input }
         },
         PromptTemplate.fromTemplate(curlTemplate),
@@ -179,9 +236,8 @@ Return complete JSON with ALL steps:
       ]),
       swagger: RunnableSequence.from([
         async (input: { input: string }) => {
-          const context = this.vectorStore 
-            ? (await this.vectorStore.similaritySearch('api-knowledge swagger OpenAPI', 3)).map(doc => doc.pageContent).join('\n\n')
-            : ''
+          const contextDocs = await SmartContextManager.getOptimalContext(`swagger api conversion ${input.input}`)
+          const context = contextDocs.map(doc => doc.pageContent).join('\n\n')
           return { context, input: input.input }
         },
         PromptTemplate.fromTemplate(swaggerTemplate),
@@ -190,9 +246,8 @@ Return complete JSON with ALL steps:
       ]),
       ui: RunnableSequence.from([
         async (input: { input: string }) => {
-          const context = this.vectorStore 
-            ? (await this.vectorStore.similaritySearch('ui-knowledge playwright conversion', 4)).map(doc => doc.pageContent).join('\n\n')
-            : ''
+          const contextDocs = await SmartContextManager.getOptimalContext(`ui playwright conversion ${input.input}`)
+          const context = contextDocs.map(doc => doc.pageContent).join('\n\n')
           return { context, input: input.input }
         },
         PromptTemplate.fromTemplate(uiTemplate),
@@ -203,13 +258,26 @@ Return complete JSON with ALL steps:
   }
 
   private validateTestSuite(obj: any): boolean {
-    return obj && 
-           typeof obj.id === 'string' &&
-           typeof obj.suiteName === 'string' &&
-           obj.type === 'UI' &&
-           Array.isArray(obj.testCases) &&
-           obj.testCases.length > 0 &&
-           Array.isArray(obj.testCases[0].testSteps)
+    if (!obj || typeof obj.id !== 'string' || typeof obj.suiteName !== 'string') {
+      return false
+    }
+    
+    // Support both UI and API test suites
+    if (obj.type === 'UI') {
+      return Array.isArray(obj.testCases) &&
+             obj.testCases.length > 0 &&
+             obj.testCases.every((tc: any) => 
+               tc.type === 'UI' && Array.isArray(tc.testSteps)
+             )
+    } else if (obj.type === 'API') {
+      return Array.isArray(obj.testCases) &&
+             obj.testCases.length > 0 &&
+             obj.testCases.every((tc: any) => 
+               (tc.type === 'REST' || tc.type === 'SOAP') && Array.isArray(tc.testData)
+             )
+    }
+    
+    return false
   }
 
   private fixOptionsPlacement(testSuite: any): any {
@@ -219,9 +287,125 @@ Return complete JSON with ALL steps:
       if (!testCase.testSteps) return
       
       testCase.testSteps.forEach((step: any) => {
+        // Fix options placement
         if (step.options && step.locator && !step.locator.options) {
           step.locator.options = step.options
           delete step.options
+        }
+        
+        // Fix missing locator structure
+        if (!step.locator && step.value && step.keyword !== 'goto') {
+          // Detect strategy from value
+          let strategy = 'role'
+          let locatorValue = step.value
+          
+          if (step.value.startsWith('#')) {
+            strategy = 'css'
+          } else if (step.value.startsWith('.')) {
+            strategy = 'css'
+          } else if (step.value.startsWith('[')) {
+            strategy = 'css'
+          } else if (step.value.startsWith('//')) {
+            strategy = 'xpath'
+          }
+          
+          step.locator = {
+            strategy,
+            value: locatorValue
+          }
+          
+          if (step.options) {
+            step.locator.options = step.options
+            delete step.options
+          }
+          
+          delete step.value
+        }
+        
+        // Fix missing locators for assertions that require them
+        const assertionKeywordsNeedingLocator = [
+          'assertVisible', 'assertHidden', 'assertText', 'assertEnabled', 'assertDisabled',
+          'assertValue', 'assertAttribute', 'assertChecked', 'assertUnchecked', 'assertContainsText',
+          'getText', 'getAttribute', 'getValue', 'getCount'
+        ]
+        
+        if (assertionKeywordsNeedingLocator.includes(step.keyword) && !step.locator) {
+          // These assertion keywords require a locator - try to infer from context
+          if (step.value) {
+            // Use the value as text locator if available
+            step.locator = {
+              strategy: 'text',
+              value: step.value
+            }
+            delete step.value
+          } else {
+            console.warn(`Missing locator for ${step.keyword} step ${step.id}`)
+          }
+        }
+        
+        // Fix complex locator patterns
+        if (step.locator?.strategy === 'role') {
+          const validRoles = ['button', 'link', 'textbox', 'heading', 'checkbox', 'radio', 'combobox', 'listbox', 'tab', 'tabpanel', 'dialog', 'alertdialog', 'banner', 'main', 'navigation', 'region', 'search', 'form', 'table', 'row', 'cell', 'columnheader', 'rowheader', 'grid', 'gridcell', 'list', 'listitem', 'group', 'img', 'figure', 'article', 'section', 'complementary', 'contentinfo']
+          
+          // Fix section with hasText -> convert to CSS with filter
+          if (step.locator.value === 'section' && step.locator.options?.hasText) {
+            step.locator.strategy = 'css'
+            step.locator.value = 'section'
+            step.locator.filter = {
+              type: 'hasText',
+              value: step.locator.options.hasText as string
+            }
+            delete step.locator.options
+          }
+          // Fix invalid role values
+          else if (!validRoles.includes(step.locator.value)) {
+            const textValue = step.locator.value
+            if (textValue === 'span') {
+              step.locator.strategy = 'css'
+              step.locator.value = 'span'
+            } else {
+              step.locator.value = 'heading'
+              step.locator.options = step.locator.options || {}
+              step.locator.options.name = textValue
+            }
+          }
+        }
+        
+        // Fix getByText patterns misidentified as role
+        if (step.locator?.strategy === 'role' && step.locator.value === 'heading' && step.locator.options?.name && typeof step.locator.options.name === 'string' && step.locator.options.name.includes('Login now')) {
+          step.locator.strategy = 'text'
+          step.locator.value = step.locator.options.name
+          delete step.locator.options.name
+        }
+        
+        // Fix CSS selectors and filters
+        if (step.locator?.strategy === 'css') {
+          if (step.locator.value?.includes(':first-child')) {
+            step.locator.value = step.locator.value.replace(':first-child', '')
+          }
+          
+          // Handle section.filter({hasText}).locator('span').first() pattern
+          if (step.locator.value === 'section' && !step.locator.filter) {
+            // This might be a complex filter pattern that needs manual handling
+          }
+        }
+        
+        // Fix invalid locator strategies
+        if (step.locator?.strategy) {
+          const strategy = step.locator.strategy
+          const value = step.locator.value
+          
+          // Convert invalid strategies to CSS
+          if (strategy === 'id') {
+            step.locator.strategy = 'css'
+            step.locator.value = `#${value}`
+          } else if (strategy === 'class') {
+            step.locator.strategy = 'css'
+            step.locator.value = `.${value}`
+          } else if (strategy === 'attribute') {
+            step.locator.strategy = 'css'
+            step.locator.value = `[${value}]`
+          }
         }
       })
     })
@@ -380,7 +564,11 @@ Return ONLY this JSON structure with NO explanations:
           // Validate structure
           if (this.validateTestSuite(rawSuite)) {
             const testSuite = validateTestSuite(rawSuite)
-            return { testSuite, status: retryCount > 0 ? `✅ Success after ${retryCount + 1} attempts` : '✅ Success' }
+            return { 
+              testSuite, 
+              status: retryCount > 0 ? `✅ Success after ${retryCount + 1} attempts` : '✅ Success',
+              retryCount 
+            }
           } else if (retryCount < 1) {
             console.log('Invalid structure, retrying with stricter prompt...')
             onStatusUpdate?.('🔧 Invalid structure detected, retrying with template...')

@@ -1,0 +1,60 @@
+{
+  "suiteName": "UI Variable Storage Demo",
+  "type": "UI",
+  "baseUrl": "https://example.com",
+  "testCases": [
+    {
+      "name": "Extract and Use Variables",
+      "type": "UI",
+      "testData": [],
+      "testSteps": [
+        {
+          "id": "1",
+          "keyword": "goto",
+          "value": "https://example.com/login"
+        },
+        {
+          "id": "2",
+          "keyword": "getText",
+          "locator": {
+            "strategy": "css",
+            "value": "h1"
+          },
+          "store": {
+            "pageTitle": "$text"
+          }
+        },
+        {
+          "id": "3",
+          "keyword": "getAttribute",
+          "locator": {
+            "strategy": "css",
+            "value": "#user-id"
+          },
+          "value": "data-user-id",
+          "store": {
+            "currentUserId": "$attribute"
+          }
+        },
+        {
+          "id": "4",
+          "keyword": "fill",
+          "locator": {
+            "strategy": "label",
+            "value": "Search"
+          },
+          "value": "{{pageTitle}} - {{currentUserId}}"
+        },
+        {
+          "id": "5",
+          "keyword": "assertText",
+          "locator": {
+            "strategy": "css",
+            "value": ".result"
+          },
+          "value": "Results for {{pageTitle}}"
+        }
+      ]
+    }
+  ]
+}

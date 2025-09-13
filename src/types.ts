@@ -51,6 +51,8 @@ export interface TestCase {
     "type": "SOAP" | "REST" | "UI";
     testData: TestData[];
     testSteps: TestStep[];
+    dependsOn?: string[]; // Array of test case names this test depends on
+    priority?: number; // Lower number = higher priority (executes first)
 }
 
 export interface Tag {
@@ -107,6 +109,7 @@ export type TestStepKeyword =
     | "reload"
     | "click"
     | "dblClick"
+    | "rightClick"
     | "type"
     | "fill"
     | "press"
@@ -118,7 +121,18 @@ export type TestStepKeyword =
     | "hover"
     | "focus"
     | "scrollIntoViewIfNeeded"
+    | "scrollTo"
+    | "scrollUp"
+    | "scrollDown"
     | "dragAndDrop"
+    | "uploadFile"
+    | "downloadFile"
+    | "getText"
+    | "getAttribute"
+    | "getTitle"
+    | "getUrl"
+    | "getValue"
+    | "getCount"
     | "assertText"
     | "assertVisible"
     | "assertHidden"
@@ -129,10 +143,40 @@ export type TestStepKeyword =
     | "assertAttribute"
     | "assertHaveText"
     | "assertHaveCount"
+    | "assertChecked"
+    | "assertUnchecked"
+    | "assertContainsText"
+    | "assertUrl"
+    | "assertTitle"
     | "screenshot"
+    | "maximize"
+    | "minimize"
+    | "setViewportSize"
+    | "goBack"
+    | "goForward"
+    | "refresh"
+    | "switchToFrame"
+    | "switchToMainFrame"
+    | "acceptAlert"
+    | "dismissAlert"
+    | "getAlertText"
     | "waitForSelector"
     | "waitForTimeout"
-    | "waitForFunction";
+    | "waitForFunction"
+    | "waitForElement"
+    | "waitForText"
+    | "customStep"
+    | "customCode"
+  | "waitForEvent"
+  | "clickAndWaitForPopup"
+  | "switchToTab";
+
+// Custom step function definition
+export interface CustomStepFunction {
+    function: string; // Function name to execute
+    args?: any[]; // Arguments to pass to function
+    mapTo?: { [key: string]: string }; // Map return values to variables
+}
 
 // --- UI: TestStep ---
 export interface TestStep {
@@ -143,6 +187,10 @@ export interface TestStep {
     value?: string; // input text, URL, expected text, etc.
     options?: any; // extra options per keyword
     assertions?: Assertion[];
+    customFunction?: CustomStepFunction; // For customStep keyword
+    customCode?: string; // Raw Playwright code for customCode keyword
+    store?: StoreMap; // Store variables from UI elements
+    skipOnFailure?: boolean; // Skip this step if any previous step failed
 }
 
 

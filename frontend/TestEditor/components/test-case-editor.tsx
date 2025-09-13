@@ -44,6 +44,8 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
   const [inlineEditingStepIndex, setInlineEditingStepIndex] = useState<number | null>(null)
   const [inlineEditingStep, setInlineEditingStep] = useState<TestStep | null>(null)
   const [isAddingNewStep, setIsAddingNewStep] = useState(false)
+  const [keywordSearch, setKeywordSearch] = useState("")
+  const [showKeywordDropdown, setShowKeywordDropdown] = useState(false)
 
   const handleTestCaseChange = (field: keyof TestCase, value: any) => {
     setEditedTestCase((prev) => ({
@@ -134,12 +136,21 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
     setInlineEditingStep(newTestStep)
     setIsAddingNewStep(true)
     setInlineEditingStepIndex(-1)
+    
+    // Scroll to new step after state update
+    setTimeout(() => {
+      const newStepElement = document.querySelector('.border-2.border-blue-200')
+      if (newStepElement) {
+        newStepElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 100)
   }
 
   const handleEditTestStep = (testStep: TestStep, index: number) => {
     setInlineEditingStep({ ...testStep })
     setInlineEditingStepIndex(index)
     setIsAddingNewStep(false)
+    setKeywordSearch(testStep.keyword)
   }
 
   const handleDeleteTestStep = (index: number) => {
@@ -422,6 +433,43 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                   </div>
                 )}
 
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="priority">Priority (Lower = Higher Priority)</Label>
+                      <Input
+                        id="priority"
+                        type="number"
+                        min="1"
+                        value={editedTestCase.priority || ""}
+                        onChange={(e) => handleTestCaseChange("priority", e.target.value ? parseInt(e.target.value) : undefined)}
+                        placeholder="1, 2, 3..."
+                      />
+                      <div className="text-xs text-gray-500">
+                        Lower numbers execute first (1 = highest priority)
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="dependsOn">Dependencies (Comma-separated)</Label>
+                      <Input
+                        id="dependsOn"
+                        value={editedTestCase.dependsOn?.join(", ") || ""}
+                        onChange={(e) => {
+                          const deps = e.target.value
+                            .split(",")
+                            .map(dep => dep.trim())
+                            .filter(dep => dep.length > 0)
+                          handleTestCaseChange("dependsOn", deps.length > 0 ? deps : undefined)
+                        }}
+                        placeholder="Generate Auth Token, Create User"
+                      />
+                      <div className="text-xs text-gray-500">
+                        Test case names this test depends on
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex justify-end pt-4 border-t">
                   <Button onClick={() => setActiveTab(testType === "API" ? "testdata" : "teststeps")} size="lg">
                     Next: {testType === "API" ? "Test Data" : "Test Steps"}
@@ -498,7 +546,7 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
 
                 <div className="grid gap-4">
                   {(editedTestCase.testSteps || []).map((testStep: TestStep, index: number) => (
-                    <Card key={testStep.id}>
+                    <Card key={testStep.id || `step-${index}`}>
                       {inlineEditingStepIndex === index ? (
                         <CardContent className="p-6">
                           <div className="space-y-4">
@@ -511,75 +559,110 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                                   placeholder="Enter step ID"
                                 />
                               </div>
-                              <div className="space-y-2">
+                              <div className="space-y-2 relative">
                                 <Label>Keyword</Label>
-                                <Select
-                                  value={inlineEditingStep?.keyword || "openBrowser"}
-                                  onValueChange={(value) => handleInlineStepChange("keyword", value)}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent className="max-h-80">
-                                    <SelectItem value="openBrowser">[Browser] Open Browser</SelectItem>
-                                    <SelectItem value="closeBrowser">[Browser] Close Browser</SelectItem>
-                                    <SelectItem value="closePage">[Browser] Close Page</SelectItem>
-                                    <SelectItem value="maximize">[Browser] Maximize Window</SelectItem>
-                                    <SelectItem value="minimize">[Browser] Minimize Window</SelectItem>
-                                    <SelectItem value="setViewportSize">[Browser] Set Viewport Size</SelectItem>
-                                    <SelectItem value="switchToFrame">[Browser] Switch To Frame</SelectItem>
-                                    <SelectItem value="switchToMainFrame">[Browser] Switch To Main Frame</SelectItem>
-                                    <SelectItem value="acceptAlert">[Browser] Accept Alert</SelectItem>
-                                    <SelectItem value="dismissAlert">[Browser] Dismiss Alert</SelectItem>
-                                    <SelectItem value="getAlertText">[Browser] Get Alert Text</SelectItem>
-                                    <SelectItem value="goto">[Navigation] Go To URL</SelectItem>
-                                    <SelectItem value="waitForNavigation">[Navigation] Wait For Navigation</SelectItem>
-                                    <SelectItem value="reload">[Navigation] Reload Page</SelectItem>
-                                    <SelectItem value="goBack">[Navigation] Go Back</SelectItem>
-                                    <SelectItem value="goForward">[Navigation] Go Forward</SelectItem>
-                                    <SelectItem value="refresh">[Navigation] Refresh Page</SelectItem>
-                                    <SelectItem value="click">[Actions] Click</SelectItem>
-                                    <SelectItem value="dblClick">[Actions] Double Click</SelectItem>
-                                    <SelectItem value="rightClick">[Actions] Right Click</SelectItem>
-                                    <SelectItem value="type">[Actions] Type Text</SelectItem>
-                                    <SelectItem value="fill">[Actions] Fill Input</SelectItem>
-                                    <SelectItem value="press">[Actions] Press Key</SelectItem>
-                                    <SelectItem value="clear">[Actions] Clear Input</SelectItem>
-                                    <SelectItem value="select">[Actions] Select Option</SelectItem>
-                                    <SelectItem value="check">[Actions] Check Checkbox</SelectItem>
-                                    <SelectItem value="uncheck">[Actions] Uncheck Checkbox</SelectItem>
-                                    <SelectItem value="setChecked">[Actions] Set Checked State</SelectItem>
-                                    <SelectItem value="hover">[Actions] Hover</SelectItem>
-                                    <SelectItem value="focus">[Actions] Focus Element</SelectItem>
-                                    <SelectItem value="scrollIntoViewIfNeeded">[Actions] Scroll Into View</SelectItem>
-                                    <SelectItem value="dragAndDrop">[Actions] Drag and Drop</SelectItem>
-                                    <SelectItem value="uploadFile">[Actions] Upload File</SelectItem>
-                                    <SelectItem value="downloadFile">[Actions] Download File</SelectItem>
-                                    <SelectItem value="waitForSelector">[Wait] Wait For Selector</SelectItem>
-                                    <SelectItem value="waitForTimeout">[Wait] Wait For Timeout</SelectItem>
-                                    <SelectItem value="waitForFunction">[Wait] Wait For Function</SelectItem>
-                                    <SelectItem value="assertText">[Assertions] Assert Text</SelectItem>
-                                    <SelectItem value="assertVisible">[Assertions] Assert Visible</SelectItem>
-                                    <SelectItem value="assertHidden">[Assertions] Assert Hidden</SelectItem>
-                                    <SelectItem value="assertEnabled">[Assertions] Assert Enabled</SelectItem>
-                                    <SelectItem value="assertDisabled">[Assertions] Assert Disabled</SelectItem>
-                                    <SelectItem value="assertCount">[Assertions] Assert Count</SelectItem>
-                                    <SelectItem value="assertValue">[Assertions] Assert Value</SelectItem>
-                                    <SelectItem value="assertAttribute">[Assertions] Assert Attribute</SelectItem>
-                                    <SelectItem value="screenshot">[Utilities] Take Screenshot</SelectItem>
-                                    <SelectItem value="scrollTo">[Utilities] Scroll To Position</SelectItem>
-                                    <SelectItem value="scrollUp">[Utilities] Scroll Up</SelectItem>
-                                    <SelectItem value="scrollDown">[Utilities] Scroll Down</SelectItem>
-                                    <SelectItem value="getText">[Utilities] Get Text</SelectItem>
-                                    <SelectItem value="getAttribute">[Utilities] Get Attribute</SelectItem>
-                                    <SelectItem value="getTitle">[Utilities] Get Page Title</SelectItem>
-                                    <SelectItem value="getUrl">[Utilities] Get Current URL</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                <Input
+                                  value={keywordSearch || (inlineEditingStep?.keyword || "")}
+                                  onChange={(e) => {
+                                    setKeywordSearch(e.target.value)
+                                    setShowKeywordDropdown(true)
+                                  }}
+                                  onFocus={() => setShowKeywordDropdown(true)}
+                                  onBlur={() => setTimeout(() => setShowKeywordDropdown(false), 200)}
+                                  placeholder="Search keywords..."
+                                />
+                                {showKeywordDropdown && (
+                                  <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                                    {[
+                                      { value: "openBrowser", label: "[Browser] Open Browser" },
+                                      { value: "closeBrowser", label: "[Browser] Close Browser" },
+                                      { value: "closePage", label: "[Browser] Close Page" },
+                                      { value: "maximize", label: "[Browser] Maximize Window" },
+                                      { value: "minimize", label: "[Browser] Minimize Window" },
+                                      { value: "setViewportSize", label: "[Browser] Set Viewport Size" },
+                                      { value: "switchToFrame", label: "[Browser] Switch To Frame" },
+                                      { value: "switchToMainFrame", label: "[Browser] Switch To Main Frame" },
+                                      { value: "acceptAlert", label: "[Browser] Accept Alert" },
+                                      { value: "dismissAlert", label: "[Browser] Dismiss Alert" },
+                                      { value: "getAlertText", label: "[Browser] Get Alert Text" },
+                                      { value: "goto", label: "[Navigation] Go To URL" },
+                                      { value: "waitForNavigation", label: "[Navigation] Wait For Navigation" },
+                                      { value: "reload", label: "[Navigation] Reload Page" },
+                                      { value: "goBack", label: "[Navigation] Go Back" },
+                                      { value: "goForward", label: "[Navigation] Go Forward" },
+                                      { value: "refresh", label: "[Navigation] Refresh Page" },
+                                      { value: "click", label: "[Actions] Click" },
+                                      { value: "dblClick", label: "[Actions] Double Click" },
+                                      { value: "rightClick", label: "[Actions] Right Click" },
+                                      { value: "type", label: "[Actions] Type Text" },
+                                      { value: "fill", label: "[Actions] Fill Input" },
+                                      { value: "press", label: "[Actions] Press Key" },
+                                      { value: "clear", label: "[Actions] Clear Input" },
+                                      { value: "select", label: "[Actions] Select Option" },
+                                      { value: "check", label: "[Actions] Check Checkbox" },
+                                      { value: "uncheck", label: "[Actions] Uncheck Checkbox" },
+                                      { value: "setChecked", label: "[Actions] Set Checked State" },
+                                      { value: "hover", label: "[Actions] Hover" },
+                                      { value: "focus", label: "[Actions] Focus Element" },
+                                      { value: "scrollIntoViewIfNeeded", label: "[Actions] Scroll Into View" },
+                                      { value: "dragAndDrop", label: "[Actions] Drag and Drop" },
+                                      { value: "uploadFile", label: "[Actions] Upload File" },
+                                      { value: "downloadFile", label: "[Actions] Download File" },
+                                      { value: "waitForSelector", label: "[Wait] Wait For Selector" },
+                                      { value: "waitForTimeout", label: "[Wait] Wait For Timeout" },
+                                      { value: "waitForFunction", label: "[Wait] Wait For Function" },
+                                      { value: "assertText", label: "[Assertions] Assert Text" },
+                                      { value: "assertVisible", label: "[Assertions] Assert Visible" },
+                                      { value: "assertHidden", label: "[Assertions] Assert Hidden" },
+                                      { value: "assertEnabled", label: "[Assertions] Assert Enabled" },
+                                      { value: "assertDisabled", label: "[Assertions] Assert Disabled" },
+                                      { value: "assertCount", label: "[Assertions] Assert Count" },
+                                      { value: "assertValue", label: "[Assertions] Assert Value" },
+                                      { value: "assertAttribute", label: "[Assertions] Assert Attribute" },
+                                      { value: "screenshot", label: "[Utilities] Take Screenshot" },
+                                      { value: "scrollTo", label: "[Utilities] Scroll To Position" },
+                                      { value: "scrollUp", label: "[Utilities] Scroll Up" },
+                                      { value: "scrollDown", label: "[Utilities] Scroll Down" },
+                                      { value: "getText", label: "[Utilities] Get Text" },
+                                      { value: "getAttribute", label: "[Utilities] Get Attribute" },
+                                      { value: "getTitle", label: "[Utilities] Get Page Title" },
+                                      { value: "getUrl", label: "[Utilities] Get Current URL" },
+                                      { value: "getValue", label: "[Utilities] Get Input Value" },
+                                      { value: "getCount", label: "[Utilities] Get Element Count" },
+                                      { value: "assertChecked", label: "[Assertions] Assert Checked" },
+                                      { value: "assertUnchecked", label: "[Assertions] Assert Unchecked" },
+                                      { value: "assertContainsText", label: "[Assertions] Assert Contains Text" },
+                                      { value: "assertUrl", label: "[Assertions] Assert URL" },
+                                      { value: "assertTitle", label: "[Assertions] Assert Title" },
+                                      { value: "assertHaveText", label: "[Assertions] Assert Have Text" },
+                                      { value: "assertHaveCount", label: "[Assertions] Assert Have Count" },
+                                      { value: "waitForElement", label: "[Wait] Wait For Element" },
+                                      { value: "waitForText", label: "[Wait] Wait For Text" },
+                                      { value: "customStep", label: "[Custom] Custom Function" },
+                                      { value: "customCode", label: "[Custom] Raw Playwright Code" }
+                                    ].filter(item => 
+                                      keywordSearch === "" || 
+                                      item.label.toLowerCase().includes(keywordSearch.toLowerCase()) ||
+                                      item.value.toLowerCase().includes(keywordSearch.toLowerCase())
+                                    ).map((item) => (
+                                      <div
+                                        key={item.value}
+                                        className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                                        onClick={() => {
+                                          handleInlineStepChange("keyword", item.value)
+                                          setKeywordSearch(item.value)
+                                          setShowKeywordDropdown(false)
+                                        }}
+                                      >
+                                        {item.label}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             </div>
 
-                            {["goto", "type", "fill", "press", "select", "setChecked", "assertText", "assertValue", "assertCount", "assertAttribute", "waitForSelector", "waitForTimeout", "waitForFunction", "setViewportSize", "scrollTo", "switchToFrame", "uploadFile", "getAttribute"].includes(inlineEditingStep?.keyword || "") && (
+                            {["goto", "type", "fill", "press", "select", "setChecked", "assertText", "assertValue", "assertCount", "assertAttribute", "assertContainsText", "assertUrl", "assertTitle", "assertHaveText", "assertHaveCount", "waitForSelector", "waitForTimeout", "waitForFunction", "waitForElement", "waitForText", "setViewportSize", "scrollTo", "switchToFrame", "uploadFile", "getAttribute"].includes(inlineEditingStep?.keyword || "") && (
                               <div className="space-y-2">
                                 <Label>Value</Label>
                                 <Input
@@ -595,7 +678,7 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                               </div>
                             )}
 
-                            {["click", "dblClick", "rightClick", "type", "fill", "press", "clear", "select", "check", "uncheck", "setChecked", "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop", "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", "assertCount", "assertValue", "assertAttribute", "uploadFile", "downloadFile", "getText", "getAttribute"].includes(inlineEditingStep?.keyword || "") && (
+                            {["click", "dblClick", "rightClick", "type", "fill", "press", "clear", "select", "check", "uncheck", "setChecked", "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop", "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", "assertCount", "assertValue", "assertAttribute", "assertChecked", "assertUnchecked", "assertContainsText", "uploadFile", "downloadFile", "getText", "getAttribute", "getValue", "getCount"].includes(inlineEditingStep?.keyword || "") && (
                               <div className="space-y-4">
                                 <Label>Element Locator</Label>
                                 <div className="grid grid-cols-2 gap-4">
@@ -681,8 +764,8 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                                           <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                             <div className="font-semibold mb-2 text-blue-300">🏷️ Accessible Name</div>
                                             <div className="space-y-1">
-                                              <div><code className="text-yellow-200">{".getByRole('button', { name: 'Subscribe' })"}</code></div>
-                                              <div><code className="text-yellow-200">{".getByRole('button', { name: /submit/i })"}</code></div>
+                                              <div><code className="text-yellow-200">.getByRole('button', {'{ name: \'Subscribe\' }'}</code></div>
+                                              <div><code className="text-yellow-200">.getByRole('button', {'{ name: /submit/i }'}</code></div>
                                               <div className="text-gray-300 mt-2">💡 Matches accessible name or aria-label</div>
                                             </div>
                                           </div>
@@ -710,8 +793,8 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                                           <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                             <div className="font-semibold mb-2 text-blue-300">🎯 Exact Text Matching</div>
                                             <div className="space-y-1">
-                                              <div><span className="text-green-300">Exact:</span> <code className="text-yellow-200">{".getByText('Sign up', { exact: true })"}</code></div>
-                                              <div><span className="text-green-300">Partial:</span> <code className="text-yellow-200">{".getByText('Sign up')"}</code> (default)</div>
+                                              <div><span className="text-green-300">Exact:</span> <code className="text-yellow-200">.getByText('Sign up', {'{ exact: true }'}</code></div>
+                                              <div><span className="text-green-300">Partial:</span> <code className="text-yellow-200">.getByText('Sign up')</code> (default)</div>
                                               <div className="text-gray-300 mt-2">💡 Controls whether text matching is exact or partial</div>
                                             </div>
                                           </div>
@@ -745,8 +828,8 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                                           <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                             <div className="font-semibold mb-2 text-blue-300">✅ Contains Text Filter</div>
                                             <div className="space-y-1">
-                                              <div><code className="text-yellow-200">{".getByRole('button').filter({ hasText: 'Save' })"}</code></div>
-                                              <div><code className="text-yellow-200">{".locator('div').filter({ hasText: /product/i })"}</code></div>
+                                              <div><code className="text-yellow-200">.getByRole('button').filter({'{ hasText: \'Save\' }'}</code></div>
+                                              <div><code className="text-yellow-200">.locator('div').filter({'{ hasText: /product/i }'}</code></div>
                                               <div className="text-gray-300 mt-2">💡 Filters elements that contain specific text</div>
                                             </div>
                                           </div>
@@ -774,8 +857,8 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                                           <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                             <div className="font-semibold mb-2 text-blue-300">❌ Excludes Text Filter</div>
                                             <div className="space-y-1">
-                                              <div><code className="text-yellow-200">{".getByRole('button').filter({ hasNotText: 'Disabled' })"}</code></div>
-                                              <div><code className="text-yellow-200">{".locator('div').filter({ hasNotText: /error/i })"}</code></div>
+                                              <div><code className="text-yellow-200">.getByRole('button').filter({'{ hasNotText: \'Disabled\' }'}</code></div>
+                                              <div><code className="text-yellow-200">.locator('div').filter({'{ hasNotText: /error/i }'}</code></div>
                                               <div className="text-gray-300 mt-2">💡 Filters out elements that contain specific text</div>
                                             </div>
                                           </div>
@@ -800,6 +883,164 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                               </div>
                             )}
 
+                            {/* Variable Storage for data extraction keywords */}
+                            {(["getText", "getAttribute", "getTitle", "getUrl", "getValue", "getCount"].includes(inlineEditingStep?.keyword || "")) && (
+                              <div className="space-y-4 border-t pt-4 bg-green-50 p-4 rounded-lg">
+                                <Label className="text-sm font-semibold text-green-700">Variable Storage</Label>
+                                <div className="text-xs text-green-600 mb-2">
+                                  Store the extracted value in a variable for later use
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <Label>Variable Name</Label>
+                                  <Input
+                                    value={inlineEditingStep?.store ? Object.keys(inlineEditingStep.store)[0] || "" : ""}
+                                    onChange={(e) => {
+                                      const varName = e.target.value
+                                      if (varName) {
+                                        let path = "$text"
+                                        switch (inlineEditingStep?.keyword) {
+                                          case "getAttribute": path = "$attribute"; break;
+                                          case "getTitle": path = "$title"; break;
+                                          case "getUrl": path = "$url"; break;
+                                          case "getValue": path = "$value"; break;
+                                          case "getCount": path = "$count"; break;
+                                          default: path = "$text"; break;
+                                        }
+                                        handleInlineStepChange("store", { [varName]: path })
+                                      } else {
+                                        handleInlineStepChange("store", undefined)
+                                      }
+                                    }}
+                                    placeholder="pageTitle, userId, productName, etc."
+                                  />
+                                  <div className="text-xs text-green-600">
+                                    Use this variable later with {"{{variableName}}"} syntax
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {inlineEditingStep?.keyword === "customStep" && (
+                              <div className="space-y-4 border-t pt-4">
+                                <Label className="text-sm font-semibold">Custom Function Configuration</Label>
+                                
+                                <div className="space-y-2">
+                                  <Label>Function Name</Label>
+                                  <Input
+                                    value={inlineEditingStep?.customFunction?.function || ""}
+                                    onChange={(e) => {
+                                      if (!inlineEditingStep) return
+                                      const newStep: TestStep = { ...inlineEditingStep }
+                                      if (!newStep.customFunction) newStep.customFunction = { function: "" }
+                                      newStep.customFunction.function = e.target.value
+                                      handleInlineStepChange("customFunction", newStep.customFunction)
+                                    }}
+                                    placeholder="loginUser, LoginPage.login, UserManagementPage.createUser"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label>Arguments (JSON Array)</Label>
+                                  <Input
+                                    value={inlineEditingStep?.customFunction?.args ? JSON.stringify(inlineEditingStep.customFunction.args) : ""}
+                                    onChange={(e) => {
+                                      if (!inlineEditingStep) return
+                                      try {
+                                        const args = e.target.value ? JSON.parse(e.target.value) : undefined
+                                        const newStep: TestStep = { ...inlineEditingStep }
+                                        if (!newStep.customFunction) newStep.customFunction = { function: "" }
+                                        newStep.customFunction.args = args
+                                        handleInlineStepChange("customFunction", newStep.customFunction)
+                                      } catch {
+                                        // Invalid JSON, don't update
+                                      }
+                                    }}
+                                    placeholder='["admin", "password123"] or [{"firstName": "John"}]'
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label>Variable Mapping (JSON Object)</Label>
+                                  <Input
+                                    value={inlineEditingStep?.customFunction?.mapTo ? JSON.stringify(inlineEditingStep.customFunction.mapTo) : ""}
+                                    onChange={(e) => {
+                                      if (!inlineEditingStep) return
+                                      try {
+                                        const mapTo = e.target.value ? JSON.parse(e.target.value) : undefined
+                                        const newStep: TestStep = { ...inlineEditingStep }
+                                        if (!newStep.customFunction) newStep.customFunction = { function: "" }
+                                        newStep.customFunction.mapTo = mapTo
+                                        handleInlineStepChange("customFunction", newStep.customFunction)
+                                      } catch {
+                                        // Invalid JSON, don't update
+                                      }
+                                    }}
+                                    placeholder='{"userId": "userId", "loginSuccess": "success"}'
+                                  />
+                                  <div className="text-xs text-gray-500">
+                                    Maps function result to variables: {'{ "variableName": "resultProperty" }'}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {inlineEditingStep?.keyword === "customCode" && (
+                              <div className="space-y-4 border-t pt-4">
+                                <Label className="text-sm font-semibold">Raw Playwright Code</Label>
+                                <div className="text-xs text-gray-600 mb-2">
+                                  Write raw Playwright code. Available variables: page, browser, expect, console
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <Textarea
+                                    value={inlineEditingStep?.customCode || ""}
+                                    onChange={(e) => handleInlineStepChange("customCode", e.target.value)}
+                                    placeholder={`// Example: Click multiple elements
+await page.locator('.item').nth(0).click();
+await page.locator('.item').nth(1).click();
+
+// Example: Complex assertion
+const count = await page.locator('.product').count();
+expect(count).toBeGreaterThan(5);
+
+// Example: Custom wait
+await page.waitForFunction(() => {
+  return document.querySelectorAll('.loaded').length > 3;
+});`}
+                                    className="font-mono text-sm min-h-[200px]"
+                                  />
+                                </div>
+                                
+                                <div className="text-xs text-gray-500 space-y-1">
+                                  <div>💡 <strong>Tips:</strong></div>
+                                  <div>• Use <code>page</code> for page interactions</div>
+                                  <div>• Use <code>expect</code> for assertions</div>
+                                  <div>• Use <code>console.log()</code> for debugging</div>
+                                  <div>• Code runs in async context - no need to wrap in async function</div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Skip on Failure Option */}
+                            <div className="space-y-4 border-t pt-4">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id="skip-on-failure-edit"
+                                  className="h-4 w-4"
+                                  checked={!!inlineEditingStep?.skipOnFailure}
+                                  onChange={(e) => handleInlineStepChange("skipOnFailure", e.target.checked)}
+                                />
+                                <Label htmlFor="skip-on-failure-edit" className="text-sm">
+                                  Skip this step if any previous step fails
+                                </Label>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                When enabled, this step will be skipped if any previous step in the test case fails
+                              </div>
+                            </div>
+
                             <div className="flex justify-end gap-2">
                               <Button variant="outline" onClick={handleInlineCancelTestStep}>
                                 Cancel
@@ -819,8 +1060,35 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                                 Step {index + 1}: {testStep.keyword}
                               </CardTitle>
                               <CardDescription>
-                                {testStep.value && `Value: ${testStep.value}`}
-                                {testStep.locator && ` | Locator: ${testStep.locator.strategy} = "${testStep.locator.value}"`}
+                                {testStep.keyword === "customStep" && testStep.customFunction
+                                  ? (
+                                    <>
+                                      Function: {testStep.customFunction.function}
+                                      {testStep.customFunction.args && (
+                                        <> | Args: {JSON.stringify(testStep.customFunction.args)}</>
+                                      )}
+                                    </>
+                                  )
+                                  : testStep.keyword === "customCode" && testStep.customCode
+                                  ? (
+                                    <>
+                                      Code: {testStep.customCode.substring(0, 100)}{testStep.customCode.length > 100 ? '...' : ''}
+                                    </>
+                                  )
+                                  : (
+                                    <>
+                                      {testStep.value && <>Value: {testStep.value}</>}
+                                      {testStep.locator && <> | Locator: {testStep.locator.strategy} = "{testStep.locator.value}"</>}
+                                    </>
+                                  )
+                                }
+                                {testStep.skipOnFailure && (
+                                  <div className="mt-1">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
+                                      ⏭️ Skip on Failure
+                                    </span>
+                                  </div>
+                                )}
                               </CardDescription>
                             </div>
                             <div className="flex items-center gap-2">
@@ -855,75 +1123,110 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                                 placeholder="Enter step ID"
                               />
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-2 relative">
                               <Label>Keyword</Label>
-                              <Select
-                                value={inlineEditingStep.keyword}
-                                onValueChange={(value) => handleInlineStepChange("keyword", value)}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="max-h-80">
-                                  <SelectItem value="openBrowser">[Browser] Open Browser</SelectItem>
-                                  <SelectItem value="closeBrowser">[Browser] Close Browser</SelectItem>
-                                  <SelectItem value="closePage">[Browser] Close Page</SelectItem>
-                                  <SelectItem value="maximize">[Browser] Maximize Window</SelectItem>
-                                  <SelectItem value="minimize">[Browser] Minimize Window</SelectItem>
-                                  <SelectItem value="setViewportSize">[Browser] Set Viewport Size</SelectItem>
-                                  <SelectItem value="switchToFrame">[Browser] Switch To Frame</SelectItem>
-                                  <SelectItem value="switchToMainFrame">[Browser] Switch To Main Frame</SelectItem>
-                                  <SelectItem value="acceptAlert">[Browser] Accept Alert</SelectItem>
-                                  <SelectItem value="dismissAlert">[Browser] Dismiss Alert</SelectItem>
-                                  <SelectItem value="getAlertText">[Browser] Get Alert Text</SelectItem>
-                                  <SelectItem value="goto">[Navigation] Go To URL</SelectItem>
-                                  <SelectItem value="waitForNavigation">[Navigation] Wait For Navigation</SelectItem>
-                                  <SelectItem value="reload">[Navigation] Reload Page</SelectItem>
-                                  <SelectItem value="goBack">[Navigation] Go Back</SelectItem>
-                                  <SelectItem value="goForward">[Navigation] Go Forward</SelectItem>
-                                  <SelectItem value="refresh">[Navigation] Refresh Page</SelectItem>
-                                  <SelectItem value="click">[Actions] Click</SelectItem>
-                                  <SelectItem value="dblClick">[Actions] Double Click</SelectItem>
-                                  <SelectItem value="rightClick">[Actions] Right Click</SelectItem>
-                                  <SelectItem value="type">[Actions] Type Text</SelectItem>
-                                  <SelectItem value="fill">[Actions] Fill Input</SelectItem>
-                                  <SelectItem value="press">[Actions] Press Key</SelectItem>
-                                  <SelectItem value="clear">[Actions] Clear Input</SelectItem>
-                                  <SelectItem value="select">[Actions] Select Option</SelectItem>
-                                  <SelectItem value="check">[Actions] Check Checkbox</SelectItem>
-                                  <SelectItem value="uncheck">[Actions] Uncheck Checkbox</SelectItem>
-                                  <SelectItem value="setChecked">[Actions] Set Checked State</SelectItem>
-                                  <SelectItem value="hover">[Actions] Hover</SelectItem>
-                                  <SelectItem value="focus">[Actions] Focus Element</SelectItem>
-                                  <SelectItem value="scrollIntoViewIfNeeded">[Actions] Scroll Into View</SelectItem>
-                                  <SelectItem value="dragAndDrop">[Actions] Drag and Drop</SelectItem>
-                                  <SelectItem value="uploadFile">[Actions] Upload File</SelectItem>
-                                  <SelectItem value="downloadFile">[Actions] Download File</SelectItem>
-                                  <SelectItem value="waitForSelector">[Wait] Wait For Selector</SelectItem>
-                                  <SelectItem value="waitForTimeout">[Wait] Wait For Timeout</SelectItem>
-                                  <SelectItem value="waitForFunction">[Wait] Wait For Function</SelectItem>
-                                  <SelectItem value="assertText">[Assertions] Assert Text</SelectItem>
-                                  <SelectItem value="assertVisible">[Assertions] Assert Visible</SelectItem>
-                                  <SelectItem value="assertHidden">[Assertions] Assert Hidden</SelectItem>
-                                  <SelectItem value="assertEnabled">[Assertions] Assert Enabled</SelectItem>
-                                  <SelectItem value="assertDisabled">[Assertions] Assert Disabled</SelectItem>
-                                  <SelectItem value="assertCount">[Assertions] Assert Count</SelectItem>
-                                  <SelectItem value="assertValue">[Assertions] Assert Value</SelectItem>
-                                  <SelectItem value="assertAttribute">[Assertions] Assert Attribute</SelectItem>
-                                  <SelectItem value="screenshot">[Utilities] Take Screenshot</SelectItem>
-                                  <SelectItem value="scrollTo">[Utilities] Scroll To Position</SelectItem>
-                                  <SelectItem value="scrollUp">[Utilities] Scroll Up</SelectItem>
-                                  <SelectItem value="scrollDown">[Utilities] Scroll Down</SelectItem>
-                                  <SelectItem value="getText">[Utilities] Get Text</SelectItem>
-                                  <SelectItem value="getAttribute">[Utilities] Get Attribute</SelectItem>
-                                  <SelectItem value="getTitle">[Utilities] Get Page Title</SelectItem>
-                                  <SelectItem value="getUrl">[Utilities] Get Current URL</SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <Input
+                                value={keywordSearch}
+                                onChange={(e) => {
+                                  setKeywordSearch(e.target.value)
+                                  setShowKeywordDropdown(true)
+                                }}
+                                onFocus={() => setShowKeywordDropdown(true)}
+                                onBlur={() => setTimeout(() => setShowKeywordDropdown(false), 200)}
+                                placeholder="Search keywords..."
+                              />
+                              {showKeywordDropdown && (
+                                <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+                                  {[
+                                    { value: "openBrowser", label: "[Browser] Open Browser" },
+                                    { value: "closeBrowser", label: "[Browser] Close Browser" },
+                                    { value: "closePage", label: "[Browser] Close Page" },
+                                    { value: "maximize", label: "[Browser] Maximize Window" },
+                                    { value: "minimize", label: "[Browser] Minimize Window" },
+                                    { value: "setViewportSize", label: "[Browser] Set Viewport Size" },
+                                    { value: "switchToFrame", label: "[Browser] Switch To Frame" },
+                                    { value: "switchToMainFrame", label: "[Browser] Switch To Main Frame" },
+                                    { value: "acceptAlert", label: "[Browser] Accept Alert" },
+                                    { value: "dismissAlert", label: "[Browser] Dismiss Alert" },
+                                    { value: "getAlertText", label: "[Browser] Get Alert Text" },
+                                    { value: "goto", label: "[Navigation] Go To URL" },
+                                    { value: "waitForNavigation", label: "[Navigation] Wait For Navigation" },
+                                    { value: "reload", label: "[Navigation] Reload Page" },
+                                    { value: "goBack", label: "[Navigation] Go Back" },
+                                    { value: "goForward", label: "[Navigation] Go Forward" },
+                                    { value: "refresh", label: "[Navigation] Refresh Page" },
+                                    { value: "click", label: "[Actions] Click" },
+                                    { value: "dblClick", label: "[Actions] Double Click" },
+                                    { value: "rightClick", label: "[Actions] Right Click" },
+                                    { value: "type", label: "[Actions] Type Text" },
+                                    { value: "fill", label: "[Actions] Fill Input" },
+                                    { value: "press", label: "[Actions] Press Key" },
+                                    { value: "clear", label: "[Actions] Clear Input" },
+                                    { value: "select", label: "[Actions] Select Option" },
+                                    { value: "check", label: "[Actions] Check Checkbox" },
+                                    { value: "uncheck", label: "[Actions] Uncheck Checkbox" },
+                                    { value: "setChecked", label: "[Actions] Set Checked State" },
+                                    { value: "hover", label: "[Actions] Hover" },
+                                    { value: "focus", label: "[Actions] Focus Element" },
+                                    { value: "scrollIntoViewIfNeeded", label: "[Actions] Scroll Into View" },
+                                    { value: "dragAndDrop", label: "[Actions] Drag and Drop" },
+                                    { value: "uploadFile", label: "[Actions] Upload File" },
+                                    { value: "downloadFile", label: "[Actions] Download File" },
+                                    { value: "waitForSelector", label: "[Wait] Wait For Selector" },
+                                    { value: "waitForTimeout", label: "[Wait] Wait For Timeout" },
+                                    { value: "waitForFunction", label: "[Wait] Wait For Function" },
+                                    { value: "assertText", label: "[Assertions] Assert Text" },
+                                    { value: "assertVisible", label: "[Assertions] Assert Visible" },
+                                    { value: "assertHidden", label: "[Assertions] Assert Hidden" },
+                                    { value: "assertEnabled", label: "[Assertions] Assert Enabled" },
+                                    { value: "assertDisabled", label: "[Assertions] Assert Disabled" },
+                                    { value: "assertCount", label: "[Assertions] Assert Count" },
+                                    { value: "assertValue", label: "[Assertions] Assert Value" },
+                                    { value: "assertAttribute", label: "[Assertions] Assert Attribute" },
+                                    { value: "screenshot", label: "[Utilities] Take Screenshot" },
+                                    { value: "scrollTo", label: "[Utilities] Scroll To Position" },
+                                    { value: "scrollUp", label: "[Utilities] Scroll Up" },
+                                    { value: "scrollDown", label: "[Utilities] Scroll Down" },
+                                    { value: "getText", label: "[Utilities] Get Text" },
+                                    { value: "getAttribute", label: "[Utilities] Get Attribute" },
+                                    { value: "getTitle", label: "[Utilities] Get Page Title" },
+                                    { value: "getUrl", label: "[Utilities] Get Current URL" },
+                                    { value: "getValue", label: "[Utilities] Get Input Value" },
+                                    { value: "getCount", label: "[Utilities] Get Element Count" },
+                                    { value: "assertChecked", label: "[Assertions] Assert Checked" },
+                                    { value: "assertUnchecked", label: "[Assertions] Assert Unchecked" },
+                                    { value: "assertContainsText", label: "[Assertions] Assert Contains Text" },
+                                    { value: "assertUrl", label: "[Assertions] Assert URL" },
+                                    { value: "assertTitle", label: "[Assertions] Assert Title" },
+                                    { value: "assertHaveText", label: "[Assertions] Assert Have Text" },
+                                    { value: "assertHaveCount", label: "[Assertions] Assert Have Count" },
+                                    { value: "waitForElement", label: "[Wait] Wait For Element" },
+                                    { value: "waitForText", label: "[Wait] Wait For Text" },
+                                    { value: "customStep", label: "[Custom] Custom Function" },
+                                    { value: "customCode", label: "[Custom] Raw Playwright Code" }
+                                  ].filter(item => 
+                                    keywordSearch === "" || 
+                                    item.label.toLowerCase().includes(keywordSearch.toLowerCase()) ||
+                                    item.value.toLowerCase().includes(keywordSearch.toLowerCase())
+                                  ).map((item) => (
+                                    <div
+                                      key={item.value}
+                                      className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                                      onClick={() => {
+                                        handleInlineStepChange("keyword", item.value)
+                                        setKeywordSearch(item.value)
+                                        setShowKeywordDropdown(false)
+                                      }}
+                                    >
+                                      {item.label}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
 
-                          {["goto", "type", "fill", "press", "select", "setChecked", "assertText", "assertValue", "assertCount", "assertAttribute", "waitForSelector", "waitForTimeout", "waitForFunction", "setViewportSize", "scrollTo", "switchToFrame", "uploadFile", "getAttribute"].includes(inlineEditingStep.keyword) && (
+                          {["goto", "type", "fill", "press", "select", "setChecked", "assertText", "assertValue", "assertCount", "assertAttribute", "assertContainsText", "assertUrl", "assertTitle", "assertHaveText", "assertHaveCount", "waitForSelector", "waitForTimeout", "waitForFunction", "waitForElement", "waitForText", "setViewportSize", "scrollTo", "switchToFrame", "uploadFile", "getAttribute"].includes(inlineEditingStep.keyword) && (
                             <div className="space-y-2">
                               <Label>Value</Label>
                               <Input
@@ -939,7 +1242,7 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                             </div>
                           )}
 
-                          {["click", "dblClick", "rightClick", "type", "fill", "press", "clear", "select", "check", "uncheck", "setChecked", "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop", "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", "assertCount", "assertValue", "assertAttribute", "uploadFile", "downloadFile", "getText", "getAttribute"].includes(inlineEditingStep.keyword) && (
+                          {["click", "dblClick", "rightClick", "type", "fill", "press", "clear", "select", "check", "uncheck", "setChecked", "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop", "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", "assertCount", "assertValue", "assertAttribute", "assertChecked", "assertUnchecked", "assertContainsText", "uploadFile", "downloadFile", "getText", "getAttribute", "getValue", "getCount"].includes(inlineEditingStep.keyword) && (
                             <div className="space-y-4">
                               <Label>Element Locator</Label>
                               <div className="grid grid-cols-2 gap-4">
@@ -1025,8 +1328,8 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                                         <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                           <div className="font-semibold mb-2 text-blue-300">🏷️ Accessible Name</div>
                                           <div className="space-y-1">
-                                            <div><code className="text-yellow-200">{".getByRole('button', { name: 'Subscribe' })"}</code></div>
-                                            <div><code className="text-yellow-200">{".getByRole('button', { name: /submit/i })"}</code></div>
+                                            <div><code className="text-yellow-200">.getByRole('button', {'{ name: \'Subscribe\' }'}</code></div>
+                                            <div><code className="text-yellow-200">.getByRole('button', {'{ name: /submit/i }'}</code></div>
                                             <div className="text-gray-300 mt-2">💡 Matches accessible name or aria-label</div>
                                           </div>
                                         </div>
@@ -1054,8 +1357,8 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                                         <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                           <div className="font-semibold mb-2 text-blue-300">🎯 Exact Text Matching</div>
                                           <div className="space-y-1">
-                                            <div><span className="text-green-300">Exact:</span> <code className="text-yellow-200">{".getByText('Sign up', { exact: true })"}</code></div>
-                                            <div><span className="text-green-300">Partial:</span> <code className="text-yellow-200">{".getByText('Sign up')"}</code> (default)</div>
+                                            <div><span className="text-green-300">Exact:</span> <code className="text-yellow-200">.getByText('Sign up', {'{ exact: true }'}</code></div>
+                                            <div><span className="text-green-300">Partial:</span> <code className="text-yellow-200">.getByText('Sign up')</code> (default)</div>
                                             <div className="text-gray-300 mt-2">💡 Controls whether text matching is exact or partial</div>
                                           </div>
                                         </div>
@@ -1089,8 +1392,8 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                                         <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                           <div className="font-semibold mb-2 text-blue-300">✅ Contains Text Filter</div>
                                           <div className="space-y-1">
-                                            <div><code className="text-yellow-200">{".getByRole('button').filter({ hasText: 'Save' })"}</code></div>
-                                            <div><code className="text-yellow-200">{".locator('div').filter({ hasText: /product/i })"}</code></div>
+                                            <div><code className="text-yellow-200">.getByRole('button').filter({'{ hasText: \'Save\' }'}</code></div>
+                                            <div><code className="text-yellow-200">.locator('div').filter({'{ hasText: /product/i }'}</code></div>
                                             <div className="text-gray-300 mt-2">💡 Filters elements that contain specific text</div>
                                           </div>
                                         </div>
@@ -1118,8 +1421,8 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                                         <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
                                           <div className="font-semibold mb-2 text-blue-300">❌ Excludes Text Filter</div>
                                           <div className="space-y-1">
-                                            <div><code className="text-yellow-200">{".getByRole('button').filter({ hasNotText: 'Disabled' })"}</code></div>
-                                            <div><code className="text-yellow-200">{".locator('div').filter({ hasNotText: /error/i })"}</code></div>
+                                            <div><code className="text-yellow-200">.getByRole('button').filter({'{ hasNotText: \'Disabled\' }'}</code></div>
+                                            <div><code className="text-yellow-200">.locator('div').filter({'{ hasNotText: /error/i }'}</code></div>
                                             <div className="text-gray-300 mt-2">💡 Filters out elements that contain specific text</div>
                                           </div>
                                         </div>
@@ -1143,6 +1446,164 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                               </div>
                             </div>
                           )}
+
+                          {/* Variable Storage for data extraction keywords */}
+                          {(["getText", "getAttribute", "getTitle", "getUrl", "getValue", "getCount"].includes(inlineEditingStep?.keyword || "")) && (
+                            <div className="space-y-4 border-t pt-4 bg-green-50 p-4 rounded-lg">
+                              <Label className="text-sm font-semibold text-green-700">Variable Storage</Label>
+                              <div className="text-xs text-green-600 mb-2">
+                                Store the extracted value in a variable for later use
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <Label>Variable Name</Label>
+                                <Input
+                                  value={inlineEditingStep?.store ? Object.keys(inlineEditingStep.store)[0] || "" : ""}
+                                  onChange={(e) => {
+                                    const varName = e.target.value
+                                    if (varName) {
+                                      let path = "$text"
+                                      switch (inlineEditingStep?.keyword) {
+                                        case "getAttribute": path = "$attribute"; break;
+                                        case "getTitle": path = "$title"; break;
+                                        case "getUrl": path = "$url"; break;
+                                        case "getValue": path = "$value"; break;
+                                        case "getCount": path = "$count"; break;
+                                        default: path = "$text"; break;
+                                      }
+                                      handleInlineStepChange("store", { [varName]: path })
+                                    } else {
+                                      handleInlineStepChange("store", undefined)
+                                    }
+                                  }}
+                                  placeholder="pageTitle, userId, productName, etc."
+                                />
+                                <div className="text-xs text-green-600">
+                                  Use this variable later with {"{{variableName}}"} syntax
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {inlineEditingStep?.keyword === "customStep" && (
+                            <div className="space-y-4 border-t pt-4">
+                              <Label className="text-sm font-semibold">Custom Function Configuration</Label>
+                              
+                              <div className="space-y-2">
+                                <Label>Function Name</Label>
+                                <Input
+                                  value={inlineEditingStep?.customFunction?.function || ""}
+                                  onChange={(e) => {
+                                    if (!inlineEditingStep) return
+                                    const newStep: TestStep = { ...inlineEditingStep }
+                                    if (!newStep.customFunction) newStep.customFunction = { function: "" }
+                                    newStep.customFunction.function = e.target.value
+                                    handleInlineStepChange("customFunction", newStep.customFunction)
+                                  }}
+                                  placeholder="loginUser, LoginPage.login, UserManagementPage.createUser"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Arguments (JSON Array)</Label>
+                                <Input
+                                  value={inlineEditingStep?.customFunction?.args ? JSON.stringify(inlineEditingStep.customFunction.args) : ""}
+                                  onChange={(e) => {
+                                    if (!inlineEditingStep) return
+                                    try {
+                                      const args = e.target.value ? JSON.parse(e.target.value) : undefined
+                                      const newStep: TestStep = { ...inlineEditingStep }
+                                      if (!newStep.customFunction) newStep.customFunction = { function: "" }
+                                      newStep.customFunction.args = args
+                                      handleInlineStepChange("customFunction", newStep.customFunction)
+                                    } catch {
+                                      // Invalid JSON, don't update
+                                    }
+                                  }}
+                                  placeholder='["admin", "password123"] or [{"firstName": "John"}]'
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Variable Mapping (JSON Object)</Label>
+                                <Input
+                                  value={inlineEditingStep?.customFunction?.mapTo ? JSON.stringify(inlineEditingStep.customFunction.mapTo) : ""}
+                                  onChange={(e) => {
+                                    if (!inlineEditingStep) return
+                                    try {
+                                      const mapTo = e.target.value ? JSON.parse(e.target.value) : undefined
+                                      const newStep: TestStep = { ...inlineEditingStep }
+                                      if (!newStep.customFunction) newStep.customFunction = { function: "" }
+                                      newStep.customFunction.mapTo = mapTo
+                                      handleInlineStepChange("customFunction", newStep.customFunction)
+                                    } catch {
+                                      // Invalid JSON, don't update
+                                    }
+                                  }}
+                                  placeholder='{"userId": "userId", "loginSuccess": "success"}'
+                                />
+                                <div className="text-xs text-gray-500">
+                                  Maps function result to variables: {'{ "variableName": "resultProperty" }'}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {inlineEditingStep?.keyword === "customCode" && (
+                            <div className="space-y-4 border-t pt-4">
+                              <Label className="text-sm font-semibold">Raw Playwright Code</Label>
+                              <div className="text-xs text-gray-600 mb-2">
+                                Write raw Playwright code. Available variables: page, browser, expect, console
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <Textarea
+                                  value={inlineEditingStep?.customCode || ""}
+                                  onChange={(e) => handleInlineStepChange("customCode", e.target.value)}
+                                  placeholder={`// Example: Click multiple elements
+await page.locator('.item').nth(0).click();
+await page.locator('.item').nth(1).click();
+
+// Example: Complex assertion
+const count = await page.locator('.product').count();
+expect(count).toBeGreaterThan(5);
+
+// Example: Custom wait
+await page.waitForFunction(() => {
+  return document.querySelectorAll('.loaded').length > 3;
+});`}
+                                  className="font-mono text-sm min-h-[200px]"
+                                />
+                              </div>
+                              
+                              <div className="text-xs text-gray-500 space-y-1">
+                                <div>💡 <strong>Tips:</strong></div>
+                                <div>• Use <code>page</code> for page interactions</div>
+                                <div>• Use <code>expect</code> for assertions</div>
+                                <div>• Use <code>console.log()</code> for debugging</div>
+                                <div>• Code runs in async context - no need to wrap in async function</div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Skip on Failure Option */}
+                          <div className="space-y-4 border-t pt-4">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="skip-on-failure-add"
+                                className="h-4 w-4"
+                                checked={!!inlineEditingStep?.skipOnFailure}
+                                onChange={(e) => handleInlineStepChange("skipOnFailure", e.target.checked)}
+                              />
+                              <Label htmlFor="skip-on-failure-add" className="text-sm">
+                                Skip this step if any previous step fails
+                              </Label>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              When enabled, this step will be skipped if any previous step in the test case fails
+                            </div>
+                          </div>
 
                           <div className="flex justify-end gap-2">
                             <Button variant="outline" onClick={handleInlineCancelTestStep}>
@@ -1172,7 +1633,11 @@ export function TestCaseEditor({ testCase, onSave, onCancel }: TestCaseEditorPro
                 </div>
 
                 {(editedTestCase.testSteps?.length || 0) > 0 && (
-                  <div className="flex justify-end pt-4 border-t">
+                  <div className="flex justify-between items-center pt-4 border-t">
+                    <Button onClick={handleAddTestStep}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Test Step
+                    </Button>
                     <Button onClick={handleSave} size="lg">
                       <Save className="h-4 w-4 mr-2" />
                       Save All Changes
