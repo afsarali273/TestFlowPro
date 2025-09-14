@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const { testSuite, location, fileName } = await request.json()
     
-    const saveLocation = location || path.join(process.cwd(), 'testData')
+    const saveLocation = location || path.join(process.cwd(), 'testSuites')
     const saveFileName = fileName || `AI_${testSuite.suiteName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.json`
     
     // Ensure directory exists

@@ -6,8 +6,8 @@ let aiService: AIService | null = null
 
 const getAIService = async () => {
   if (!aiService) {
-    const testDataPath = path.join(process.cwd(), 'testData')
-    aiService = new AIService(testDataPath)
+    const testSuitesPath = path.join(process.cwd(), 'testSuites')
+    aiService = new AIService(testSuitesPath)
   }
   return aiService
 }

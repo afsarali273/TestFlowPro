@@ -92,19 +92,46 @@ export default function APITestFramework() {
 
   const { toast } = useToast()
 
+  // Fallback function to load test suites directly from filesystem
+  const loadTestSuitesDirectly = async (dirPath: string) => {
+    console.log('📁 [Fallback] Loading test suites directly from:', dirPath)
+    try {
+      // Use File API to read directory (only works in modern browsers)
+      if ('showDirectoryPicker' in window) {
+        toast({
+          title: "Server Unavailable",
+          description: "API server not running. Please start the development server with 'npm run dev'.",
+          variant: "destructive",
+        })
+        return
+      }
+      
+      // For now, show error message
+      throw new Error('Cannot access filesystem directly from browser')
+    } catch (error) {
+      console.error('❌ [Fallback] Direct loading failed:', error)
+      toast({
+        title: "Server Required",
+        description: "The development server must be running to load test suites. Please run 'npm run dev' in the TestEditor directory.",
+        variant: "destructive",
+      })
+    }
+  }
+
   // Load paths and test suites on mount
   useEffect(() => {
+    if (typeof window === "undefined") return
+    
     const savedPath = localStorage.getItem("testSuitePath")
     const savedFrameworkPath = localStorage.getItem("frameworkPath")
 
     if (savedPath) {
       setTestSuitePath(savedPath)
-      loadTestSuitesFromPath(savedPath)
+      setTimeout(() => {
+        loadTestSuitesFromPath(savedPath)
+      }, 100)
     } else {
-      // Only show path config modal on client side
-      if (typeof window !== "undefined") {
-        setIsPathConfigOpen(true)
-      }
+      setIsPathConfigOpen(true)
     }
 
     if (savedFrameworkPath) {
@@ -195,15 +222,13 @@ export default function APITestFramework() {
     }
   }, [testSuites])
 
-  // Update the loadTestSuitesFromPath function to handle IDs more consistently
   const loadTestSuitesFromPath = async (path: string) => {
     setIsLoading(true)
     try {
       const response = await fetch(`/api/test-suites?path=${encodeURIComponent(path)}`)
+      
       if (response.ok) {
         const suites = await response.json()
-
-        // Ensure all suites have unique IDs using a more deterministic approach
         const uniqueSuites = suites.map((suite: TestSuite, index: number) => ({
           ...suite,
           id: suite.id || `suite_${suite.suiteName.replace(/[^a-zA-Z0-9]/g, "_")}_${index}`,
@@ -215,12 +240,13 @@ export default function APITestFramework() {
           description: `Loaded ${uniqueSuites.length} test suites from ${path}`,
         })
       } else {
-        throw new Error("Failed to load test suites")
+        const errorText = await response.text()
+        throw new Error(`API Error: ${response.status} ${errorText}`)
       }
     } catch (error) {
       toast({
         title: "Error Loading Test Suites",
-        description: "Failed to load test suites from the specified path. Please check the path and try again.",
+        description: `Failed to load test suites. ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       })
     } finally {
@@ -228,7 +254,6 @@ export default function APITestFramework() {
     }
   }
 
-  // Add path configuration handlers
   const handlePathSave = (path: string) => {
     setTestSuitePath(path)
     localStorage.setItem("testSuitePath", path)
@@ -521,7 +546,7 @@ export default function APITestFramework() {
         {/* ------------ Main Page ------------- */}
         <div className="min-h-screen bg-gray-50">
           {/* Header Section */}
-          <div className="bg-white border-b border-gray-200 subtle-shadow">
+          <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 subtle-shadow">
             <div className="max-w-7xl mx-auto px-6 py-6">
               <div className="flex items-center justify-between">
                 {/* Logo and Title Section */}
@@ -628,7 +653,7 @@ export default function APITestFramework() {
           </div>
 
           {/* Main Content */}
-          <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="max-w-7xl mx-auto px-6 py-8 pt-32">
             {/* Search and Stats Section */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
@@ -736,19 +761,20 @@ export default function APITestFramework() {
 
             {/* Main Content Area */}
             {showFolderView ? (
-              <div className="flex gap-6 h-[calc(100vh-400px)]">
+              <div className="flex gap-6 h-[calc(100vh-200px)]">
                 {/* Folder Sidebar */}
-                <div className="w-80 bg-white rounded-lg border border-gray-200 shadow-sm">
+                <div className="w-80 bg-white rounded-lg border border-gray-200 shadow-sm h-full">
                   <FolderTree
                     testSuites={testSuites}
                     activeTab={activeTab}
                     onFolderSelect={handleFolderSelect}
                     selectedFolder={selectedFolder}
+                    searchTerm={searchTerm}
                   />
                 </div>
                 
                 {/* Suite Display Area */}
-                <div className="flex-1 bg-white rounded-lg border border-gray-200 shadow-sm">
+                <div className="flex-1 bg-white rounded-lg border border-gray-200 shadow-sm h-full">
                   {selectedFolder !== null ? (
                     <div className="p-6">
                       <div className="mb-4">
@@ -1000,8 +1026,8 @@ export default function APITestFramework() {
                 </div>
                 
                 {/* Suite Cards Area */}
-                <div className={`flex-1 ${viewMode === 'grid' 
-                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6" 
+                <div className={`flex-1 h-full overflow-y-auto ${viewMode === 'grid' 
+                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 content-start" 
                   : "space-y-4"
                 }`}>
                 {filteredSuites.map((suite) => {

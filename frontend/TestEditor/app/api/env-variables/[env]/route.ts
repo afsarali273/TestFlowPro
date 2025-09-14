@@ -13,6 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     
     return NextResponse.json({ variables });
   } catch (error) {
+    const { env } = await params;
     console.error(`Error reading .env.${env}:`, error);
     return NextResponse.json({ variables: [] });
   }
@@ -30,6 +31,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     
     return NextResponse.json({ success: true });
   } catch (error) {
+    const { env } = await params;
     console.error(`Error writing .env.${env}:`, error);
     return NextResponse.json({ error: 'Failed to save environment variables' }, { status: 500 });
   }

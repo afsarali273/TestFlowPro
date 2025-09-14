@@ -12,7 +12,7 @@ dotenv.config({
     path: path.resolve(__dirname, '../../.env')
 });
 
-const suitesDir = path.join(__dirname, '../testData');
+const suitesDir = path.join(__dirname, '../testSuites');
 const maxParallel = Number(process.env.MAX_PARALLEL_SUITES) || 2;
 
 // Execution target types

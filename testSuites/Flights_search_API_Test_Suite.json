@@ -148,5 +148,5 @@
     }
   ],
   "status": "Running",
-  "filePath": "/Users/afsarali/Repository/TestFlowPro/testData/Flights_search_API_Test_Suite.json"
+  "filePath": "/Users/afsarali/Repository/TestFlowPro/testSuites/Flights_search_API_Test_Suite.json"
 }
