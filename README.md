@@ -1,6 +1,82 @@
 # 🔍 TestFlow Pro – Keyword-Driven API Automation Framework
 
-A powerful and flexible API test automation tool built with **TypeScript**, supporting **REST**, **SOAP**, and **Database** testing using **JSON-driven test cases**. It is designed for scalable and maintainable testing with no-code authoring and UI support.
+A powerful and flexible API test automation tool built with **TypeScript**, supporting **REST**, **SOAP**, **UI**, and **Database** testing using **JSON-driven test cases**. It is designed for scalable and maintainable testing with no-code authoring and comprehensive UI support.
+
+---
+
+## 🏗️ Architecture Overview
+
+```mermaid
+graph TB
+    subgraph "TestFlow Pro Architecture"
+        UI[🎨 Web UI Dashboard<br/>React + Next.js]
+        CLI[⚡ CLI Runner<br/>TypeScript]
+        
+        subgraph "Test Execution Engine"
+            Runner[🚀 Test Runner]
+            APIExec[🌐 API Executor<br/>REST/SOAP]
+            UIExec[🖱️ UI Executor<br/>Playwright]
+            DBExec[🗄️ DB Executor<br/>MySQL/ODBC/DB2]
+        end
+        
+        subgraph "Test Management"
+            Parser[📝 Test Parser]
+            Validator[✅ Schema Validator]
+            VarStore[💾 Variable Store]
+            PreProc[⚙️ PreProcessor<br/>Faker/Encrypt/Custom]
+        end
+        
+        subgraph "Import & Export"
+            CurlImp[📥 cURL Import]
+            SwagImp[📥 Swagger Import]
+            PostImp[📥 Postman Import]
+            BrunoImp[📥 Bruno Import]
+            HTMLExp[📤 HTML Reports]
+            JSONExp[📤 JSON Reports]
+        end
+        
+        subgraph "Storage & Config"
+            TestSuites[(📁 Test Suites<br/>JSON Files)]
+            EnvFiles[(🔧 Environment<br/>.env files)]
+            Reports[(📊 Reports<br/>HTML/JSON)]
+        end
+        
+        subgraph "CI/CD Integration"
+            GHA[🔄 GitHub Actions<br/>Workflows]
+            Artifacts[📦 Test Artifacts]
+        end
+    end
+    
+    UI --> Runner
+    CLI --> Runner
+    Runner --> APIExec
+    Runner --> UIExec
+    Runner --> DBExec
+    
+    Runner --> Parser
+    Parser --> Validator
+    Parser --> VarStore
+    Parser --> PreProc
+    
+    UI --> CurlImp
+    UI --> SwagImp
+    UI --> PostImp
+    UI --> BrunoImp
+    
+    Runner --> HTMLExp
+    Runner --> JSONExp
+    
+    Runner --> TestSuites
+    Runner --> EnvFiles
+    HTMLExp --> Reports
+    JSONExp --> Reports
+    
+    GHA --> CLI
+    GHA --> Artifacts
+    
+    TestSuites --> Parser
+    EnvFiles --> Runner
+```
 
 ---
 
@@ -21,14 +97,26 @@ A powerful and flexible API test automation tool built with **TypeScript**, supp
 * ✅ **Schema validation** (inline or file-based)
 * ✅ **JSONPath-based assertions**
 * ✅ **REST & SOAP** API support
+* ✅ **UI Testing** with Playwright integration
 * ✅ **External body/response schema file support**
 * ✅ **Suite tags** (`@serviceName`, `@suiteType`) with CLI filters
 * ✅ **Environment config via `.env.*` files**
 * ✅ **Parallel test suite execution**
 * ✅ **Database integration** with MySQL, ODBC, DB2
 
+### Advanced Execution Features
+* ✅ **Granular Execution Control** - Run at suite, test case, or test data level
+* ✅ **Application-based Filtering** - Filter tests by application name
+* ✅ **Test Type Filtering** - Run only UI or API tests
+* ✅ **Enhanced CLI Arguments** - Multiple filtering options
+* ✅ **Target-based Execution** - Execute specific test components
+
 ### UI & Import Features
-* ✅ **Test Designer UI** with professional slate color scheme
+* ✅ **Modern Test Designer UI** with professional slate color scheme
+* ✅ **Fixed Header Navigation** - Always accessible controls
+* ✅ **Folder Tree Structure** - Hierarchical test suite organization
+* ✅ **Application Grouping** - Organize tests by application
+* ✅ **Search & Filtering** - Real-time test suite filtering
 * ✅ **Multiple Import Options**: cURL, Swagger/OpenAPI, Postman, Bruno collections
 * ✅ **Environment Variables Manager** - Edit .env files directly from UI
 * ✅ **Test cURL Commands** - Execute and validate before importing
@@ -40,13 +128,23 @@ A powerful and flexible API test automation tool built with **TypeScript**, supp
 * ✅ **Response Body Capture** - Always stored for passed and failed tests
 * ✅ **Test Result Details** - Complete execution information
 
+### CI/CD Integration
+* ✅ **GitHub Actions Workflows** - Ready-to-use automation
+* ✅ **Tag-based Execution** - Run tests by service/suite tags
+* ✅ **Application-based Execution** - Run tests by application name
+* ✅ **Matrix Testing** - Multi-environment test execution
+* ✅ **Artifact Management** - Automatic report uploads
+
 ---
 
 ## 🧪 Sample Suite JSON
 
 ```json
 {
+  "id": "bookstore-api-001",
   "suiteName": "Bookstore API Suite",
+  "applicationName": "Bookstore Application",
+  "type": "API",
   "baseUrl": "https://api.bookstore.com",
   "tags": [
     { "serviceName": "@BookService" },
@@ -55,6 +153,7 @@ A powerful and flexible API test automation tool built with **TypeScript**, supp
   "testCases": [
     {
       "name": "Create Book",
+      "type": "REST",
       "testData": [
         {
           "name": "Add Book",
@@ -86,6 +185,83 @@ A powerful and flexible API test automation tool built with **TypeScript**, supp
 
 ---
 
+## 🎯 Enhanced CLI Usage
+
+### Basic Execution
+```bash
+# Run all test suites
+npx ts-node src/runner.ts
+
+# Run specific test suite file
+npx ts-node src/runner.ts --file="./testSuites/api-tests.json"
+```
+
+### Advanced Filtering
+```bash
+# Filter by application name
+npx ts-node src/runner.ts --applicationName="Bookstore Application"
+
+# Filter by test type
+npx ts-node src/runner.ts --testType="API"
+npx ts-node src/runner.ts --testType="UI"
+
+# Filter by tags
+npx ts-node src/runner.ts --serviceName="@BookService" --suiteType="@smoke"
+
+# Combine multiple filters
+npx ts-node src/runner.ts --applicationName="Bookstore" --testType="API" --suiteType="@regression"
+```
+
+### Granular Execution
+```bash
+# Run specific test case
+npx ts-node src/runner.ts --target="suite-001:Bookstore Suite > tc-001:Create Book"
+
+# Run specific test data
+npx ts-node src/runner.ts --target="suite-001:Bookstore Suite > tc-001:Create Book > 0:Add Valid Book"
+```
+
+---
+
+## 🔄 GitHub Actions Integration
+
+### Available Workflows
+
+#### 1. **Run Tests by Tags** (`run-tests-by-tags.yml`)
+```yaml
+# Manual trigger with tag filtering
+inputs:
+  serviceName: "@UserService"
+  suiteType: "@smoke" 
+  environment: "qa"
+```
+
+#### 2. **Run Tests by Application** (`run-tests-by-application.yml`)
+```yaml
+# Manual trigger with application filtering
+inputs:
+  applicationName: "Bookstore Application"
+  testType: "API"
+  environment: "qa"
+```
+
+#### 3. **Run Tests Matrix** (`run-tests-matrix.yml`)
+```yaml
+# Manual trigger with matrix execution
+inputs:
+  environments: "dev,qa,prod"
+  testTypes: "API,UI"
+  tags: "@smoke,@regression"
+```
+
+### Workflow Features
+* ✅ **Environment Management** - Automatic `.env` file handling
+* ✅ **HTML Report Generation** - `npm run report:html`
+* ✅ **Artifact Uploads** - JSON and HTML reports
+* ✅ **Manual Triggers Only** - No automatic scheduling
+
+---
+
 ## 🔧 PreProcess Functions
 
 ```json
@@ -108,39 +284,6 @@ A powerful and flexible API test automation tool built with **TypeScript**, supp
 | `custom.authToken` | Custom logic for token                                                    |
 | `generateUser`     | Custom function returning multiple keys (use with `mapTo`)                |
 | `dbQuery`          | SQL query to DB (MySQL/ODBC/DB2) with support for `mapTo` or single `var` |
-
----
-
-## 📦 `mapTo` Usage Examples
-
-### 🔹 dbQuery
-
-```json
-{
-  "function": "dbQuery",
-  "args": ["SELECT id, email FROM users WHERE id = 1"],
-  "db": "userDb",
-  "mapTo": {
-    "userId": "id",
-    "userEmail": "email"
-  }
-}
-```
-
-### 🔹 Custom Function
-
-```json
-{
-  "function": "generateUser",
-  "mapTo": {
-    "userNameVar": "username",
-    "userEmailVar": "email",
-    "userUUIDVar": "uuid"
-  }
-}
-```
-
-Supports `{{variable}}` in `args`, auto-injected via variable store.
 
 ---
 
@@ -168,50 +311,47 @@ Supports `{{variable}}` in `args`, auto-injected via variable store.
 
 ---
 
-## 📁 External Files Support
+## 🎨 Modern UI Features
 
-* ✅ `bodyFile`: `"bodyFile": "./payloads/login.json"`
-* ✅ `responseSchemaFile`: `"responseSchemaFile": "./schemas/user-schema.json"`
+### Dashboard Interface
+* ✅ **Fixed Header Navigation** - Always accessible controls
+* ✅ **Modern Folder Tree** - Hierarchical structure with visual connections
+* ✅ **Application Sidebar** - Organized by application (320px width)
+* ✅ **Search Integration** - Real-time filtering across folder structure
+* ✅ **Responsive Design** - Full viewport height utilization
 
----
+### Visual Enhancements
+* ✅ **Professional Slate Theme** - Eye-strain reducing design
+* ✅ **Smooth Animations** - Hover effects and transitions
+* ✅ **Color-coded Icons** - Blue folders, purple UI tests, emerald API tests
+* ✅ **Badge Integration** - Suite counts and type indicators close to names
+* ✅ **Horizontal Scrolling** - Handle long names gracefully
 
-## 🔗 Variable Injection & Storage
-
-Inject `{{variable}}` in `endpoint`, `headers`, `body`.
-
-```json
-"store": {
-  "userId": "$.id"
-}
-```
-
-Advanced array-object matching:
-
-```json
-"store": [
-  {
-    "type": "arrayObjectMatch",
-    "jsonPath": "$.data",
-    "matchField": "name",
-    "matchValue": "Company",
-    "extractField": "value",
-    "variableName": "companyName"
-  }
-]
-```
+### Test Management
+* ✅ **Grid/List Views** - Multiple viewing options
+* ✅ **Real-time Search** - Filter by suite name, tags, test cases, keywords
+* ✅ **Application Grouping** - Organize tests by application
+* ✅ **Environment Management** - Visual .env file editor
 
 ---
 
 ## ⚙️ Environment Setup
 
-`.env.qa`, `.env.dev`, etc.
+Environment files support automatic loading based on `ENV` variable:
 
 ```env
+# .env (base configuration)
 BASE_URL=https://api.example.com
 PARALLEL_THREADS=4
+
+# .env.qa (QA overrides)
+BASE_URL=https://qa-api.example.com
+
+# .env.prod (Production overrides)  
+BASE_URL=https://api.example.com
 ```
 
-Supports DB credentials via prefixed variables:
+Database credentials via prefixed variables:
 
 ```env
 DB_USERDB_TYPE=mysql
@@ -221,6 +361,29 @@ DB_USERDB_USER=root
 DB_USERDB_PASSWORD=secret
 DB_USERDB_NAME=testflow
 ```
+
+---
+
+## 🧪 Running Tests
+
+```bash
+# Install dependencies
+npm install
+
+# Generate HTML reports
+npm run report:html
+
+# Run Frontend UI (React)
+cd frontend/TestEditor
+npm install --legacy-peer-deps
+npm run dev
+```
+
+### UI Access
+* **Dashboard**: http://localhost:3000
+* **Features**: Create, edit, run test suites with visual interface
+* **Import**: Use UI to import from cURL, Swagger, Postman, Bruno
+* **Environment**: Manage .env files through Settings menu
 
 ---
 
@@ -264,45 +427,4 @@ DB_USERDB_NAME=testflow
 
 ---
 
-## 🎨 UI Features
-
-### Professional Interface
-* **Slate Color Scheme**: Professional, eye-strain reducing design
-* **Application Grouping**: Organize test suites by application
-* **Grid/List Views**: Multiple viewing options for test suites
-* **Folder Navigation**: Browse test suites by folder structure
-
-### Environment Management
-* **Visual Editor**: Edit .env.dev, .env.qa, .env.prod files directly
-* **Add/Edit/Delete**: Full CRUD operations for environment variables
-* **Multi-Environment**: Switch between different environments seamlessly
-
----
-
-## 🧪 Running Tests
-
-```bash
-# Install dependencies
-npm install
-
-# Run tests
-npx ts-node src/runner.ts
-
-# Run filtered by tag
-npx ts-node src/runner.ts --serviceName=@UserService --suiteType=@smoke
-
-# Run Frontend UI (React)
-cd frontend/TestEditor
-npm install --legacy-peer-deps
-npm run dev
-```
-
-### UI Access
-* **Dashboard**: http://localhost:3000
-* **Features**: Create, edit, run test suites with visual interface
-* **Import**: Use UI to import from cURL, Swagger, Postman, Bruno
-* **Environment**: Manage .env files through Settings menu
-
----
-
-Want to contribute, build plugins, or explore GraphQL/Kafka next? Let’s connect!
+Want to contribute, build plugins, or explore GraphQL/Kafka next? Let's connect!
