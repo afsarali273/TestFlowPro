@@ -1,0 +1,80 @@
+name: Run Tests by Tags
+
+on:
+  workflow_dispatch:
+    inputs:
+      serviceName:
+        description: 'Service Name Tag (e.g., @UserService)'
+        required: false
+        type: string
+      suiteType:
+        description: 'Suite Type Tag (e.g., @smoke, @regression)'
+        required: false
+        type: string
+      environment:
+        description: 'Environment to run tests against'
+        required: true
+        default: 'qa'
+        type: choice
+        options:
+          - dev
+          - qa
+          - prod
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Set tags from inputs
+      run: |
+        echo "SERVICE_NAME=${{ github.event.inputs.serviceName }}" >> $GITHUB_ENV
+        echo "SUITE_TYPE=${{ github.event.inputs.suiteType }}" >> $GITHUB_ENV
+        echo "ENVIRONMENT=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+        
+    - name: Run tests with tags
+      env:
+        ENV: ${{ env.ENVIRONMENT }}
+      run: |
+        ARGS=""
+        if [ ! -z "$SERVICE_NAME" ]; then
+          ARGS="$ARGS --serviceName=$SERVICE_NAME"
+        fi
+        if [ ! -z "$SUITE_TYPE" ]; then
+          ARGS="$ARGS --suiteType=$SUITE_TYPE"
+        fi
+        
+        echo "Running tests with args: $ARGS on environment: $ENV"
+        npx ts-node src/runner.ts $ARGS
+        
+    - name: Generate HTML reports
+      if: always()
+      run: npm run report:html
+        
+    - name: Upload test reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-reports-tags-${{ env.ENVIRONMENT }}
+        path: reports/
+        retention-days: 30
+        
+    - name: Upload HTML reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: html-reports-tags-${{ env.ENVIRONMENT }}
+        path: '**/*.html'
+        retention-days: 30

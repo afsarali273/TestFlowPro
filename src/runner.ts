@@ -28,29 +28,20 @@ type ExecutionTarget = {
 
 // Parse execution target from string format: "suiteId:suiteName > testCaseId:testCaseName > testDataIndex:testDataName"
 function parseExecutionTarget(targetStr: string): ExecutionTarget {
-    console.log(`Parsing target: "${targetStr}"`);
     const parts = targetStr.split(' > ').map(p => p.trim());
-    console.log(`Target parts:`, parts);
     
     if (parts.length === 1) {
-        // Suite level: "suiteId:suiteName"
         const [suiteId, suiteName] = parts[0].split(':');
-        const result = { type: 'suite' as const, suiteId, suiteName };
-        console.log(`Parsed as suite:`, result);
-        return result;
+        return { type: 'suite' as const, suiteId, suiteName };
     } else if (parts.length === 2) {
-        // TestCase level: "suiteId:suiteName > testCaseId:testCaseName"
         const [suiteId, suiteName] = parts[0].split(':');
         const [testCaseId, testCaseName] = parts[1].split(':');
-        const result = { type: 'testcase' as const, suiteId, suiteName, testCaseId, testCaseName };
-        console.log(`Parsed as testcase:`, result);
-        return result;
+        return { type: 'testcase' as const, suiteId, suiteName, testCaseId, testCaseName };
     } else if (parts.length === 3) {
-        // TestData level: "suiteId:suiteName > testCaseId:testCaseName > testDataIndex:testDataName"
         const [suiteId, suiteName] = parts[0].split(':');
         const [testCaseId, testCaseName] = parts[1].split(':');
         const [testDataIndex, testDataName] = parts[2].split(':');
-        const result = { 
+        return { 
             type: 'testdata' as const, 
             suiteId, 
             suiteName, 
@@ -59,18 +50,34 @@ function parseExecutionTarget(targetStr: string): ExecutionTarget {
             testDataIndex: parseInt(testDataIndex), 
             testDataName 
         };
-        console.log(`Parsed as testdata:`, result);
-        return result;
     }
     
     throw new Error(`Invalid target format: ${targetStr}. Use "suiteId:suiteName" or "suiteId:suiteName > testCaseId:testCaseName" or "suiteId:suiteName > testCaseId:testCaseName > testDataIndex:testDataName"`);
 }
 
-function suiteHasTags(suite: TestSuite, filters: Record<string, string>): boolean {
-    if (!suite.tags) return false;
+function suiteMatchesFilters(suite: TestSuite, filters: Record<string, string>): boolean {
     for (const [key, value] of Object.entries(filters)) {
-        const found = suite.tags.some(tag => tag[key] === value);
-        if (!found) return false;
+        if (key === 'applicationName') {
+            // Application name filtering (case-insensitive partial match)
+            if (!suite.applicationName || 
+                suite.applicationName.trim() === '' ||
+                !suite.applicationName.toLowerCase().includes(value.toLowerCase())) {
+                return false;
+            }
+        } else if (key === 'testType') {
+            // Test type filtering (UI/API)
+            if (value === 'UI' && suite.type !== 'UI') {
+                return false;
+            } else if (value === 'API' && suite.type !== 'API') {
+                return false;
+            }
+            // 'all' or any other value matches everything
+        } else {
+            // Tag-based filtering (existing logic)
+            if (!suite.tags) return false;
+            const found = suite.tags.some(tag => tag[key] === value);
+            if (!found) return false;
+        }
     }
     return true;
 }
@@ -89,9 +96,6 @@ class TestRunner {
     }
     
     async executeTestCase(suite: TestSuite, target: ExecutionTarget) {
-        console.log(`Looking for test case: ID='${target.testCaseId}', Name='${target.testCaseName}'`);
-        console.log(`Available test cases:`, suite.testCases.map(tc => ({ id: tc.id, name: tc.name })));
-        
         const testCase = suite.testCases.find(tc => 
             tc.name === target.testCaseName || (target.testCaseId && tc.id === target.testCaseId)
         );
@@ -99,8 +103,6 @@ class TestRunner {
         if (!testCase) {
             throw new Error(`TestCase not found: ${target.testCaseId}:${target.testCaseName}`);
         }
-        
-        console.log(`Found test case: ${testCase.name} (ID: ${testCase.id})`);
         
         console.log(`\n▶️ Starting TestCase: ${testCase.name} from Suite: ${suite.suiteName}`);
         
@@ -169,9 +171,8 @@ async function runTarget(filePath: string, target: ExecutionTarget, filters: Rec
         return;
     }
 
-    if (Object.keys(filters).length > 0 && !suiteHasTags(suite, filters)) {
-        console.log(`Skipping suite ${suite.suiteName} (tags filter mismatch)`);
-        return;
+    if (Object.keys(filters).length > 0 && !suiteMatchesFilters(suite, filters)) {
+        return; // Skip silently
     }
 
     const reporter = new Reporter();
@@ -255,6 +256,10 @@ async function runAllSuitesParallel(filters: Record<string, string>) {
     const runId = generateRunName();
 
     console.log(`\n🚀 Starting ${runId}`);
+    if (Object.keys(filters).length > 0) {
+        const filterDesc = Object.entries(filters).map(([k, v]) => `${k}=${v}`).join(', ');
+        console.log(`📋 Filters: ${filterDesc}`);
+    }
 
     const tasks = files.map((file) =>
         limit(() => {
