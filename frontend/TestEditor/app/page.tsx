@@ -866,7 +866,7 @@ export default function APITestFramework() {
             ) : (
               <div className="flex gap-6">
                 {/* Application Navigation Sidebar */}
-                <div className="w-64 bg-white rounded-xl border border-slate-200 subtle-shadow-lg">
+                <div className="w-80 bg-white rounded-xl border border-slate-200 subtle-shadow-lg">
                   <div className="p-4 border-b border-slate-200">
                     <h3 className="text-sm font-bold text-slate-900 flex items-center justify-between">
                       <div className="flex items-center gap-2">
