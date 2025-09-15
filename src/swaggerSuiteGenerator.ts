@@ -121,7 +121,7 @@ export function convertSwaggerToTestSuite(swagger: any): TestSuite {
     };
 
     if (suite.fileName != null) {
-        suite.filePath = path.join('./testData', suite.fileName);
+        suite.filePath = path.join('./testSuites', suite.fileName);
     }
     return suite;
 }

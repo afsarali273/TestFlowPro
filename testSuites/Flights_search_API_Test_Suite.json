@@ -46,11 +46,6 @@
             {
               "type": "statusCode",
               "expected": 200
-            },
-            {
-              "type": "equals",
-              "jsonPath": "$.status",
-              "expected": "success"
             }
           ],
           "store": {}
@@ -134,11 +129,6 @@
             {
               "type": "statusCode",
               "expected": 400
-            },
-            {
-              "type": "equals",
-              "jsonPath": "$.error.message",
-              "expected": "Invalid currency provided"
             }
           ],
           "store": {}

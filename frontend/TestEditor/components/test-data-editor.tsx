@@ -45,7 +45,7 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
   const [rawSchemaJson, setRawSchemaJson] = useState("")
   const [bodyJsonError, setBodyJsonError] = useState("")
   const [schemaJsonError, setSchemaJsonError] = useState("")
-  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null)
+
 
   const [activeTab, setActiveTab] = useState("general")
 
@@ -56,7 +56,23 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
     return currentIndex < tabSequence.length - 1 ? tabSequence[currentIndex + 1] : null
   }
 
+  const silentSave = () => {
+    // Clean the test data for silent save (same logic as handleSave but without calling onSave)
+    const cleanedTestData = {
+      ...editedTestData,
+      assertions: (editedTestData.assertions || []).map(cleanAssertionData),
+      preProcess: (editedTestData.preProcess || []).filter((process: any) => process.function).map(cleanPreProcessData),
+    }
+    // Store the cleaned data but don't call onSave to avoid navigation
+    setEditedTestData(cleanedTestData)
+  }
+
   const handleNextTab = () => {
+    // Auto-save silently before moving to next section (without navigation)
+    if (testData && testData.name && testData.name !== "New Test Data") {
+      silentSave()
+    }
+    
     const nextTab = getNextTab(activeTab)
     if (nextTab) {
       setActiveTab(nextTab)
@@ -96,22 +112,9 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
       ...prev,
       [field]: value,
     }))
-    triggerAutoSave()
   }
 
-  const triggerAutoSave = () => {
-    // Only auto-save if we're editing existing test data (has onSave callback)
-    // For new test data, user must manually save first
-    if (!testData || !testData.name || testData.name === "New Test Data") return
-    
-    if (autoSaveTimeout) {
-      clearTimeout(autoSaveTimeout)
-    }
-    const timeout = setTimeout(() => {
-      handleSave()
-    }, 1000)
-    setAutoSaveTimeout(timeout)
-  }
+
 
   const handleNestedChange = (parent: string, field: string, value: any) => {
     setEditedTestData((prev: any) => ({
@@ -121,7 +124,6 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
         [field]: value,
       },
     }))
-    triggerAutoSave()
   }
 
   const handleAddHeader = () => {
@@ -182,7 +184,13 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
       counter++
     }
 
-    handleNestedChange("headers", finalKey, value)
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      headers: {
+        ...prev.headers,
+        [finalKey]: value,
+      },
+    }))
   }
 
   const handleAddAssertion = () => {
@@ -223,7 +231,10 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
 
     const newAssertions = [...(editedTestData.assertions || [])]
     newAssertions.splice(index + 1, 0, clonedAssertion)
-    handleChange("assertions", newAssertions)
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      assertions: newAssertions,
+    }))
   }
 
   const handleAddPreProcess = () => {
@@ -367,7 +378,13 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
       counter++
     }
 
-    handleNestedChange("store", finalKey, value)
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      store: {
+        ...prev.store,
+        [finalKey]: value,
+      },
+    }))
   }
 
   const handleRemoveStoreVariable = (key: string) => {

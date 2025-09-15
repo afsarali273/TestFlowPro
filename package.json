@@ -4,15 +4,9 @@
   "main": "index.js",
   "scripts": {
     "test": "npx ts-node src/runner.ts",
-    "test:smoke": "npx ts-node src/runner.ts --serviceName=digitalLibrary --suiteType=smoke",
+    "test:smoke": "npx ts-node src/runner.ts --serviceName=@digitalLibrary --suiteType=@smoke",
     "generate:swagger": "npx ts-node src/swaggerSuiteGenerator.ts /Users/afsarali/Repository/POC/swagger.json",
-    "report:html": "npx ts-node src/generateHtmlReport.ts",
-    "mcp:server": "node start-mcp-server.js",
-    "mcp:test": "node test-working.js",
-    "mcp:test-simple": "node test-simple.js",
-    "mcp:test-ts": "node test-mcp.js",
-    "mcp:tools": "node test-tools.js",
-    "mcp:install": "npm install -g playwright-mcp && npx playwright install"
+    "report:html": "npx ts-node src/generateHtmlReport.ts"
   },
   "author": "Afsar",
   "license": "ISC",

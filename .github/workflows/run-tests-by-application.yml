@@ -34,98 +34,54 @@ on:
 jobs:
   run-tests:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Run tests for application
-      env:
-        ENV: ${{ github.event.inputs.environment }}
-      run: |
-        echo "Running tests for application: ${{ github.event.inputs.applicationName }}"
-        echo "Test type: ${{ github.event.inputs.testType }}"
-        echo "Environment: $ENV"
-        
-        # Build arguments
-        ARGS="--applicationName=${{ github.event.inputs.applicationName }}"
-        
-        if [ "${{ github.event.inputs.testType }}" != "all" ]; then
-          ARGS="$ARGS --testType=${{ github.event.inputs.testType }}"
-        fi
-        
-        echo "Running with args: $ARGS"
-        npx ts-node src/runner.ts $ARGS
-        
-    - name: Generate HTML reports
-      if: always()
-      run: npm run report:html
-        
-    - name: Generate combined report
-      run: |
-        echo "Generating combined test report..."
-        # Add logic to combine multiple suite reports if needed
-        
-    - name: Upload test reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-reports-app-${{ github.event.inputs.applicationName }}-${{ github.event.inputs.environment }}
-        path: reports/
-        retention-days: 30
-        
-    - name: Upload HTML reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: html-reports-app-${{ github.event.inputs.applicationName }}-${{ github.event.inputs.environment }}
-        path: '**/*.html'
-        retention-days: 30
-        
-    - name: Comment PR with results
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          const path = require('path');
-          
-          // Read latest test results
-          const reportsDir = './reports';
-          if (fs.existsSync(reportsDir)) {
-            const files = fs.readdirSync(reportsDir);
-            const latestReport = files
-              .filter(f => f.endsWith('.json'))
-              .sort()
-              .pop();
-              
-            if (latestReport) {
-              const reportPath = path.join(reportsDir, latestReport);
-              const report = JSON.parse(fs.readFileSync(reportPath, 'utf-8'));
-              
-              const comment = `## Test Results for ${context.payload.inputs?.applicationName || 'Application'}
-              
-              - **Total Tests**: ${report.totalTests || 0}
-              - **Passed**: ${report.passedTests || 0}
-              - **Failed**: ${report.failedTests || 0}
-              - **Environment**: ${context.payload.inputs?.environment || 'N/A'}
-              
-              [View detailed report in artifacts](${context.payload.repository.html_url}/actions/runs/${context.runId})`;
-              
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: comment
-              });
-            }
-          }
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        env:
+          ENV: ${{ github.event.inputs.environment }}
+        run: |
+          echo "Running tests for application: ${{ github.event.inputs.applicationName }}"
+          echo "Test type: ${{ github.event.inputs.testType }}"
+          echo "Environment: $ENV"
+
+          # Build CLI args dynamically
+          ARGS="--applicationName='${{ github.event.inputs.applicationName }}'"
+
+          if [ "${{ github.event.inputs.testType }}" != "all" ]; then
+            ARGS="$ARGS --testType='${{ github.event.inputs.testType }}'"
+          fi
+
+          echo "Executing: npx ts-node src/runner.ts $ARGS"
+          npx ts-node src/runner.ts $ARGS
+
+      - name: Generate HTML reports
+        if: always()
+        run: npm run report:html
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-${{ github.event.inputs.applicationName }}-${{ github.event.inputs.environment }}
+          path: reports/
+          retention-days: 30
+
+      - name: Upload HTML reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: html-reports-${{ github.event.inputs.applicationName }}-${{ github.event.inputs.environment }}
+          path: '**/*.html'
+          retention-days: 30
