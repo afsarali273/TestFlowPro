@@ -1,13 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { promises as fs } from "fs"
+import {type NextRequest, NextResponse} from "next/server"
+import {promises as fs} from "fs"
 import path from "path"
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const testSuitePath = searchParams.get("path")
-
-  console.log('🔍 [API] Received request for path:', testSuitePath)
-  console.log('🔍 [API] Current working directory:', process.cwd())
 
   if (!testSuitePath) {
     console.error('❌ [API] No path parameter provided')
@@ -17,9 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     // Resolve to absolute path if it's relative
     const resolvedPath = path.isAbsolute(testSuitePath) ? testSuitePath : path.resolve(process.cwd(), testSuitePath)
-    console.log('📁 [API] Resolved path:', resolvedPath)
-    
-    console.log('📁 [API] Checking if path exists:', resolvedPath)
+
     // Check if the directory exists
     const stats = await fs.stat(resolvedPath)
     if (!stats.isDirectory()) {
@@ -27,12 +22,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Path is not a directory" }, { status: 400 })
     }
 
-    console.log('✅ [API] Path is valid directory, loading test suites...')
     // Read all JSON files from the directory
     const testSuites = await loadTestSuitesFromDirectory(resolvedPath)
-    
-    console.log('📊 [API] Loaded test suites count:', testSuites.length)
-    console.log('📊 [API] Test suites:', testSuites.map(s => ({ id: s.id, suiteName: s.suiteName, filePath: s.filePath })))
 
     return NextResponse.json(testSuites)
   } catch (error) {
@@ -42,29 +33,29 @@ export async function GET(request: NextRequest) {
 }
 
 async function loadTestSuitesFromDirectory(dirPath: string): Promise<any[]> {
-  console.log('📂 [loadTestSuitesFromDirectory] Processing directory:', dirPath)
+  //console.log('📂 [loadTestSuitesFromDirectory] Processing directory:', dirPath)
   const testSuites: any[] = []
   const processedPaths = new Set<string>() // Track processed file paths to avoid duplicates
 
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true })
-    console.log('📁 [loadTestSuitesFromDirectory] Found entries:', entries.length, entries.map(e => `${e.name} (${e.isDirectory() ? 'dir' : 'file'})`))
+    //console.log('📁 [loadTestSuitesFromDirectory] Found entries:', entries.length, entries.map(e => `${e.name} (${e.isDirectory() ? 'dir' : 'file'})`))
 
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name)
-      console.log('🔍 [loadTestSuitesFromDirectory] Processing:', fullPath)
+      //console.log('🔍 [loadTestSuitesFromDirectory] Processing:', fullPath)
 
       if (entry.isDirectory()) {
-        console.log('📁 [loadTestSuitesFromDirectory] Recursing into subdirectory:', fullPath)
+        //console.log('📁 [loadTestSuitesFromDirectory] Recursing into subdirectory:', fullPath)
         // Recursively load from subdirectories
         const subSuites = await loadTestSuitesFromDirectory(fullPath)
-        console.log('📊 [loadTestSuitesFromDirectory] Got', subSuites.length, 'suites from subdirectory')
+        //console.log('📊 [loadTestSuitesFromDirectory] Got', subSuites.length, 'suites from subdirectory')
         testSuites.push(...subSuites)
       } else if (entry.isFile() && entry.name.endsWith(".json")) {
-        console.log('📜 [loadTestSuitesFromDirectory] Processing JSON file:', entry.name)
+        //console.log('📜 [loadTestSuitesFromDirectory] Processing JSON file:', entry.name)
         // Skip if we've already processed this file path
         if (processedPaths.has(fullPath)) {
-          console.log('⚠️ [loadTestSuitesFromDirectory] Skipping duplicate path:', fullPath)
+          //console.log('⚠️ [loadTestSuitesFromDirectory] Skipping duplicate path:', fullPath)
           continue
         }
         processedPaths.add(fullPath)
@@ -72,7 +63,7 @@ async function loadTestSuitesFromDirectory(dirPath: string): Promise<any[]> {
         try {
           const fileContent = await fs.readFile(fullPath, "utf-8")
           const testSuite = JSON.parse(fileContent)
-          console.log('📊 [loadTestSuitesFromDirectory] Parsed suite:', testSuite.suiteName)
+          //console.log('📊 [loadTestSuitesFromDirectory] Parsed suite:', testSuite.suiteName)
 
           // Generate a deterministic ID based on file path and suite name
           const pathHash = Buffer.from(fullPath)
@@ -90,7 +81,6 @@ async function loadTestSuitesFromDirectory(dirPath: string): Promise<any[]> {
 
           // Validate basic structure
           if (testSuite.suiteName && testSuite.testCases) {
-            console.log('✅ [loadTestSuitesFromDirectory] Valid suite added:', testSuite.suiteName)
             testSuites.push(testSuite)
           } else {
             console.warn(`⚠️ [loadTestSuitesFromDirectory] Invalid test suite structure in file: ${fullPath}`, { suiteName: testSuite.suiteName, hasTestCases: !!testSuite.testCases })
@@ -99,7 +89,6 @@ async function loadTestSuitesFromDirectory(dirPath: string): Promise<any[]> {
           console.error(`❌ [loadTestSuitesFromDirectory] Error parsing JSON file ${fullPath}:`, parseError)
         }
       } else {
-        console.log('⏭️ [loadTestSuitesFromDirectory] Skipping non-JSON file:', entry.name)
       }
     }
   } catch (error) {
@@ -107,12 +96,9 @@ async function loadTestSuitesFromDirectory(dirPath: string): Promise<any[]> {
   }
 
   // Remove any potential duplicates based on file path
-  const uniqueSuites = testSuites.filter(
-    (suite, index, self) => index === self.findIndex((s) => s.filePath === suite.filePath),
+  return testSuites.filter(
+      (suite, index, self) => index === self.findIndex((s) => s.filePath === suite.filePath),
   )
-
-  console.log('🏁 [loadTestSuitesFromDirectory] Final result:', uniqueSuites.length, 'unique suites')
-  return uniqueSuites
 }
 
 function generateIdFromPath(filePath: string): string {

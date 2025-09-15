@@ -24,7 +24,7 @@ export async function runTarget(filePath: string, target: ExecutionTarget, filte
         const appliedFilters = Object.entries(filters)
             .map(([k, v]) => `${k}=${v}`)
             .join(", ");
-        console.log(`⏭️ Skipping suite "${suite.suiteName}" (${suite.id}) — did not match filters: ${appliedFilters}`);
+        //console.log(`⏭️ Skipping suite "${suite.suiteName}" (${suite.id}) — did not match filters: ${appliedFilters}`);
         return;
     }
 
