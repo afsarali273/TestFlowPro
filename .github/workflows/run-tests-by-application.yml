@@ -77,11 +77,3 @@ jobs:
           name: test-reports-${{ github.event.inputs.applicationName }}-${{ github.event.inputs.environment }}
           path: reports/
           retention-days: 30
-
-      - name: Upload HTML reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: html-reports-${{ github.event.inputs.applicationName }}-${{ github.event.inputs.environment }}
-          path: '**/*.html'
-          retention-days: 30
