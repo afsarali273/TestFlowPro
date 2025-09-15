@@ -57,10 +57,10 @@ jobs:
           echo "Environment: $ENV"
 
           # Build CLI args dynamically
-          ARGS="--applicationName='${{ github.event.inputs.applicationName }}'"
+          ARGS="--applicationName=${{ github.event.inputs.applicationName }}"
 
           if [ "${{ github.event.inputs.testType }}" != "all" ]; then
-            ARGS="$ARGS --testType='${{ github.event.inputs.testType }}'"
+            ARGS="$ARGS --testType=${{ github.event.inputs.testType }}"
           fi
 
           echo "Executing: npx ts-node src/runner.ts $ARGS"
