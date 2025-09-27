@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Copy, Save, Download, AlertCircle, Plus, FileText, Play } from 'lucide-react';
+import { Copy, Save, Download, AlertCircle, Plus, FileText, Play, Shield } from 'lucide-react';
 import { CurlParser, CurlParseResult } from '../../../src/utils/curlParser';
 import { TestSuite } from '../../../src/types';
 
@@ -33,6 +33,9 @@ export const CurlImportModal: React.FC<CurlImportModalProps> = ({
   const [savePath, setSavePath] = useState<string>('');
   const [testResult, setTestResult] = useState<any>(null);
   const [isTestingCurl, setIsTestingCurl] = useState(false);
+  const [jsonPath, setJsonPath] = useState('');
+  const [filteredResult, setFilteredResult] = useState<any>(null);
+  const [assertions, setAssertions] = useState<any[]>([]);
 
   const handleTestCurl = async () => {
     if (!curlInput.trim()) return;
@@ -52,6 +55,73 @@ export const CurlImportModal: React.FC<CurlImportModalProps> = ({
     } finally {
       setIsTestingCurl(false);
     }
+  };
+
+  const handleJsonPathFilter = () => {
+    if (!testResult?.data || !jsonPath.trim()) {
+      setFilteredResult(null);
+      return;
+    }
+
+    try {
+      // Simple JSONPath implementation for basic queries
+      const data = testResult.data;
+      let result = data;
+      
+      if (jsonPath === '$') {
+        result = data;
+      } else if (jsonPath.startsWith('$.')) {
+        const path = jsonPath.substring(2);
+        const parts = path.split('.');
+        
+        for (const part of parts) {
+          if (part.includes('[') && part.includes(']')) {
+            const [key, indexStr] = part.split('[');
+            const index = parseInt(indexStr.replace(']', ''));
+            result = key ? result[key][index] : result[index];
+          } else {
+            result = result[part];
+          }
+          if (result === undefined) break;
+        }
+      }
+      
+      setFilteredResult(result);
+    } catch (error) {
+      setFilteredResult({ error: 'Invalid JSONPath expression' });
+    }
+  };
+
+  const addAssertion = (type: string, expected?: any) => {
+    if (!jsonPath.trim()) return;
+    
+    const newAssertion = {
+      type,
+      jsonPath,
+      ...(expected !== undefined && { expected })
+    };
+    
+    setAssertions(prev => [...prev, newAssertion]);
+  };
+
+  const removeAssertion = (index: number) => {
+    setAssertions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateTestSuiteWithAssertions = () => {
+    if (!parseResult?.testSuite || assertions.length === 0) return;
+    
+    const updatedSuite = { ...parseResult.testSuite };
+    if (updatedSuite.testCases[0]?.testData[0]) {
+      updatedSuite.testCases[0].testData[0].assertions = [
+        ...(updatedSuite.testCases[0].testData[0].assertions || []),
+        ...assertions
+      ];
+    }
+    
+    setJsonOutput(JSON.stringify(updatedSuite, null, 2));
+    setParseResult({ ...parseResult, testSuite: updatedSuite });
+    setAssertions([]);
   };
 
   const handleParse = () => {
@@ -112,7 +182,7 @@ export const CurlImportModal: React.FC<CurlImportModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="text-2xl">🔄</span>
@@ -120,9 +190,9 @@ export const CurlImportModal: React.FC<CurlImportModalProps> = ({
           </DialogTitle>
         </DialogHeader>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[70vh]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 overflow-hidden">
           {/* Input Section */}
-          <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-4 overflow-y-auto pr-2">
             <div>
               <label className="text-sm font-medium mb-2 block">
                 Paste your cURL command:
@@ -138,32 +208,73 @@ export const CurlImportModal: React.FC<CurlImportModalProps> = ({
             <div className="space-y-4">
               {/* Test Results */}
               {testResult && (
-                <div className="p-3 bg-slate-50 rounded-lg space-y-2">
-                  <h4 className="font-medium text-sm">Test Results</h4>
+                <div className="p-3 bg-slate-50 rounded-lg space-y-3">
+                  <h4 className="font-medium text-sm">API Response</h4>
                   {testResult.error ? (
                     <div className="text-red-600 text-sm">{testResult.error}</div>
                   ) : (
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Status:</span>
-                        <span className={testResult.status < 400 ? 'text-green-600' : 'text-red-600'}>
-                          {testResult.status} {testResult.statusText}
-                        </span>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span>Status: <span className={testResult.status < 400 ? 'text-green-600' : 'text-red-600'}>{testResult.status}</span></span>
+                        <span>Time: {testResult.time}ms</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Time:</span>
-                        <span>{testResult.responseTime}ms</span>
-                      </div>
-                      {testResult.response && (
+                      
+                      {testResult.data && (
                         <div>
-                          <span className="font-medium">Response:</span>
-                          <pre className="mt-1 p-2 bg-white rounded text-xs max-h-40 overflow-auto">
-                            {typeof testResult.response === 'string' 
-                              ? testResult.response 
-                              : JSON.stringify(testResult.response, null, 2)}
+                          <div className="font-medium text-sm mb-2">Response Data:</div>
+                          <pre className="p-2 bg-white rounded text-xs max-h-32 overflow-auto border">
+                            {JSON.stringify(testResult.data, null, 2)}
                           </pre>
                         </div>
                       )}
+                      
+                      {/* JSONPath Filter Section */}
+                      <div className="border-t pt-3">
+                        <div className="font-medium text-sm mb-2">JSONPath Filter:</div>
+                        <div className="flex gap-2 mb-2">
+                          <Input
+                            value={jsonPath}
+                            onChange={(e) => setJsonPath(e.target.value)}
+                            placeholder="$.data[0].name or $..id"
+                            className="text-xs h-8 flex-1"
+                          />
+                          <Button size="sm" onClick={handleJsonPathFilter} className="text-xs h-8">
+                            Filter
+                          </Button>
+                        </div>
+                        
+                        {filteredResult !== null && (
+                          <div>
+                            <div className="text-xs text-gray-600 mb-1">Filtered Result:</div>
+                            <pre className="p-2 bg-white rounded text-xs max-h-24 overflow-auto border">
+                              {filteredResult?.error 
+                                ? filteredResult.error 
+                                : JSON.stringify(filteredResult, null, 2)}
+                            </pre>
+                            
+                            {!filteredResult?.error && jsonPath && (
+                              <div className="mt-2 flex gap-1 flex-wrap">
+                                <Button size="sm" onClick={() => addAssertion('exists')} className="text-xs h-6">
+                                  + Exists
+                                </Button>
+                                <Button size="sm" onClick={() => addAssertion('equals', filteredResult)} className="text-xs h-6">
+                                  + Equals
+                                </Button>
+                                <Button size="sm" onClick={() => addAssertion('contains', filteredResult)} className="text-xs h-6">
+                                  + Contains
+                                </Button>
+                                <Button size="sm" onClick={() => addAssertion('type', typeof filteredResult)} className="text-xs h-6">
+                                  + Type
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="text-xs text-gray-500 mt-1">
+                          Examples: <code>$</code> (root), <code>$.data</code> (data field), <code>$.items[0]</code> (first item)
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -181,6 +292,35 @@ export const CurlImportModal: React.FC<CurlImportModalProps> = ({
                   Reset
                 </Button>
               </div>
+              
+              {/* Assertions Section */}
+              {assertions.length > 0 && (
+                <div className="p-3 bg-green-50 rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-sm">Added Assertions ({assertions.length})</h4>
+                    <Button size="sm" onClick={updateTestSuiteWithAssertions} className="text-xs">
+                      <Shield className="h-3 w-3 mr-1" />
+                      Apply to Suite
+                    </Button>
+                  </div>
+                  <div className="space-y-1">
+                    {assertions.map((assertion, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-white rounded text-xs">
+                        <div>
+                          <span className="font-mono">{assertion.jsonPath}</span>
+                          <span className="mx-2 text-gray-500">{assertion.type}</span>
+                          {assertion.expected !== undefined && (
+                            <span className="text-blue-600">{JSON.stringify(assertion.expected)}</span>
+                          )}
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => removeAssertion(index)} className="h-5 w-5 p-0">
+                          ×
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {parseResult?.success && (
                 <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
@@ -260,7 +400,7 @@ export const CurlImportModal: React.FC<CurlImportModalProps> = ({
           </div>
 
           {/* Output Section */}
-          <div className="flex flex-col space-y-4">
+          <div className="flex flex-col space-y-4 overflow-y-auto pr-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">
                 Generated TestFlow Pro JSON:

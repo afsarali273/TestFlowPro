@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Bot, X, Send, Upload, FileText, Code, Globe, Sparkles, Copy, Check, RotateCcw, Play, Square, Download } from 'lucide-react'
+import { Bot, X, Send, Upload, FileText, Code, Globe, Sparkles, Copy, Check, RotateCcw, Play, Square, Download, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -32,6 +32,9 @@ export function AIChat() {
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('chat')
   const [curlCommand, setCurlCommand] = useState('')
+  const [curlResponse, setCurlResponse] = useState<any>(null)
+  const [jsonPath, setJsonPath] = useState('')
+  const [filteredResult, setFilteredResult] = useState<any>(null)
   const [swaggerContent, setSwaggerContent] = useState('')
   const [uiSteps, setUiSteps] = useState('')
   const [recordUrl, setRecordUrl] = useState('')
@@ -41,6 +44,13 @@ export function AIChat() {
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [generateTestCaseOnly, setGenerateTestCaseOnly] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [aiProvider, setAiProvider] = useState<'ollama' | 'github-copilot'>('ollama')
+  const [showProviderSettings, setShowProviderSettings] = useState(false)
+  const [githubAuthStatus, setGithubAuthStatus] = useState<'unknown' | 'authenticated' | 'not-authenticated'>('unknown')
+  const [showTokenInput, setShowTokenInput] = useState(false)
+  const [githubToken, setGithubToken] = useState('')
+  const [deviceFlow, setDeviceFlow] = useState<{ userCode: string; verificationUri: string; deviceCode: string } | null>(null)
+  const [isPolling, setIsPolling] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
@@ -52,6 +62,147 @@ export function AIChat() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+  
+  useEffect(() => {
+    // Check GitHub auth status when provider changes
+    if (aiProvider === 'github-copilot') {
+      checkGitHubAuth()
+    }
+  }, [aiProvider])
+  
+  // Clear device flow when switching away from GitHub Copilot
+  useEffect(() => {
+    if (aiProvider !== 'github-copilot') {
+      setDeviceFlow(null)
+      setIsPolling(false)
+    }
+  }, [aiProvider])
+  
+  const checkGitHubAuth = async () => {
+    try {
+      const { GitHubAuthService } = await import('@/lib/services/githubAuth')
+      const authService = new GitHubAuthService()
+      const status = await authService.checkAuthStatus()
+      const isAuthenticated = status.hasToken && status.isValid
+      setGithubAuthStatus(isAuthenticated ? 'authenticated' : 'not-authenticated')
+      
+      // Clear device flow only if already authenticated
+      if (isAuthenticated && deviceFlow) {
+        setDeviceFlow(null)
+        setIsPolling(false)
+      }
+    } catch (error) {
+      setGithubAuthStatus('not-authenticated')
+    }
+  }
+  
+  const handleGitHubAuth = async () => {
+    try {
+      setIsLoading(true)
+      const { GitHubAuthService } = await import('@/lib/services/githubAuth')
+      const authService = new GitHubAuthService()
+      const flow = await authService.startDeviceFlow()
+      
+      console.log('Device flow response:', flow)
+      setDeviceFlow(flow)
+      
+      toast({ 
+        title: 'GitHub Authentication Started', 
+        description: `Code: ${flow.userCode} - Opening GitHub...` 
+      })
+      
+      // Open GitHub auth page after a short delay to ensure state is set
+      setTimeout(() => {
+        window.open(flow.verificationUri, '_blank')
+      }, 500)
+      
+      // Start polling for token
+      startPolling(authService, flow.deviceCode, flow.interval)
+    } catch (error: any) {
+      console.error('GitHub auth error:', error)
+      toast({ title: 'Error', description: error.message || 'Authentication failed', variant: 'destructive' })
+      setIsLoading(false)
+    }
+  }
+  
+  const startPolling = async (authService: any, deviceCode: string, interval: number) => {
+    setIsPolling(true)
+    setIsLoading(false) // Allow UI to show device code while polling
+    
+    const poll = async () => {
+      try {
+        console.log('Polling for token...')
+        const result = await authService.pollForToken(deviceCode)
+        
+        if (result.success) {
+          console.log('Authentication successful!')
+          setGithubAuthStatus('authenticated')
+          setDeviceFlow(null)
+          setIsPolling(false)
+          toast({ title: '✅ Success', description: 'GitHub authentication successful!' })
+          return
+        }
+        
+        if (result.pending) {
+          console.log('Still pending, polling again...')
+          setTimeout(poll, interval * 1000)
+        }
+      } catch (error: any) {
+        console.error('Polling error:', error)
+        // Don't clear device flow on polling errors - keep showing the code
+        if (error.message?.includes('Body is unusable') || error.message?.includes('authorization_pending')) {
+          console.log('Continuing to poll despite error...')
+          setTimeout(poll, interval * 1000)
+        } else {
+          setIsPolling(false)
+          setDeviceFlow(null)
+          toast({ title: 'Error', description: error.message || 'Authentication failed', variant: 'destructive' })
+        }
+      }
+    }
+    
+    // Start polling immediately, then continue at intervals
+    setTimeout(poll, 2000) // Start after 2 seconds
+  }
+  
+  const handleReAuth = async () => {
+    try {
+      setIsLoading(true)
+      const { GitHubAuthService } = await import('@/lib/services/githubAuth')
+      const authService = new GitHubAuthService()
+      await authService.clearTokens()
+      setGithubAuthStatus('not-authenticated')
+      setDeviceFlow(null)
+      setIsPolling(false)
+      toast({ title: 'Cleared', description: 'Please authenticate again with new permissions' })
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to clear tokens', variant: 'destructive' })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  const handleManualTokenSubmit = async () => {
+    if (!githubToken.trim()) {
+      toast({ title: 'Error', description: 'Please enter a valid GitHub token', variant: 'destructive' })
+      return
+    }
+    
+    try {
+      setIsLoading(true)
+      const { GitHubAuthService } = await import('@/lib/services/githubAuth')
+      const authService = new GitHubAuthService()
+      await authService.setToken(githubToken)
+      setGithubAuthStatus('authenticated')
+      setShowTokenInput(false)
+      setGithubToken('')
+      toast({ title: 'Success', description: 'GitHub token saved successfully' })
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to save token', variant: 'destructive' })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const addMessage = (content: string, type: 'user' | 'ai') => {
     const newMessage: Message = {
@@ -70,22 +221,39 @@ export function AIChat() {
     setIsLoading(true)
     
     try {
-      const response = await fetch('/api/ai-chat', {
+      const endpoint = aiProvider === 'github-copilot' ? '/api/copilot-chat' : '/api/ai-chat'
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: inputMessage,
-          type: 'general'
+          type: 'general',
+          provider: aiProvider
         })
       })
 
       const data = await response.json()
       
-      if (data.testSuite) {
-        setGeneratedSuite(data.testSuite)
-        addMessage('I\'ve generated a test suite based on your requirements. You can review and save it below.', 'ai')
-      } else {
+      if (aiProvider === 'github-copilot') {
         addMessage(data.response, 'ai')
+        // Try to extract JSON if it looks like a test suite
+        try {
+          const jsonMatch = data.response.match(/```json\s*([\s\S]*?)\s*```/) || data.response.match(/{[\s\S]*}/)
+          if (jsonMatch && jsonMatch[0].includes('testCases')) {
+            const jsonStr = jsonMatch[1] || jsonMatch[0]
+            const parsedSuite = JSON.parse(jsonStr)
+            setGeneratedSuite(parsedSuite)
+          }
+        } catch (parseError) {
+          // Ignore parsing errors for general chat
+        }
+      } else {
+        if (data.testSuite) {
+          setGeneratedSuite(data.testSuite)
+          addMessage('I\'ve generated a test suite based on your requirements. You can review and save it below.', 'ai')
+        } else {
+          addMessage(data.response, 'ai')
+        }
       }
     } catch (error) {
       addMessage('Sorry, I encountered an error. Please try again.', 'ai')
@@ -100,17 +268,36 @@ export function AIChat() {
 
     setIsLoading(true)
     try {
-      const response = await fetch('/api/ai-chat', {
+      const endpoint = aiProvider === 'github-copilot' ? '/api/copilot-chat' : '/api/ai-chat'
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: curlCommand,
-          type: 'curl'
+          type: 'curl',
+          provider: aiProvider
         })
       })
 
       const data = await response.json()
-      setGeneratedSuite(data.testSuite)
+      if (aiProvider === 'github-copilot') {
+        try {
+          const jsonMatch = data.response.match(/```json\s*([\s\S]*?)\s*```/) || data.response.match(/{[\s\S]*}/)
+          if (jsonMatch) {
+            const jsonStr = jsonMatch[1] || jsonMatch[0]
+            const parsedSuite = JSON.parse(jsonStr)
+            setGeneratedSuite(parsedSuite)
+          } else {
+            throw new Error('No JSON found in response')
+          }
+        } catch (parseError) {
+          console.error('Failed to parse GitHub Copilot response:', parseError)
+          toast({ title: 'Error', description: 'Failed to parse AI response', variant: 'destructive' })
+          return
+        }
+      } else {
+        setGeneratedSuite(data.testSuite)
+      }
       toast({ title: 'Test Suite Generated', description: 'Generated from cURL command' })
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to generate test suite', variant: 'destructive' })
@@ -119,22 +306,98 @@ export function AIChat() {
     }
   }
 
+  const handleTestCurl = async () => {
+    if (!curlCommand.trim()) return
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/test-curl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ curlCommand })
+      })
+
+      const data = await response.json()
+      setCurlResponse(data)
+      toast({ title: 'cURL Executed', description: 'Response received successfully' })
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to execute cURL', variant: 'destructive' })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleJsonPathFilter = () => {
+    if (!curlResponse || !jsonPath.trim()) {
+      setFilteredResult(null)
+      return
+    }
+
+    try {
+      // Simple JSONPath implementation for basic queries
+      const data = curlResponse.data
+      let result = data
+      
+      if (jsonPath === '$') {
+        result = data
+      } else if (jsonPath.startsWith('$.')) {
+        const path = jsonPath.substring(2)
+        const parts = path.split('.')
+        
+        for (const part of parts) {
+          if (part.includes('[') && part.includes(']')) {
+            const [key, indexStr] = part.split('[')
+            const index = parseInt(indexStr.replace(']', ''))
+            result = key ? result[key][index] : result[index]
+          } else {
+            result = result[part]
+          }
+          if (result === undefined) break
+        }
+      }
+      
+      setFilteredResult(result)
+    } catch (error) {
+      toast({ title: 'Error', description: 'Invalid JSONPath expression', variant: 'destructive' })
+      setFilteredResult(null)
+    }
+  }
+
   const handleSwaggerGeneration = async () => {
     if (!swaggerContent.trim()) return
 
     setIsLoading(true)
     try {
-      const response = await fetch('/api/ai-chat', {
+      const endpoint = aiProvider === 'github-copilot' ? '/api/copilot-chat' : '/api/ai-chat'
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: swaggerContent,
-          type: 'swagger'
+          type: 'swagger',
+          provider: aiProvider
         })
       })
 
       const data = await response.json()
-      setGeneratedSuite(data.testSuite)
+      if (aiProvider === 'github-copilot') {
+        try {
+          const jsonMatch = data.response.match(/```json\s*([\s\S]*?)\s*```/) || data.response.match(/{[\s\S]*}/)
+          if (jsonMatch) {
+            const jsonStr = jsonMatch[1] || jsonMatch[0]
+            const parsedSuite = JSON.parse(jsonStr)
+            setGeneratedSuite(parsedSuite)
+          } else {
+            throw new Error('No JSON found in response')
+          }
+        } catch (parseError) {
+          console.error('Failed to parse GitHub Copilot response:', parseError)
+          toast({ title: 'Error', description: 'Failed to parse AI response', variant: 'destructive' })
+          return
+        }
+      } else {
+        setGeneratedSuite(data.testSuite)
+      }
       toast({ title: 'Test Suite Generated', description: 'Generated from Swagger specification' })
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to generate test suite', variant: 'destructive' })
@@ -148,17 +411,37 @@ export function AIChat() {
 
     setIsLoading(true)
     try {
-      const response = await fetch('/api/ai-chat', {
+      const endpoint = aiProvider === 'github-copilot' ? '/api/copilot-chat' : '/api/ai-chat'
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: uiSteps,
-          type: 'ui'
+          type: 'ui',
+          provider: aiProvider
         })
       })
 
       const data = await response.json()
-      setGeneratedSuite(data.testSuite)
+      if (aiProvider === 'github-copilot') {
+        // Parse GitHub Copilot response
+        try {
+          const jsonMatch = data.response.match(/```json\s*([\s\S]*?)\s*```/) || data.response.match(/{[\s\S]*}/)
+          if (jsonMatch) {
+            const jsonStr = jsonMatch[1] || jsonMatch[0]
+            const parsedSuite = JSON.parse(jsonStr)
+            setGeneratedSuite(parsedSuite)
+          } else {
+            throw new Error('No JSON found in response')
+          }
+        } catch (parseError) {
+          console.error('Failed to parse GitHub Copilot response:', parseError)
+          toast({ title: 'Error', description: 'Failed to parse AI response', variant: 'destructive' })
+          return
+        }
+      } else {
+        setGeneratedSuite(data.testSuite)
+      }
       toast({ title: 'UI Test Suite Generated', description: 'Generated from test steps' })
     } catch (error) {
       toast({ title: 'Error', description: 'Failed to generate UI test suite', variant: 'destructive' })
@@ -323,6 +606,9 @@ export function AIChat() {
                 <Sparkles className="h-4 w-4 text-yellow-500 animate-pulse" />
               </CardTitle>
               <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" onClick={() => setShowProviderSettings(!showProviderSettings)} title="AI Provider Settings">
+                  <Settings className="h-4 w-4" />
+                </Button>
                 <Button variant="ghost" size="icon" onClick={handleReset} title="Reset Chat">
                   <RotateCcw className="h-4 w-4" />
                 </Button>
@@ -333,6 +619,130 @@ export function AIChat() {
             </CardHeader>
 
             <CardContent className="flex-1 flex flex-col overflow-hidden">
+              {/* Provider Settings */}
+              {showProviderSettings && (
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-medium mb-3 text-blue-900">AI Provider Settings</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-blue-800 mb-2 block">Select AI Provider</label>
+                      <div className="flex gap-3">
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            name="aiProvider"
+                            value="ollama"
+                            checked={aiProvider === 'ollama'}
+                            onChange={(e) => setAiProvider(e.target.value as 'ollama')}
+                            className="text-blue-600"
+                          />
+                          <span className="text-sm">Ollama (Local)</span>
+                        </label>
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            name="aiProvider"
+                            value="github-copilot"
+                            checked={aiProvider === 'github-copilot'}
+                            onChange={(e) => setAiProvider(e.target.value as 'github-copilot')}
+                            className="text-blue-600"
+                          />
+                          <span className="text-sm">GitHub Copilot</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="text-xs text-blue-600">
+                      {aiProvider === 'ollama' ? 
+                        '🏠 Using local Ollama instance (http://localhost:11434)' : 
+                        <div className="flex items-center justify-between">
+                          <span>🔗 Using GitHub Copilot API</span>
+                          {githubAuthStatus === 'authenticated' ? (
+                            <div className="flex gap-2 items-center">
+                              <Badge className="bg-green-100 text-green-800 text-xs">✓ Authenticated</Badge>
+                              <Button size="sm" variant="outline" onClick={handleReAuth} className="text-xs h-6">
+                                Re-auth
+                              </Button>
+                            </div>
+                          ) : githubAuthStatus === 'not-authenticated' ? (
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={handleGitHubAuth} disabled={isLoading || isPolling} className="text-xs h-6">
+                                {isLoading ? 'Starting...' : isPolling ? 'Waiting...' : 'OAuth'}
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => setShowTokenInput(true)} className="text-xs h-6">
+                                Manual
+                              </Button>
+                            </div>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">Checking...</Badge>
+                          )}
+                        </div>
+                      }
+                    </div>
+                    
+                    {deviceFlow && (
+                      <div className="mt-3 p-3 bg-yellow-50 border border-yellow-300 rounded">
+                        <div className="space-y-2">
+                          <div className="text-sm font-bold text-yellow-800">🔐 GitHub Device Authentication</div>
+                          <div className="bg-white p-2 rounded border">
+                            <div className="text-xs text-gray-600 mb-1">Enter this code on GitHub:</div>
+                            <div className="text-lg font-mono font-bold text-center bg-gray-100 p-2 rounded border-2 border-dashed">
+                              {deviceFlow.userCode}
+                            </div>
+                          </div>
+                          <div className="text-xs text-yellow-700">
+                            🌐 URL: <code className="bg-yellow-100 px-1 rounded text-xs">{deviceFlow.verificationUri}</code>
+                          </div>
+                          <div className="text-xs text-yellow-600 flex items-center gap-1">
+                            {isPolling ? (
+                              <>
+                                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                                Waiting for you to authorize in GitHub...
+                              </>
+                            ) : (
+                              '✅ Complete authorization in the opened browser tab'
+                            )}
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => window.open(deviceFlow.verificationUri, '_blank')}
+                            className="w-full text-xs"
+                          >
+                            🔗 Open GitHub Again
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {showTokenInput && (
+                      <div className="mt-3 p-3 bg-white border border-blue-300 rounded">
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium text-blue-800">GitHub Personal Access Token</label>
+                          <Input
+                            type="password"
+                            value={githubToken}
+                            onChange={(e) => setGithubToken(e.target.value)}
+                            placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                            className="text-xs h-8"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={handleManualTokenSubmit} disabled={isLoading} className="text-xs h-6">
+                              {isLoading ? 'Saving...' : 'Save Token'}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setShowTokenInput(false)} className="text-xs h-6">
+                              Cancel
+                            </Button>
+                          </div>
+                          <p className="text-xs text-blue-600">
+                            Get token from: <a href="https://github.com/settings/tokens" target="_blank" className="underline">GitHub Settings → Developer settings → Personal access tokens</a>
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               {/* Generation Options */}
               <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                 <label className="flex items-center space-x-2 text-sm">
@@ -400,25 +810,67 @@ export function AIChat() {
                 </TabsContent>
 
                 <TabsContent value="curl" className="flex-1 flex flex-col">
-                  <Textarea
-                    value={curlCommand}
-                    onChange={(e) => setCurlCommand(e.target.value)}
-                    placeholder="Paste your cURL command here..."
-                    className="flex-1 mb-4"
-                  />
-                  <Button onClick={handleCurlGeneration} disabled={isLoading} className="relative">
-                    {isLoading ? (
-                      <>
-                        <Bot className="h-4 w-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Code className="h-4 w-4 mr-2" />
-                        Generate Test Suite
-                      </>
+                  <div className="flex-1 flex flex-col space-y-4">
+                    <Textarea
+                      value={curlCommand}
+                      onChange={(e) => setCurlCommand(e.target.value)}
+                      placeholder="Paste your cURL command here..."
+                      className="h-24"
+                    />
+                    
+                    <div className="flex gap-2">
+                      <Button onClick={handleTestCurl} disabled={isLoading} variant="outline" className="flex-1">
+                        {isLoading ? 'Testing...' : 'Test cURL'}
+                      </Button>
+                      <Button onClick={handleCurlGeneration} disabled={isLoading} className="flex-1">
+                        {isLoading ? (
+                          <>
+                            <Bot className="h-4 w-4 mr-2 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Code className="h-4 w-4 mr-2" />
+                            Generate Test Suite
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    {curlResponse && (
+                      <div className="space-y-3">
+                        <div className="bg-gray-50 p-3 rounded border">
+                          <h4 className="font-medium text-sm mb-2">API Response</h4>
+                          <div className="text-xs text-gray-600 mb-1">
+                            Status: {curlResponse.status} | Time: {curlResponse.time}ms
+                          </div>
+                          <div className="bg-white p-2 rounded border max-h-32 overflow-y-auto">
+                            <pre className="text-xs">{JSON.stringify(curlResponse.data, null, 2)}</pre>
+                          </div>
+                        </div>
+
+                        <div className="bg-blue-50 p-3 rounded border">
+                          <h4 className="font-medium text-sm mb-2">JSONPath Filter</h4>
+                          <div className="flex gap-2 mb-2">
+                            <Input
+                              value={jsonPath}
+                              onChange={(e) => setJsonPath(e.target.value)}
+                              placeholder="$.data[0].name or $..id"
+                              className="text-xs h-8"
+                            />
+                            <Button size="sm" onClick={handleJsonPathFilter} className="text-xs h-8">
+                              Filter
+                            </Button>
+                          </div>
+                          {filteredResult !== null && (
+                            <div className="bg-white p-2 rounded border">
+                              <pre className="text-xs">{JSON.stringify(filteredResult, null, 2)}</pre>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
-                  </Button>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="swagger" className="flex-1 flex flex-col">

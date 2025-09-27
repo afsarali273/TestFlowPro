@@ -47,6 +47,7 @@ import { SwaggerImportModal } from "@/components/SwaggerImportModal"
 import { PostmanImportModal } from "@/components/PostmanImportModal"
 import BrunoImportModal from "@/components/BrunoImportModal"
 import EnvVariablesModal from "@/components/EnvVariablesModal"
+import { SoapImportModal } from "@/components/SoapImportModal"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 import type { TestSuite } from "@/types/test-suite"
@@ -80,6 +81,7 @@ export default function APITestFramework() {
   const [showSwaggerImportModal, setShowSwaggerImportModal] = useState(false)
   const [showPostmanImportModal, setShowPostmanImportModal] = useState(false)
   const [showBrunoImportModal, setShowBrunoImportModal] = useState(false)
+  const [showSoapImportModal, setShowSoapImportModal] = useState(false)
   const [showEnvVariablesModal, setShowEnvVariablesModal] = useState(false)
 
 
@@ -619,6 +621,10 @@ export default function APITestFramework() {
                         <DropdownMenuItem onClick={() => setShowBrunoImportModal(true)}>
                           <FileText className="h-4 w-4 mr-2" />
                           Import Bruno
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowSoapImportModal(true)}>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Import SOAP
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setShowEnvVariablesModal(true)}>
@@ -1527,6 +1533,34 @@ export default function APITestFramework() {
             // Open the editor with the new suite
             setSelectedSuite(testSuite);
             setIsEditing(true);
+          }}
+        />
+        
+        {/* SOAP Import Modal */}
+        <SoapImportModal
+          isOpen={showSoapImportModal}
+          onClose={() => setShowSoapImportModal(false)}
+          existingSuites={testSuites}
+          onSave={(testSuite) => {
+            setTestSuites((prev) => [...prev, testSuite]);
+            setShowSoapImportModal(false);
+            toast({
+              title: "SOAP Imported",
+              description: "Test suite created from SOAP specification successfully.",
+            });
+            setSelectedSuite(testSuite);
+            setIsEditing(true);
+          }}
+          onAddToExisting={(suiteId, testCase) => {
+            setTestSuites((prev) => prev.map(suite => 
+              suite.id === suiteId 
+                ? { ...suite, testCases: [...suite.testCases, testCase] }
+                : suite
+            ));
+            toast({
+              title: "Test Case Added",
+              description: "SOAP test case added to existing suite successfully.",
+            });
           }}
         />
         

@@ -88,6 +88,7 @@ export class SoapParser {
         method: parsed.method,
         endpoint,
         headers: parsed.headers,
+        preProcess: [],
         body: parsed.body,
         assertions: this.generateSoapAssertions()
       }
@@ -99,6 +100,7 @@ export class SoapParser {
       method: parsed.method,
       endpoint,
       headers: parsed.headers,
+      preProcess: [],
       body: this.generateInvalidSoapEnvelope(),
       assertions: [
         { type: 'statusCode', expected: 500 },

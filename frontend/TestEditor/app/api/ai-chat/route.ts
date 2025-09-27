@@ -15,7 +15,7 @@ const getAIService = async () => {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { message, type, stream } = body
+    const { message, type, stream, provider = 'ollama' } = body
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
             controller.enqueue(encoder.encode(data))
           }
           
-          service.generateResponse({ message, type }, onStatusUpdate)
+          service.generateResponse({ message, type, provider }, onStatusUpdate)
             .then(result => {
               const data = `data: ${JSON.stringify({ ...result, done: true })}\n\n`
               controller.enqueue(encoder.encode(data))
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Regular non-streaming response
-    const result = await service.generateResponse({ message, type })
+    const result = await service.generateResponse({ message, type, provider })
     return NextResponse.json(result)
   } catch (error) {
     console.error('AI Chat API Error:', error)

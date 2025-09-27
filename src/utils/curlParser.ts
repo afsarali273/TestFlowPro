@@ -39,14 +39,10 @@ export class CurlParser {
       method = methodMatch[1].toUpperCase();
     }
     
-    // Extract URL - look for quoted URLs first, then unquoted
-    const quotedUrlMatch = trimmed.match(/['"]([^'"]*(?:https?|ftp):\/\/[^'"]*)['"]/);
-    const unquotedUrlMatch = trimmed.match(/(https?:\/\/\S+)/);
-    
-    if (quotedUrlMatch) {
-      url = quotedUrlMatch[1];
-    } else if (unquotedUrlMatch) {
-      url = unquotedUrlMatch[1];
+    // Extract URL - handle HTML entities and various formats
+    let urlMatch = trimmed.match(/(?:--location\s+)?['"]?([^'"\s]*(?:https?|ftp):\/\/[^'"\s]*)['"]?/);
+    if (urlMatch) {
+      url = urlMatch[1].replace(/&amp;/g, '&').replace(/&#39;/g, "'");
     }
     
     // Extract headers
@@ -61,14 +57,20 @@ export class CurlParser {
       }
     }
     
-    // Extract body data
-    const bodyMatch = trimmed.match(/-d\s+['"]?([^'"\n]+)['"]?/);
+    // Extract body data - support both -d and --data flags
+    const bodyMatch = trimmed.match(/(?:-d|--data)\s+['"]?([\s\S]*?)['"]?(?:\s+--|$)/);
     if (bodyMatch) {
-      const bodyStr = bodyMatch[1];
+      let bodyStr = bodyMatch[1];
+      // Decode HTML entities
+      bodyStr = bodyStr.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
       try {
         body = JSON.parse(bodyStr);
       } catch {
         body = bodyStr;
+      }
+      // If data is present and no explicit method, default to POST
+      if (!methodMatch) {
+        method = 'POST';
       }
     }
     
