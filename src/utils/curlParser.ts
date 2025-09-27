@@ -93,11 +93,12 @@ export class CurlParser {
 
     // Add negative test cases
     if (parsed.headers.Authorization) {
+      const { Authorization, ...headersWithoutAuth } = parsed.headers;
       testData.push({
         name: 'Unauthorized Request',
         method: parsed.method,
         endpoint,
-        headers: { ...parsed.headers, Authorization: undefined } as Record<string, string>,
+        headers: headersWithoutAuth,
         ...(parsed.body && { body: parsed.body }),
         assertions: [{ type: 'statusCode', expected: 401 }]
       });
