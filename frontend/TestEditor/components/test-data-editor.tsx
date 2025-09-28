@@ -1378,54 +1378,70 @@ Example:
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {Object.entries(editedTestData.store || {}).map(([key, value]) => (
-                        <div
-                            key={key}
-                            className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50/50"
-                        >
-                          <div className="flex-1 relative">
-                            <Label className="text-xs font-medium text-gray-600 mb-1 block">Variable Name</Label>
-                            <Input
-                                value={key}
-                                onChange={(e) => handleUpdateStoreKey(key, e.target.value)}
-                                placeholder="variableName"
-                                className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            />
+                <CardContent className="space-y-8">
+                  {/* Global Variables Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">Global Variables</h3>
+                        <p className="text-sm text-gray-600">Available across all test cases in the suite</p>
+                      </div>
+                      <Button
+                          onClick={handleAddStoreVariable}
+                          size="sm"
+                          className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Global Variable
+                      </Button>
+                    </div>
+                    <div className="space-y-3">
+                      {Object.entries(editedTestData.store || {}).map(([key, value]) => (
+                          <div
+                              key={key}
+                              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50/50"
+                          >
+                            <div className="flex-1 relative">
+                              <Label className="text-xs font-medium text-gray-600 mb-1 block">Variable Name</Label>
+                              <Input
+                                  value={key}
+                                  onChange={(e) => handleUpdateStoreKey(key, e.target.value)}
+                                  placeholder="variableName"
+                                  className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div className="flex-1 relative">
+                              <Label className="text-xs font-medium text-gray-600 mb-1 block">
+                                {testCaseType === "SOAP" ? "XPath Expression" : "JSON Path"}
+                              </Label>
+                              <Input
+                                  value={value as string}
+                                  onChange={(e) => handleNestedChange("store", key, e.target.value)}
+                                  className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                  placeholder={testCaseType === "SOAP" ? "//*[local-name()='id']" : "$.id"}
+                              />
+                            </div>
+                            <div className="flex items-end gap-2">
+                              <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleCloneStoreVariable(key, value as string)}
+                                  className="h-10 px-3 border-blue-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
+                                  title="Clone variable"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleRemoveStoreVariable(key)}
+                                  className="h-10 px-3 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex-1 relative">
-                            <Label className="text-xs font-medium text-gray-600 mb-1 block">
-                              {testCaseType === "SOAP" ? "XPath Expression" : "JSON Path"}
-                            </Label>
-                            <Input
-                                value={value as string}
-                                onChange={(e) => handleNestedChange("store", key, e.target.value)}
-                                className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                placeholder={testCaseType === "SOAP" ? "//*[local-name()='id']" : "$.id"}
-                            />
-                          </div>
-                          <div className="flex items-end gap-2">
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleCloneStoreVariable(key, value as string)}
-                                className="h-10 px-3 border-blue-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
-                                title="Clone variable"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleRemoveStoreVariable(key)}
-                                className="h-10 px-3 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                    ))}
+                      ))}
 
                     {/* Quick Add Row */}
                     <div className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50/30 hover:border-gray-400 hover:bg-gray-50/50 transition-colors">
@@ -1485,55 +1501,146 @@ Example:
                       </div>
                     </div>
 
-                    {(!editedTestData.store || Object.keys(editedTestData.store).length === 0) && (
-                        <div className="text-center py-8 text-gray-500 bg-gray-50/50 rounded-lg border-2 border-dashed border-gray-200">
-                          <p className="text-sm">No store variables defined yet</p>
-                          <p className="text-xs mt-1">Store response values to use in subsequent requests</p>
-                        </div>
-                    )}
+                      {(!editedTestData.store || Object.keys(editedTestData.store).length === 0) && (
+                          <div className="text-center py-6 text-gray-500 bg-gray-50/50 rounded-lg border-2 border-dashed border-gray-200">
+                            <p className="text-sm">No global variables defined yet</p>
+                            <p className="text-xs mt-1">Global variables are available across all test cases</p>
+                          </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Local Variables Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">Local Variables</h3>
+                        <p className="text-sm text-gray-600">Only available within this test case (shared among testData)</p>
+                      </div>
+                      <Button
+                          onClick={() => {
+                            const newLocalStore = { ...editedTestData.localStore }
+                            let newKey = ""
+                            let counter = 1
+                            while (newLocalStore[newKey] !== undefined) {
+                              newKey = `local_variable_${counter}`
+                              counter++
+                            }
+                            newLocalStore[newKey] = ""
+                            setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
+                          }}
+                          size="sm"
+                          className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Local Variable
+                      </Button>
+                    </div>
+                    <div className="space-y-3">
+                      {Object.entries(editedTestData.localStore || {}).map(([key, value], index) => (
+                          <div
+                              key={`local-var-${index}`}
+                              className="flex items-center gap-3 p-4 border border-blue-200 rounded-lg bg-blue-50/50"
+                          >
+                            <div className="flex-1 relative">
+                              <Label className="text-xs font-medium text-blue-700 mb-1 block">Local Variable Name</Label>
+                              <Input
+                                  value={key}
+                                  onChange={(e) => {
+                                    const newKey = e.target.value
+                                    const newLocalStore = { ...editedTestData.localStore }
+                                    const currentValue = newLocalStore[key]
+                                    delete newLocalStore[key]
+                                    newLocalStore[newKey] = currentValue
+                                    setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
+                                  }}
+                                  placeholder="localVariableName"
+                                  className="h-10 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div className="flex-1 relative">
+                              <Label className="text-xs font-medium text-blue-700 mb-1 block">
+                                {testCaseType === "SOAP" ? "XPath Expression" : "JSON Path"}
+                              </Label>
+                              <Input
+                                  value={value as string}
+                                  onChange={(e) => {
+                                    const newLocalStore = { ...editedTestData.localStore }
+                                    newLocalStore[key] = e.target.value
+                                    setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
+                                  }}
+                                  className="h-10 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                                  placeholder={testCaseType === "SOAP" ? "//*[local-name()='id']" : "$.id"}
+                              />
+                            </div>
+                            <div className="flex items-end gap-2">
+                              <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const newKey = `${key}_copy`
+                                    let finalKey = newKey
+                                    let counter = 1
+                                    while (editedTestData.localStore && editedTestData.localStore[finalKey]) {
+                                      finalKey = `${newKey}_${counter}`
+                                      counter++
+                                    }
+                                    const newLocalStore = { ...editedTestData.localStore }
+                                    newLocalStore[finalKey] = value as string
+                                    setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
+                                  }}
+                                  className="h-10 px-3 border-blue-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
+                                  title="Clone local variable"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const newLocalStore = { ...editedTestData.localStore }
+                                    delete newLocalStore[key]
+                                    setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
+                                  }}
+                                  className="h-10 px-3 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                      ))}
+
+                      {(!editedTestData.localStore || Object.keys(editedTestData.localStore).length === 0) && (
+                          <div className="text-center py-6 text-gray-500 bg-blue-50/50 rounded-lg border-2 border-dashed border-blue-200">
+                            <p className="text-sm">No local variables defined yet</p>
+                            <p className="text-xs mt-1">Local variables are only available within this test case</p>
+                          </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Examples Section */}
-                  <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
-                    <h4 className="font-medium mb-3 text-orange-800">Examples:</h4>
-                    <div className="space-y-3 text-sm">
-                      {testCaseType === "SOAP" ? (
-                        <>
-                          <div>
-                            <p className="font-medium text-orange-700">Extract ID from SOAP response:</p>
-                            <code className="text-xs bg-orange-100 px-2 py-1 rounded block mt-1">
-                              Variable: userId, XPath: //*[local-name()='UserId']/text()
-                            </code>
-                          </div>
-                          <div>
-                            <p className="font-medium text-orange-700">Extract nested element:</p>
-                            <code className="text-xs bg-orange-100 px-2 py-1 rounded block mt-1">
-                              Variable: userName, XPath: //soap:Body//User/Name/text()
-                            </code>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div>
-                            <p className="font-medium text-orange-700">Extract ID from JSON response:</p>
-                            <code className="text-xs bg-orange-100 px-2 py-1 rounded block mt-1">
-                              Variable: userId, JSON Path: $.id
-                            </code>
-                          </div>
-                          <div>
-                            <p className="font-medium text-orange-700">Extract from nested object:</p>
-                            <code className="text-xs bg-orange-100 px-2 py-1 rounded block mt-1">
-                              Variable: userName, JSON Path: $.user.name
-                            </code>
-                          </div>
-                          <div>
-                            <p className="font-medium text-orange-700">Extract from array:</p>
-                            <code className="text-xs bg-orange-100 px-2 py-1 rounded block mt-1">
-                              Variable: firstItem, JSON Path: $[0].id
-                            </code>
-                          </div>
-                        </>
-                      )}
+                  <div className="p-4 bg-gradient-to-r from-orange-50 to-blue-50 rounded-lg border border-gray-200">
+                    <h4 className="font-medium mb-3 text-gray-800">Variable Scope Examples:</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-2">
+                        <p className="font-medium text-orange-700">Global Variables (store):</p>
+                        <code className="text-xs bg-orange-100 px-2 py-1 rounded block">
+                          Available across all test cases
+                        </code>
+                        <code className="text-xs bg-orange-100 px-2 py-1 rounded block">
+                          {testCaseType === "SOAP" ? "userId: //*[local-name()='UserId']/text()" : "userId: $.id"}
+                        </code>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="font-medium text-blue-700">Local Variables (localStore):</p>
+                        <code className="text-xs bg-blue-100 px-2 py-1 rounded block">
+                          Only within current test case
+                        </code>
+                        <code className="text-xs bg-blue-100 px-2 py-1 rounded block">
+                          {testCaseType === "SOAP" ? "tempId: //*[local-name()='TempId']/text()" : "tempId: $.tempId"}
+                        </code>
+                      </div>
                     </div>
                   </div>
 

@@ -5,7 +5,7 @@ import { assertJson, assertXPath } from "./utils/assertUtils";
 import { loadRequestBody } from "./utils/loadRequestBody";
 import { TestSuite } from "./types";
 import { loadEnvironment } from "./utils/envManager";
-import { injectVariables, storeResponseVariables } from "./utils/variableStore";
+import { injectVariables, storeResponseVariables, clearLocalVariables } from "./utils/variableStore";
 import { runPreProcessors } from "./preProcessor";
 import { loadSchema } from "./utils/loadSchema";
 import {UIRunner} from "./ui-test";
@@ -90,6 +90,9 @@ export async function runUITests(suite: TestSuite, reporter: Reporter) {
             failedTestCases.add(testCase.name);
             Logger.error(`UI test case ${testCase.name} failed - dependent tests will be skipped`);
             await runner.close();
+        } finally {
+            // Clear local variables after test case completion
+            clearLocalVariables();
         }
     }
 }
@@ -310,11 +313,11 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
 
                 // Variable storage
                 if (data.store && Object.keys(data.store).length > 0) {
-                    Logger.section('💾', 'STORING VARIABLES', colors.magenta);
+                    Logger.section('💾', 'STORING GLOBAL VARIABLES', colors.magenta);
                     
                     try {
                         storeResponseVariables(res.data, data.store);
-                        Logger.info(`Variables stored: ${Object.keys(data.store).join(', ')}`);
+                        Logger.info(`Global variables stored: ${Object.keys(data.store).join(', ')}`);
                         
                         apiDetails.variableStorage = {
                             variables: Object.keys(data.store),
@@ -328,6 +331,32 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                         
                         apiDetails.variableStorage = {
                             variables: Object.keys(data.store),
+                            status: 'FAIL',
+                            error: storeError
+                        };
+                    }
+                }
+
+                // Local variable storage
+                if (data.localStore && Object.keys(data.localStore).length > 0) {
+                    Logger.section('💾', 'STORING LOCAL VARIABLES', colors.magenta);
+                    
+                    try {
+                        storeResponseVariables(res.data, data.localStore, true);
+                        Logger.info(`Local variables stored: ${Object.keys(data.localStore).join(', ')}`);
+                        
+                        apiDetails.localVariableStorage = {
+                            variables: Object.keys(data.localStore),
+                            status: 'PASS'
+                        };
+                    } catch (err: any) {
+                        failed++;
+                        const storeError = `Local variable store failed: ${err.message}`;
+                        allErrors.push(storeError);
+                        Logger.error(`Local variable storage failed: ${err.message}`);
+                        
+                        apiDetails.localVariableStorage = {
+                            variables: Object.keys(data.localStore),
                             status: 'FAIL',
                             error: storeError
                         };
@@ -387,11 +416,11 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                     }
 
                     if (data.store) {
-                        console.log(`➡️ Storing variables from error response...`);
+                        console.log(`➡️ Storing global variables from error response...`);
                         
                         try {
                             storeResponseVariables(res.data, data.store);
-                            console.log(`✅ Variables stored from error response`);
+                            console.log(`✅ Global variables stored from error response`);
                             
                             apiDetails.variableStorage = {
                                 variables: Object.keys(data.store),
@@ -405,6 +434,31 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                             
                             apiDetails.variableStorage = {
                                 variables: Object.keys(data.store),
+                                status: 'FAIL',
+                                error: storeError
+                            };
+                        }
+                    }
+
+                    if (data.localStore) {
+                        console.log(`➡️ Storing local variables from error response...`);
+                        
+                        try {
+                            storeResponseVariables(res.data, data.localStore, true);
+                            console.log(`✅ Local variables stored from error response`);
+                            
+                            apiDetails.localVariableStorage = {
+                                variables: Object.keys(data.localStore),
+                                status: 'PASS'
+                            };
+                        } catch (err: any) {
+                            failed++;
+                            const storeError = `Local variable store failed: ${err.message}`;
+                            allErrors.push(storeError);
+                            console.log(`❌ Local variable storage failed: ${err.message}`);
+                            
+                            apiDetails.localVariableStorage = {
+                                variables: Object.keys(data.localStore),
                                 status: 'FAIL',
                                 error: storeError
                             };
@@ -441,6 +495,9 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                 }
             }
         }
+        
+        // Clear local variables after test case completion
+        clearLocalVariables();
         
         // Mark test case as executed or failed
         if (testCaseFailed) {

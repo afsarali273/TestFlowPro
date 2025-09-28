@@ -1,7 +1,7 @@
 import { chromium, Browser, Page, Locator, expect } from "@playwright/test";
 import { TestStep, TestCase, LocatorDefinition, FilterDefinition } from "./types";
 import { Reporter } from "./reporter";
-import { setVariable, injectVariables } from "./utils/variableStore";
+import { setVariable, setLocalVariable, injectVariables } from "./utils/variableStore";
 
 export class UIRunner {
     private browser!: Browser;
@@ -129,6 +129,8 @@ export class UIRunner {
         await this.executeKeyword(step, locator);
     }
 
+
+
     private async executeKeyword(step: TestStep, locator?: Locator) {
         switch (step.keyword) {
             case "openBrowser":
@@ -187,6 +189,7 @@ export class UIRunner {
                 await locator.fill('');
                 break;
             case "select":
+            case "selectOption":
                 if (!locator) throw new Error("select requires a locator");
                 if (!step.value) throw new Error("select requires option value");
                 await locator.selectOption(step.value);
@@ -210,6 +213,33 @@ export class UIRunner {
             case "focus":
                 if (!locator) throw new Error("focus requires a locator");
                 await locator.focus();
+                break;
+            case "screenshot":
+                const stepScreenshotPath = step.value || `screenshots/step-${step.id}-${Date.now()}.png`;
+                await this.page.screenshot({ path: stepScreenshotPath, fullPage: true });
+                console.log(`📷 Screenshot saved: ${stepScreenshotPath}`);
+                break;
+            case "assertVisible":
+                if (!locator) throw new Error("assertVisible requires a locator");
+                await expect(locator).toBeVisible();
+                break;
+            case "assertHidden":
+                if (!locator) throw new Error("assertHidden requires a locator");
+                await expect(locator).toBeHidden();
+                break;
+
+            case "assertCount":
+                if (!locator) throw new Error("assertCount requires a locator");
+                if (!step.value) throw new Error("assertCount requires expected count");
+                await expect(locator).toHaveCount(Number(step.value));
+                break;
+            case "assertChecked":
+                if (!locator) throw new Error("assertChecked requires a locator");
+                await expect(locator).toBeChecked();
+                break;
+            case "waitForElement":
+                if (!locator) throw new Error("waitForElement requires a locator");
+                await locator.waitFor({ state: 'visible' });
                 break;
             case "scrollIntoViewIfNeeded":
                 if (!locator) throw new Error("scrollIntoViewIfNeeded requires a locator");
@@ -276,7 +306,15 @@ export class UIRunner {
                     for (const [varName, path] of Object.entries(step.store)) {
                         if (path === "$text") {
                             setVariable(varName, text);
-                            console.log(`📝 Stored variable '${varName}' = '${text}'`);
+                            console.log(`📝 Stored global variable '${varName}' = '${text}'`);
+                        }
+                    }
+                }
+                if (step.localStore) {
+                    for (const [varName, path] of Object.entries(step.localStore)) {
+                        if (path === "$text") {
+                            setLocalVariable(varName, text);
+                            console.log(`📝 Stored local variable '${varName}' = '${text}'`);
                         }
                     }
                 }
@@ -289,7 +327,15 @@ export class UIRunner {
                     for (const [varName, path] of Object.entries(step.store)) {
                         if (path === "$attribute") {
                             setVariable(varName, attrValue);
-                            console.log(`📝 Stored variable '${varName}' = '${attrValue}'`);
+                            console.log(`📝 Stored global variable '${varName}' = '${attrValue}'`);
+                        }
+                    }
+                }
+                if (step.localStore) {
+                    for (const [varName, path] of Object.entries(step.localStore)) {
+                        if (path === "$attribute") {
+                            setLocalVariable(varName, attrValue);
+                            console.log(`📝 Stored local variable '${varName}' = '${attrValue}'`);
                         }
                     }
                 }
@@ -300,7 +346,15 @@ export class UIRunner {
                     for (const [varName, path] of Object.entries(step.store)) {
                         if (path === "$title") {
                             setVariable(varName, title);
-                            console.log(`📝 Stored variable '${varName}' = '${title}'`);
+                            console.log(`📝 Stored global variable '${varName}' = '${title}'`);
+                        }
+                    }
+                }
+                if (step.localStore) {
+                    for (const [varName, path] of Object.entries(step.localStore)) {
+                        if (path === "$title") {
+                            setLocalVariable(varName, title);
+                            console.log(`📝 Stored local variable '${varName}' = '${title}'`);
                         }
                     }
                 }
@@ -311,7 +365,15 @@ export class UIRunner {
                     for (const [varName, path] of Object.entries(step.store)) {
                         if (path === "$url") {
                             setVariable(varName, currentUrl);
-                            console.log(`📝 Stored variable '${varName}' = '${currentUrl}'`);
+                            console.log(`📝 Stored global variable '${varName}' = '${currentUrl}'`);
+                        }
+                    }
+                }
+                if (step.localStore) {
+                    for (const [varName, path] of Object.entries(step.localStore)) {
+                        if (path === "$url") {
+                            setLocalVariable(varName, currentUrl);
+                            console.log(`📝 Stored local variable '${varName}' = '${currentUrl}'`);
                         }
                     }
                 }
@@ -323,7 +385,15 @@ export class UIRunner {
                     for (const [varName, path] of Object.entries(step.store)) {
                         if (path === "$value") {
                             setVariable(varName, inputValue);
-                            console.log(`📝 Stored variable '${varName}' = '${inputValue}'`);
+                            console.log(`📝 Stored global variable '${varName}' = '${inputValue}'`);
+                        }
+                    }
+                }
+                if (step.localStore) {
+                    for (const [varName, path] of Object.entries(step.localStore)) {
+                        if (path === "$value") {
+                            setLocalVariable(varName, inputValue);
+                            console.log(`📝 Stored local variable '${varName}' = '${inputValue}'`);
                         }
                     }
                 }
@@ -335,7 +405,15 @@ export class UIRunner {
                     for (const [varName, path] of Object.entries(step.store)) {
                         if (path === "$count") {
                             setVariable(varName, count.toString());
-                            console.log(`📝 Stored variable '${varName}' = '${count}'`);
+                            console.log(`📝 Stored global variable '${varName}' = '${count}'`);
+                        }
+                    }
+                }
+                if (step.localStore) {
+                    for (const [varName, path] of Object.entries(step.localStore)) {
+                        if (path === "$count") {
+                            setLocalVariable(varName, count.toString());
+                            console.log(`📝 Stored local variable '${varName}' = '${count}'`);
                         }
                     }
                 }
@@ -346,14 +424,7 @@ export class UIRunner {
                 const expectedText = injectVariables(step.value);
                 await expect(locator).toHaveText(expectedText);
                 break;
-            case "assertVisible":
-                if (!locator) throw new Error("assertVisible requires a locator");
-                await expect(locator).toBeVisible();
-                break;
-            case "assertHidden":
-                if (!locator) throw new Error("assertHidden requires a locator");
-                await expect(locator).toBeHidden();
-                break;
+
             case "assertEnabled":
                 if (!locator) throw new Error("assertEnabled requires a locator");
                 await expect(locator).toBeEnabled();
@@ -361,11 +432,6 @@ export class UIRunner {
             case "assertDisabled":
                 if (!locator) throw new Error("assertDisabled requires a locator");
                 await expect(locator).toBeDisabled();
-                break;
-            case "assertCount":
-                if (!locator) throw new Error("assertCount requires a locator");
-                if (!step.value) throw new Error("assertCount requires expected count");
-                await expect(locator).toHaveCount(Number(step.value));
                 break;
             case "assertValue":
                 if (!locator) throw new Error("assertValue requires a locator");
@@ -390,10 +456,7 @@ export class UIRunner {
                 if (!step.value) throw new Error("assertHaveCount requires expected count");
                 await expect(locator).toHaveCount(Number(step.value));
                 break;
-            case "assertChecked":
-                if (!locator) throw new Error("assertChecked requires a locator");
-                await expect(locator).toBeChecked();
-                break;
+
             case "assertUnchecked":
                 if (!locator) throw new Error("assertUnchecked requires a locator");
                 await expect(locator).not.toBeChecked();
@@ -414,11 +477,7 @@ export class UIRunner {
                 const expectedTitle = injectVariables(step.value);
                 await expect(this.page).toHaveTitle(expectedTitle);
                 break;
-            case "screenshot":
-                const screenshotPath = step.value || `screenshots/step-${step.id}-${Date.now()}.png`;
-                await this.page.screenshot({ path: screenshotPath, fullPage: true });
-                console.log(`📷 Screenshot saved: ${screenshotPath}`);
-                break;
+
             case "maximize":
                 await this.page.setViewportSize({ width: 1920, height: 1080 });
                 break;
@@ -461,10 +520,6 @@ export class UIRunner {
             case "getAlertText":
                 // This would need to be handled with page.on('dialog') event listener
                 console.log("getAlertText: Use page.on('dialog') event listener for alert text");
-                break;
-            case "waitForElement":
-                if (!locator) throw new Error("waitForElement requires a locator");
-                await locator.waitFor({ state: 'visible' });
                 break;
             case "waitForText":
                 if (!step.value) throw new Error("waitForText requires text to wait for");

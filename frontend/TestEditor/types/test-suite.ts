@@ -169,7 +169,8 @@ export interface TestStep {
     assertions?: Assertion[]
     customFunction?: CustomStepFunction // for customStep keyword
     customCode?: string // raw Playwright code for customCode keyword
-    store?: StoreMap // store variables from UI elements
+    store?: StoreMap // store variables from UI elements globally
+    localStore?: StoreMap // store variables from UI elements locally within test case
     skipOnFailure?: boolean // skip this step if any previous step failed
 }
 
@@ -267,6 +268,7 @@ export function validateTestStep(testStep: any): TestStep {
         customFunction: testStep.customFunction,
         customCode: testStep.customCode,
         store: testStep.store || {},
+        localStore: testStep.localStore || {},
         skipOnFailure: testStep.skipOnFailure || false,
     }
 

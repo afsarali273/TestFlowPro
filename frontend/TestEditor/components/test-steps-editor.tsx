@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Save, X, ArrowLeft } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 import type { TestStep, TestStepKeyword, LocatorDefinition, LocatorOptions } from "@/types/test-suite"
 
 interface TestStepsEditorProps {
@@ -219,9 +220,14 @@ export function TestStepsEditor({ testStep, onSave, onCancel }: TestStepsEditorP
             cleaned.options = step.options
         }
 
-        // Include store for getText/getAttribute keywords
-        if ((step.keyword === "getText" || step.keyword === "getAttribute") && step.store && Object.keys(step.store).length > 0) {
-            cleaned.store = step.store
+        // Include store for variable extraction keywords
+        if (["getText", "getAttribute", "getTitle", "getUrl", "getValue", "getCount"].includes(step.keyword)) {
+            if (step.store && Object.keys(step.store).length > 0) {
+                cleaned.store = step.store
+            }
+            if (step.localStore && Object.keys(step.localStore).length > 0) {
+                cleaned.localStore = step.localStore
+            }
         }
 
         return cleaned
@@ -643,38 +649,104 @@ await page.waitForFunction(() => {
                         )}
 
                         {/* Variable Storage Configuration */}
-                        {(editedTestStep.keyword === "getText" || editedTestStep.keyword === "getAttribute") && (
+                        {(editedTestStep.keyword === "getText" || editedTestStep.keyword === "getAttribute" || editedTestStep.keyword === "getTitle" || editedTestStep.keyword === "getUrl" || editedTestStep.keyword === "getValue" || editedTestStep.keyword === "getCount") && (
                             <div className="space-y-4 border-t pt-4 bg-green-50 p-4 rounded-lg">
                                 <Label className="text-sm font-semibold text-green-700">Variable Storage</Label>
                                 <div className="text-xs text-green-600 mb-2">
                                     Store the extracted value in a variable for later use
                                 </div>
                                 
-                                <div className="space-y-2">
-                                    <Label htmlFor="store-variable">Variable Name</Label>
-                                    <Input
-                                        id="store-variable"
-                                        value={editedTestStep.store ? Object.keys(editedTestStep.store)[0] || "" : ""}
-                                        onChange={(e) => {
-                                            const varName = e.target.value
-                                            if (varName) {
-                                                const path = editedTestStep.keyword === "getText" ? "$text" : "$attribute"
-                                                setEditedTestStep(prev => ({
-                                                    ...prev,
-                                                    store: { [varName]: path }
-                                                }))
-                                            } else {
-                                                setEditedTestStep(prev => ({
-                                                    ...prev,
-                                                    store: undefined
-                                                }))
-                                            }
-                                        }}
-                                        placeholder="pageTitle, userId, productName, etc."
-                                    />
-                                    <div className="text-xs text-green-600">
-                                        Use this variable later with {"{{variableName}}"} syntax
+                                <div className="space-y-4">
+                                    {/* Global Variable Section */}
+                                    <div className="space-y-2">
+                                        <h4 className="text-sm font-medium text-green-700">Global Variable (store)</h4>
+                                        <p className="text-xs text-green-600">Available across all test cases</p>
+                                        <Input
+                                            value={editedTestStep.store ? Object.keys(editedTestStep.store)[0] || "" : ""}
+                                            onChange={(e) => {
+                                                const varName = e.target.value
+                                                if (varName) {
+                                                    const path = editedTestStep.keyword === "getText" ? "$text" : 
+                                                                editedTestStep.keyword === "getAttribute" ? "$attribute" :
+                                                                editedTestStep.keyword === "getTitle" ? "$title" :
+                                                                editedTestStep.keyword === "getUrl" ? "$url" :
+                                                                editedTestStep.keyword === "getValue" ? "$value" :
+                                                                editedTestStep.keyword === "getCount" ? "$count" : "$text"
+                                                    setEditedTestStep(prev => ({
+                                                        ...prev,
+                                                        store: { [varName]: path }
+                                                    }))
+                                                } else {
+                                                    setEditedTestStep(prev => ({
+                                                        ...prev,
+                                                        store: undefined
+                                                    }))
+                                                }
+                                            }}
+                                            placeholder="globalUserId, pageTitle, etc."
+                                        />
                                     </div>
+                                    
+                                    {/* Local Variable Section with Checkbox */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id="use-local-store"
+                                                checked={!!editedTestStep.localStore}
+                                                onCheckedChange={(checked) => {
+                                                    if (checked) {
+                                                        setEditedTestStep(prev => ({
+                                                            ...prev,
+                                                            localStore: {}
+                                                        }))
+                                                    } else {
+                                                        setEditedTestStep(prev => ({
+                                                            ...prev,
+                                                            localStore: undefined
+                                                        }))
+                                                    }
+                                                }}
+                                            />
+                                            <Label htmlFor="use-local-store" className="text-sm font-medium text-blue-700">
+                                                Use Local Variable (localStore)
+                                            </Label>
+                                        </div>
+                                        <p className="text-xs text-blue-600 ml-6">Only within current test case</p>
+                                        
+                                        {editedTestStep.localStore && (
+                                            <div className="ml-6">
+                                                <Input
+                                                    value={Object.keys(editedTestStep.localStore)[0] || ""}
+                                                    onChange={(e) => {
+                                                        const varName = e.target.value
+                                                        if (varName) {
+                                                            const path = editedTestStep.keyword === "getText" ? "$text" : 
+                                                                        editedTestStep.keyword === "getAttribute" ? "$attribute" :
+                                                                        editedTestStep.keyword === "getTitle" ? "$title" :
+                                                                        editedTestStep.keyword === "getUrl" ? "$url" :
+                                                                        editedTestStep.keyword === "getValue" ? "$value" :
+                                                                        editedTestStep.keyword === "getCount" ? "$count" : "$text"
+                                                            setEditedTestStep(prev => ({
+                                                                ...prev,
+                                                                localStore: { [varName]: path }
+                                                            }))
+                                                        } else {
+                                                            setEditedTestStep(prev => ({
+                                                                ...prev,
+                                                                localStore: {}
+                                                            }))
+                                                        }
+                                                    }}
+                                                    placeholder="tempUserId, localData, etc."
+                                                    className="border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                <div className="text-xs text-gray-600 bg-white p-2 rounded border">
+                                    💡 Use variables later with {"{{variableName}}"} syntax. Local variables take precedence over global variables.
                                 </div>
                             </div>
                         )}

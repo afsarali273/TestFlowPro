@@ -43,6 +43,7 @@ export interface TestData {
     responseSchema?: any;
     responseSchemaFile?: string;
     store?: StoreMap;
+    localStore?: StoreMap;
 }
 
 export interface TestCase {
@@ -116,6 +117,7 @@ export type TestStepKeyword =
     | "press"
     | "clear"
     | "select"
+    | "selectOption"
     | "check"
     | "uncheck"
     | "setChecked"
@@ -190,7 +192,8 @@ export interface TestStep {
     assertions?: Assertion[];
     customFunction?: CustomStepFunction; // For customStep keyword
     customCode?: string; // Raw Playwright code for customCode keyword
-    store?: StoreMap; // Store variables from UI elements
+    store?: StoreMap; // Store variables from UI elements (global)
+    localStore?: StoreMap; // Store variables from UI elements (local to test case)
     skipOnFailure?: boolean; // Skip this step if any previous step failed
 }
 

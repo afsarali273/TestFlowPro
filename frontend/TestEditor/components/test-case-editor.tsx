@@ -293,18 +293,112 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
     }
   }
 
+  // Helper function to clean step for JSON serialization
+  const cleanStepForSerialization = (step: TestStep): TestStep => {
+    const cleaned: any = {
+      id: step.id,
+      keyword: step.keyword,
+    }
+
+    // Keywords that need values
+    const valueKeywords = [
+      "goto", "type", "fill", "press", "select", "setChecked", "assertText", "assertValue", 
+      "assertCount", "assertAttribute", "assertContainsText", "assertUrl", "assertTitle", 
+      "assertHaveText", "assertHaveCount", "waitForSelector", "waitForTimeout", "waitForFunction", 
+      "waitForElement", "waitForText", "setViewportSize", "scrollTo", "switchToFrame", 
+      "uploadFile", "getAttribute"
+    ]
+
+    // Keywords that need locators
+    const locatorKeywords = [
+      "click", "dblClick", "rightClick", "type", "fill", "press", "clear", "select", "check", 
+      "uncheck", "setChecked", "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop", 
+      "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", 
+      "assertCount", "assertValue", "assertAttribute", "assertChecked", "assertUnchecked", 
+      "assertContainsText", "uploadFile", "downloadFile", "getText", "getAttribute", 
+      "getValue", "getCount"
+    ]
+
+    if (valueKeywords.includes(step.keyword) && step.value) {
+      cleaned.value = step.value
+    }
+
+    if (locatorKeywords.includes(step.keyword) && step.locator) {
+      const cleanedLocator: any = {
+        strategy: step.locator.strategy,
+        value: step.locator.value,
+      }
+
+      // Only include options if they have values
+      if (step.locator.options) {
+        const cleanedOptions: any = {}
+        Object.entries(step.locator.options).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== "") {
+            cleanedOptions[key] = value
+          }
+        })
+        if (Object.keys(cleanedOptions).length > 0) {
+          cleanedLocator.options = cleanedOptions
+        }
+      }
+
+      // Include filter if present
+      if (step.locator.filter) {
+        cleanedLocator.filter = step.locator.filter
+      }
+
+      cleaned.locator = cleanedLocator
+    }
+
+    // Include customFunction for customStep keyword
+    if (step.keyword === "customStep" && step.customFunction) {
+      cleaned.customFunction = step.customFunction
+    }
+
+    // Include customCode for customCode keyword
+    if (step.keyword === "customCode" && step.customCode) {
+      cleaned.customCode = step.customCode
+    }
+
+    if (step.target) {
+      cleaned.target = step.target
+    }
+
+    if (step.options && Object.keys(step.options).length > 0) {
+      cleaned.options = step.options
+    }
+
+    // Include store and localStore for variable extraction keywords
+    if (["getText", "getAttribute", "getTitle", "getUrl", "getValue", "getCount"].includes(step.keyword)) {
+      if (step.store && Object.keys(step.store).length > 0) {
+        cleaned.store = step.store
+      }
+      if (step.localStore && Object.keys(step.localStore).length > 0) {
+        cleaned.localStore = step.localStore
+      }
+    }
+
+    if (step.skipOnFailure) {
+      cleaned.skipOnFailure = step.skipOnFailure
+    }
+
+    return cleaned
+  }
+
   const handleInlineSaveTestStep = () => {
     if (!inlineEditingStep) return
+
+    const cleanedStep = cleanStepForSerialization(inlineEditingStep)
 
     if (isAddingNewStep) {
       setEditedTestCase((prev) => ({
         ...prev,
-        testSteps: [...(prev.testSteps || []), inlineEditingStep],
+        testSteps: [...(prev.testSteps || []), cleanedStep],
       }))
     } else if (inlineEditingStepIndex !== null && inlineEditingStepIndex >= 0) {
       setEditedTestCase((prev) => ({
         ...prev,
-        testSteps: prev.testSteps?.map((ts, i) => (i === inlineEditingStepIndex ? inlineEditingStep : ts)) || [],
+        testSteps: prev.testSteps?.map((ts, i) => (i === inlineEditingStepIndex ? cleanedStep : ts)) || [],
       }))
     }
 
@@ -1005,32 +1099,87 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                                   Store the extracted value in a variable for later use
                                 </div>
                                 
-                                <div className="space-y-2">
-                                  <Label>Variable Name</Label>
-                                  <Input
-                                    value={inlineEditingStep?.store ? Object.keys(inlineEditingStep.store)[0] || "" : ""}
-                                    onChange={(e) => {
-                                      const varName = e.target.value
-                                      if (varName) {
-                                        let path = "$text"
-                                        switch (inlineEditingStep?.keyword) {
-                                          case "getAttribute": path = "$attribute"; break;
-                                          case "getTitle": path = "$title"; break;
-                                          case "getUrl": path = "$url"; break;
-                                          case "getValue": path = "$value"; break;
-                                          case "getCount": path = "$count"; break;
-                                          default: path = "$text"; break;
+                                <div className="space-y-4">
+                                  {/* Global Variable Section */}
+                                  <div className="space-y-2">
+                                    <h4 className="text-sm font-medium text-green-700">Global Variable (store)</h4>
+                                    <p className="text-xs text-green-600">Available across all test cases</p>
+                                    <Input
+                                      value={inlineEditingStep?.store ? Object.keys(inlineEditingStep.store)[0] || "" : ""}
+                                      onChange={(e) => {
+                                        const varName = e.target.value
+                                        if (varName) {
+                                          let path = "$text"
+                                          switch (inlineEditingStep?.keyword) {
+                                            case "getAttribute": path = "$attribute"; break;
+                                            case "getTitle": path = "$title"; break;
+                                            case "getUrl": path = "$url"; break;
+                                            case "getValue": path = "$value"; break;
+                                            case "getCount": path = "$count"; break;
+                                            default: path = "$text"; break;
+                                          }
+                                          handleInlineStepChange("store", { [varName]: path })
+                                        } else {
+                                          handleInlineStepChange("store", undefined)
                                         }
-                                        handleInlineStepChange("store", { [varName]: path })
-                                      } else {
-                                        handleInlineStepChange("store", undefined)
-                                      }
-                                    }}
-                                    placeholder="pageTitle, userId, productName, etc."
-                                  />
-                                  <div className="text-xs text-green-600">
-                                    Use this variable later with {"{{variableName}}"} syntax
+                                      }}
+                                      placeholder="globalUserId, pageTitle, etc."
+                                    />
                                   </div>
+                                  
+                                  {/* Local Variable Section with Checkbox */}
+                                  <div className="space-y-2">
+                                    <div className="flex items-center space-x-2">
+                                      <input
+                                        type="checkbox"
+                                        id="use-local-store-edit"
+                                        className="h-4 w-4"
+                                        checked={!!inlineEditingStep?.localStore}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            handleInlineStepChange("localStore", {})
+                                          } else {
+                                            handleInlineStepChange("localStore", undefined)
+                                          }
+                                        }}
+                                      />
+                                      <Label htmlFor="use-local-store-edit" className="text-sm font-medium text-blue-700">
+                                        Use Local Variable (localStore)
+                                      </Label>
+                                    </div>
+                                    <p className="text-xs text-blue-600 ml-6">Only within current test case</p>
+                                    
+                                    {inlineEditingStep?.localStore && (
+                                      <div className="ml-6">
+                                        <Input
+                                          value={Object.keys(inlineEditingStep.localStore)[0] || ""}
+                                          onChange={(e) => {
+                                            const varName = e.target.value
+                                            if (varName) {
+                                              let path = "$text"
+                                              switch (inlineEditingStep?.keyword) {
+                                                case "getAttribute": path = "$attribute"; break;
+                                                case "getTitle": path = "$title"; break;
+                                                case "getUrl": path = "$url"; break;
+                                                case "getValue": path = "$value"; break;
+                                                case "getCount": path = "$count"; break;
+                                                default: path = "$text"; break;
+                                              }
+                                              handleInlineStepChange("localStore", { [varName]: path })
+                                            } else {
+                                              handleInlineStepChange("localStore", {})
+                                            }
+                                          }}
+                                          placeholder="tempUserId, localData, etc."
+                                          className="border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <div className="text-xs text-gray-600 bg-white p-2 rounded border">
+                                  💡 Use variables later with {"{{variableName}}"} syntax. Local variables take precedence over global variables.
                                 </div>
                               </div>
                             )}
@@ -1569,32 +1718,87 @@ await page.waitForFunction(() => {
                                 Store the extracted value in a variable for later use
                               </div>
                               
-                              <div className="space-y-2">
-                                <Label>Variable Name</Label>
-                                <Input
-                                  value={inlineEditingStep?.store ? Object.keys(inlineEditingStep.store)[0] || "" : ""}
-                                  onChange={(e) => {
-                                    const varName = e.target.value
-                                    if (varName) {
-                                      let path = "$text"
-                                      switch (inlineEditingStep?.keyword) {
-                                        case "getAttribute": path = "$attribute"; break;
-                                        case "getTitle": path = "$title"; break;
-                                        case "getUrl": path = "$url"; break;
-                                        case "getValue": path = "$value"; break;
-                                        case "getCount": path = "$count"; break;
-                                        default: path = "$text"; break;
+                              <div className="space-y-4">
+                                {/* Global Variable Section */}
+                                <div className="space-y-2">
+                                  <h4 className="text-sm font-medium text-green-700">Global Variable (store)</h4>
+                                  <p className="text-xs text-green-600">Available across all test cases</p>
+                                  <Input
+                                    value={inlineEditingStep?.store ? Object.keys(inlineEditingStep.store)[0] || "" : ""}
+                                    onChange={(e) => {
+                                      const varName = e.target.value
+                                      if (varName) {
+                                        let path = "$text"
+                                        switch (inlineEditingStep?.keyword) {
+                                          case "getAttribute": path = "$attribute"; break;
+                                          case "getTitle": path = "$title"; break;
+                                          case "getUrl": path = "$url"; break;
+                                          case "getValue": path = "$value"; break;
+                                          case "getCount": path = "$count"; break;
+                                          default: path = "$text"; break;
+                                        }
+                                        handleInlineStepChange("store", { [varName]: path })
+                                      } else {
+                                        handleInlineStepChange("store", undefined)
                                       }
-                                      handleInlineStepChange("store", { [varName]: path })
-                                    } else {
-                                      handleInlineStepChange("store", undefined)
-                                    }
-                                  }}
-                                  placeholder="pageTitle, userId, productName, etc."
-                                />
-                                <div className="text-xs text-green-600">
-                                  Use this variable later with {"{{variableName}}"} syntax
+                                    }}
+                                    placeholder="globalUserId, pageTitle, etc."
+                                  />
                                 </div>
+                                
+                                {/* Local Variable Section with Checkbox */}
+                                <div className="space-y-2">
+                                  <div className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      id="use-local-store-add"
+                                      className="h-4 w-4"
+                                      checked={!!inlineEditingStep?.localStore}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          handleInlineStepChange("localStore", {})
+                                        } else {
+                                          handleInlineStepChange("localStore", undefined)
+                                        }
+                                      }}
+                                    />
+                                    <Label htmlFor="use-local-store-add" className="text-sm font-medium text-blue-700">
+                                      Use Local Variable (localStore)
+                                    </Label>
+                                  </div>
+                                  <p className="text-xs text-blue-600 ml-6">Only within current test case</p>
+                                  
+                                  {inlineEditingStep?.localStore && (
+                                    <div className="ml-6">
+                                      <Input
+                                        value={Object.keys(inlineEditingStep.localStore)[0] || ""}
+                                        onChange={(e) => {
+                                          const varName = e.target.value
+                                          if (varName) {
+                                            let path = "$text"
+                                            switch (inlineEditingStep?.keyword) {
+                                              case "getAttribute": path = "$attribute"; break;
+                                              case "getTitle": path = "$title"; break;
+                                              case "getUrl": path = "$url"; break;
+                                              case "getValue": path = "$value"; break;
+                                              case "getCount": path = "$count"; break;
+                                              default: path = "$text"; break;
+                                            }
+                                            handleInlineStepChange("localStore", { [varName]: path })
+                                          } else {
+                                            handleInlineStepChange("localStore", {})
+                                          }
+                                        }}
+                                        placeholder="tempUserId, localData, etc."
+                                        className="border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="text-xs text-gray-600 bg-white p-2 rounded border">
+                                💡 Use variables later with {"{{variableName}}"} syntax. Local variables take precedence over global variables.
                               </div>
                             </div>
                           )}
