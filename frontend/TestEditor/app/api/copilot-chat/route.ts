@@ -19,14 +19,42 @@ export async function POST(request: NextRequest) {
   try {
     const { message, type } = await request.json();
     
-    console.log('Copilot API called with type:', type, 'message:', message.substring(0, 100));
+    console.log('🚀 Copilot API Request:', {
+      type,
+      messageLength: message?.length || 0,
+      messagePreview: message?.substring(0, 100)
+    });
     
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
+    console.log('🔑 Getting Copilot token...');
     const token = await getCopilotToken();
+    console.log('✅ Token retrieved, length:', token?.length || 0);
+    
     const context = getKnowledgeBaseContext(type, message);
+    
+    const requestBody = {
+      messages: [
+        {
+          role: 'system',
+          content: getSystemPrompt(type, context)
+        },
+        {
+          role: 'user', 
+          content: message
+        }
+      ],
+      model: 'gpt-4.1',
+      temperature: 0.7,
+      max_tokens: 4000
+    };
+    
+    console.log('📡 Making request to GitHub Copilot API:', {
+      bodySize: JSON.stringify(requestBody).length,
+      tokenPrefix: token.substring(0, 10) + '...'
+    });
     
     const response = await fetch('https://api.githubcopilot.com/chat/completions', {
       method: 'POST',
@@ -42,27 +70,32 @@ export async function POST(request: NextRequest) {
         'x-request-id': randomUUID(),
         'x-vscode-user-agent-library-version': 'electron-fetch'
       },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: 'system',
-            content: getSystemPrompt(type, context)
-          },
-          {
-            role: 'user', 
-            content: message
-          }
-        ],
-        model: 'gpt-4.1',
-        temperature: 0.7,
-        max_tokens: 4000
-      })
+      body: JSON.stringify(requestBody)
+    });
+    
+    console.log('📥 GitHub Copilot Response:', {
+      status: response.status,
+      statusText: response.statusText
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorText = await response.text();
+      console.error('❌ GitHub Copilot API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText
+      });
+      
+      let errorData = {};
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        console.error('Failed to parse error response as JSON');
+      }
+      
       return NextResponse.json({ 
-        error: `GitHub Copilot API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}` 
+        error: `GitHub Copilot API error: ${response.status} - ${errorData.error?.message || errorText || 'Unknown error'}`,
+        details: { status: response.status, statusText: response.statusText }
       }, { status: response.status });
     }
 

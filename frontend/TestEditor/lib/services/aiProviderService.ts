@@ -1,4 +1,5 @@
 import { GitHubAuthService } from './githubAuth';
+import { AI_CONFIG } from '../../ai-config';
 
 export type AIProvider = 'ollama' | 'github-copilot';
 
@@ -17,8 +18,8 @@ export class AIProviderService {
       case 'ollama':
         return {
           provider: 'ollama',
-          baseUrl: 'http://localhost:11434',
-          model: 'llama2'
+          baseUrl: AI_CONFIG.ollama.baseUrl,
+          model: AI_CONFIG.ollama.model
         };
       
       case 'github-copilot':
@@ -28,8 +29,8 @@ export class AIProviderService {
         }
         return {
           provider: 'github-copilot',
-          baseUrl: 'https://api.githubcopilot.com',
-          model: 'claude-3-5-sonnet-20241022',
+          baseUrl: AI_CONFIG.github.baseUrl,
+          model: AI_CONFIG.github.model,
           apiKey: 'authenticated'
         };
       

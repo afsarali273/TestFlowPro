@@ -48,6 +48,7 @@ import { PostmanImportModal } from "@/components/PostmanImportModal"
 import BrunoImportModal from "@/components/BrunoImportModal"
 import EnvVariablesModal from "@/components/EnvVariablesModal"
 import { SoapImportModal } from "@/components/SoapImportModal"
+import { PlaywrightImportModal } from "@/components/PlaywrightImportModal"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 import type { TestSuite } from "@/types/test-suite"
@@ -82,6 +83,7 @@ export default function APITestFramework() {
   const [showPostmanImportModal, setShowPostmanImportModal] = useState(false)
   const [showBrunoImportModal, setShowBrunoImportModal] = useState(false)
   const [showSoapImportModal, setShowSoapImportModal] = useState(false)
+  const [showPlaywrightImportModal, setShowPlaywrightImportModal] = useState(false)
   const [showEnvVariablesModal, setShowEnvVariablesModal] = useState(false)
 
 
@@ -327,6 +329,7 @@ export default function APITestFramework() {
     setSelectedSuite({
       id: newId,
       suiteName: "New Suite",
+      applicationName: "New Application",
       baseUrl: "",
       status: "Not Started",
       tags: [],
@@ -625,6 +628,10 @@ export default function APITestFramework() {
                         <DropdownMenuItem onClick={() => setShowSoapImportModal(true)}>
                           <FileText className="h-4 w-4 mr-2" />
                           Import SOAP
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowPlaywrightImportModal(true)}>
+                          <MousePointer className="h-4 w-4 mr-2" />
+                          Import Playwright
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setShowEnvVariablesModal(true)}>
@@ -1420,10 +1427,10 @@ export default function APITestFramework() {
         <CurlImportModal
           isOpen={showCurlImportModal}
           onClose={() => setShowCurlImportModal(false)}
-          existingSuites={testSuites}
+          existingSuites={testSuites.map(suite => ({ ...suite, type: suite.type || 'API' })) as any}
           onSave={(testSuite) => {
             // Add the imported suite to the list
-            setTestSuites((prev) => [...prev, testSuite]);
+            setTestSuites((prev) => [...prev, testSuite as any]);
             // Close the modal
             setShowCurlImportModal(false);
             // Show success message
@@ -1432,14 +1439,14 @@ export default function APITestFramework() {
               description: "Test suite created from cURL command successfully.",
             });
             // Open the editor with the new suite
-            setSelectedSuite(testSuite);
+            setSelectedSuite(testSuite as any);
             setIsEditing(true);
           }}
           onAddToExisting={(suiteId, testCase) => {
             // Add test case to existing suite
             setTestSuites((prev) => prev.map(suite => 
               suite.id === suiteId 
-                ? { ...suite, testCases: [...suite.testCases, testCase] }
+                ? { ...suite, testCases: [...suite.testCases, testCase as any] }
                 : suite
             ));
             // Show success message
@@ -1488,10 +1495,10 @@ export default function APITestFramework() {
         <PostmanImportModal
           isOpen={showPostmanImportModal}
           onClose={() => setShowPostmanImportModal(false)}
-          existingSuites={testSuites}
+          existingSuites={testSuites.map(suite => ({ ...suite, type: suite.type || 'API' })) as any}
           onSave={(testSuite) => {
             // Add the imported suite to the list
-            setTestSuites((prev) => [...prev, testSuite]);
+            setTestSuites((prev) => [...prev, testSuite as any]);
             // Close the modal
             setShowPostmanImportModal(false);
             // Show success message
@@ -1500,14 +1507,14 @@ export default function APITestFramework() {
               description: "Test suite created from Postman collection successfully.",
             });
             // Open the editor with the new suite
-            setSelectedSuite(testSuite);
+            setSelectedSuite(testSuite as any);
             setIsEditing(true);
           }}
           onAddToExisting={(suiteId, testCase) => {
             // Add test cases to existing suite
             setTestSuites((prev) => prev.map(suite => 
               suite.id === suiteId 
-                ? { ...suite, testCases: [...suite.testCases, testCase] }
+                ? { ...suite, testCases: [...suite.testCases, testCase as any] }
                 : suite
             ));
             // Show success message
@@ -1540,13 +1547,41 @@ export default function APITestFramework() {
         <SoapImportModal
           isOpen={showSoapImportModal}
           onClose={() => setShowSoapImportModal(false)}
-          existingSuites={testSuites}
+          existingSuites={testSuites.map(suite => ({ ...suite, type: suite.type || 'API' })) as any}
           onSave={(testSuite) => {
-            setTestSuites((prev) => [...prev, testSuite]);
+            setTestSuites((prev) => [...prev, testSuite as any]);
             setShowSoapImportModal(false);
             toast({
               title: "SOAP Imported",
               description: "Test suite created from SOAP specification successfully.",
+            });
+            setSelectedSuite(testSuite as any);
+            setIsEditing(true);
+          }}
+          onAddToExisting={(suiteId, testCase) => {
+            setTestSuites((prev) => prev.map(suite => 
+              suite.id === suiteId 
+                ? { ...suite, testCases: [...suite.testCases, testCase as any] }
+                : suite
+            ));
+            toast({
+              title: "Test Case Added",
+              description: "SOAP test case added to existing suite successfully.",
+            });
+          }}
+        />
+        
+        {/* Playwright Import Modal */}
+        <PlaywrightImportModal
+          isOpen={showPlaywrightImportModal}
+          onClose={() => setShowPlaywrightImportModal(false)}
+          existingSuites={testSuites}
+          onSave={(testSuite) => {
+            setTestSuites((prev) => [...prev, testSuite]);
+            setShowPlaywrightImportModal(false);
+            toast({
+              title: "Playwright Imported",
+              description: "Test suite created from Playwright code successfully.",
             });
             setSelectedSuite(testSuite);
             setIsEditing(true);
@@ -1559,7 +1594,7 @@ export default function APITestFramework() {
             ));
             toast({
               title: "Test Case Added",
-              description: "SOAP test case added to existing suite successfully.",
+              description: "Playwright test case added to existing suite successfully.",
             });
           }}
         />

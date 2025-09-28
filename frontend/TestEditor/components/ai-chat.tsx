@@ -9,6 +9,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
+import { AI_CONFIG } from '../ai-config'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 
 interface Message {
   id: string
@@ -44,13 +47,14 @@ export function AIChat() {
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [generateTestCaseOnly, setGenerateTestCaseOnly] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [aiProvider, setAiProvider] = useState<'ollama' | 'github-copilot'>('ollama')
+  const [aiProvider, setAiProvider] = useState<'ollama' | 'github-copilot'>(AI_CONFIG.defaults.provider)
   const [showProviderSettings, setShowProviderSettings] = useState(false)
   const [githubAuthStatus, setGithubAuthStatus] = useState<'unknown' | 'authenticated' | 'not-authenticated'>('unknown')
   const [showTokenInput, setShowTokenInput] = useState(false)
   const [githubToken, setGithubToken] = useState('')
   const [deviceFlow, setDeviceFlow] = useState<{ userCode: string; verificationUri: string; deviceCode: string } | null>(null)
   const [isPolling, setIsPolling] = useState(false)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
@@ -232,6 +236,22 @@ export function AIChat() {
         })
       })
 
+      if (!response.ok) {
+        const errorData = await response.json()
+        let errorMessage = 'Sorry, I encountered an error. Please try again.'
+        
+        if (response.status === 402) {
+          errorMessage = '💳 GitHub Copilot quota exceeded. You have no remaining quota. Please check your subscription or switch to Ollama provider.'
+        } else if (errorData.error) {
+          errorMessage = `❌ API Error (${response.status}): ${errorData.error}`
+        }
+        
+        addMessage(errorMessage, 'ai')
+        setIsLoading(false)
+        setInputMessage('')
+        return
+      }
+      
       const data = await response.json()
       
       if (aiProvider === 'github-copilot') {
@@ -255,8 +275,17 @@ export function AIChat() {
           addMessage(data.response, 'ai')
         }
       }
-    } catch (error) {
-      addMessage('Sorry, I encountered an error. Please try again.', 'ai')
+    } catch (error: any) {
+      const errorResponse = await error.response?.json?.() || {}
+      let errorMessage = 'Sorry, I encountered an error. Please try again.'
+      
+      if (error.response?.status === 402) {
+        errorMessage = '💳 GitHub Copilot quota exceeded. Please check your subscription or switch to Ollama provider.'
+      } else if (errorResponse.error) {
+        errorMessage = `❌ ${errorResponse.error}`
+      }
+      
+      addMessage(errorMessage, 'ai')
     } finally {
       setIsLoading(false)
       setInputMessage('')
@@ -679,6 +708,8 @@ export function AIChat() {
                       }
                     </div>
                     
+
+                    
                     {deviceFlow && (
                       <div className="mt-3 p-3 bg-yellow-50 border border-yellow-300 rounded">
                         <div className="space-y-2">
@@ -801,7 +832,7 @@ export function AIChat() {
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       placeholder="Describe your API or test requirements..."
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
                     />
                     <Button onClick={handleSendMessage} disabled={isLoading}>
                       <Send className="h-4 w-4" />
@@ -982,28 +1013,28 @@ export function AIChat() {
 
               {/* Generated Suite Preview - Always visible */}
               {generatedSuite && (
-                <div className="mt-4 border-t pt-4 flex-shrink-0">
+                <div className="mt-4 border-t pt-3 flex-shrink-0">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold">
+                    <h3 className="font-semibold text-sm">
                       {generateTestCaseOnly ? 'Generated Test Cases' : 'Generated Test Suite'}
                     </h3>
                     <div className="flex gap-2">
-                      <Badge variant={generatedSuite.type === 'API' ? 'default' : 'secondary'}>
+                      <Badge variant={generatedSuite.type === 'API' ? 'default' : 'secondary'} className="text-xs">
                         {generatedSuite.type}
                       </Badge>
-                      <Button size="sm" variant="outline" onClick={handleCopyTestCases}>
+                      <Button size="sm" variant="outline" onClick={handleCopyTestCases} className="text-xs h-7">
                         {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
                         {copied ? 'Copied!' : 'Copy'}
                       </Button>
                       {!generateTestCaseOnly && (
-                        <Button size="sm" onClick={handleSaveSuite}>
+                        <Button size="sm" onClick={handleSaveSuite} className="text-xs h-7">
                           Save Suite
                         </Button>
                       )}
                     </div>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded-lg max-h-40 overflow-y-auto">
-                    <pre className="text-sm">
+                  <div className="bg-gray-50 p-3 rounded-lg h-32 overflow-y-auto">
+                    <pre className="text-xs">
                       {generateTestCaseOnly 
                         ? JSON.stringify(generatedSuite.testCases, null, 2)
                         : JSON.stringify(generatedSuite, null, 2)

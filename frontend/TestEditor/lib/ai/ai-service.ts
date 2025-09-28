@@ -8,6 +8,7 @@ import { RAGKnowledgeBase } from './rag-knowledge-base'
 import { SmartContextManager } from './smart-context-manager'
 import { CurlParser } from './curl-parser'
 import { TestSuite } from '@/types/test-suite'
+import { AI_CONFIG } from '@/ai-config'
 import fs from 'fs'
 import path from 'path'
 
@@ -45,13 +46,13 @@ export class AIService {
 
   constructor(testDataPath?: string) {
     this.llm = new ChatOllama({
-      baseUrl: 'http://localhost:11434',
-      model: 'qwen2.5-coder:14b'  // Specialized for code generation and structured output
+      baseUrl: AI_CONFIG.ollama.baseUrl,
+      model: AI_CONFIG.ollama.model
     })
     
     this.embeddings = new OllamaEmbeddings({
-      baseUrl: 'http://localhost:11434', 
-      model: 'mxbai-embed-large'  // High quality embeddings for better context matching
+      baseUrl: AI_CONFIG.ollama.baseUrl, 
+      model: AI_CONFIG.ollama.embeddingModel
     })
     
     this.ragChains = this.initializeRAGChains()
