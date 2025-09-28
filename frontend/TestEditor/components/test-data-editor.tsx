@@ -10,15 +10,19 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Trash2, Save, X, ArrowLeft, FileText, Upload, Code, Database, Copy, ArrowRight } from "lucide-react"
+import { Plus, Trash2, Save, X, ArrowLeft, FileText, Upload, Code, Database, Copy, ArrowRight, Zap } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
+import { AssertionGenerator } from "./assertion-generator"
+import { VariableGenerator } from "./variable-generator"
 
 interface TestDataEditorProps {
   testData: any
   onSave: (testData: any) => void
   onCancel: () => void
   testCaseType?: string
+  baseUrl?: string
+  suite?: any
 }
 
 const commonHeaders = [
@@ -39,17 +43,26 @@ const commonHeaders = [
   "X-CSRF-Token",
 ]
 
-export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "REST" }: TestDataEditorProps) {
+export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "REST", baseUrl = "", suite }: TestDataEditorProps) {
+  // Use suite baseUrl if available, otherwise use passed baseUrl
+  const effectiveBaseUrl = suite?.baseUrl || baseUrl || ""
+  
+  // Debug logging
+  console.log("TestDataEditor - suite:", suite)
+  console.log("TestDataEditor - suite.baseUrl:", suite?.baseUrl)
+  console.log("TestDataEditor - baseUrl prop:", baseUrl)
+  console.log("TestDataEditor - effectiveBaseUrl:", effectiveBaseUrl)
   const [editedTestData, setEditedTestData] = useState(JSON.parse(JSON.stringify(testData)))
   const [rawBodyJson, setRawBodyJson] = useState("")
   const [rawSchemaJson, setRawSchemaJson] = useState("")
   const [bodyJsonError, setBodyJsonError] = useState("")
   const [schemaJsonError, setSchemaJsonError] = useState("")
-
+  const [showAssertionGenerator, setShowAssertionGenerator] = useState(false)
+  const [showVariableGenerator, setShowVariableGenerator] = useState(false)
 
   const [activeTab, setActiveTab] = useState("general")
 
-  const tabSequence = ["general", "headers", "body", "assertions", "preprocess", "store", "schema", "json"]
+  const tabSequence = ["general", "headers", "preprocess", "body", "assertions", "store", "schema", "json"]
 
   const getNextTab = (currentTab: string) => {
     const currentIndex = tabSequence.indexOf(currentTab)
@@ -234,6 +247,23 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
     setEditedTestData((prev: any) => ({
       ...prev,
       assertions: newAssertions,
+    }))
+  }
+
+  const handleAddGeneratedAssertions = (assertions: any[]) => {
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      assertions: [...(prev.assertions || []), ...assertions],
+    }))
+  }
+
+  const handleAddGeneratedVariables = (variables: Record<string, string>) => {
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      store: {
+        ...prev.store,
+        ...variables
+      }
     }))
   }
 
@@ -486,6 +516,7 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
   }
 
   return (
+    <>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="max-w-6xl mx-auto p-6">
           {/* Header */}
@@ -518,9 +549,9 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
             <TabsList className="grid w-full grid-cols-8 bg-white/80 backdrop-blur-sm shadow-sm">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="headers">Headers</TabsTrigger>
+              <TabsTrigger value="preprocess">Pre-Process</TabsTrigger>
               <TabsTrigger value="body">{testCaseType === "SOAP" ? "XML Body" : "JSON Body"}</TabsTrigger>
               <TabsTrigger value="assertions">Assertions</TabsTrigger>
-              <TabsTrigger value="preprocess">Pre-Process</TabsTrigger>
               <TabsTrigger value="store">Store</TabsTrigger>
               <TabsTrigger value="schema">Schema</TabsTrigger>
               <TabsTrigger value="json">JSON</TabsTrigger>
@@ -729,7 +760,7 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
                           onClick={handleNextTab}
                           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                       >
-                        Next: {testCaseType === "SOAP" ? "XML Body" : "JSON Body"}
+                        Next: Pre-Process
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
                     </div>
@@ -904,13 +935,23 @@ Example:
                       <CardTitle>Assertions</CardTitle>
                       <CardDescription>Define response validation rules</CardDescription>
                     </div>
-                    <Button
-                        onClick={handleAddAssertion}
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Assertion
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                          onClick={() => setShowAssertionGenerator(true)}
+                          variant="outline"
+                          className="border-purple-300 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700"
+                      >
+                        <Zap className="h-4 w-4 mr-2" />
+                        Auto-Generate
+                      </Button>
+                      <Button
+                          onClick={handleAddAssertion}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Assertion
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1301,7 +1342,7 @@ Example:
                           onClick={handleNextTab}
                           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                       >
-                        Next: Store
+                        Next: {testCaseType === "SOAP" ? "XML Body" : "JSON Body"}
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
                     </div>
@@ -1318,13 +1359,23 @@ Example:
                       <CardTitle>Store Variables</CardTitle>
                       <CardDescription>Store response values for later use in subsequent requests</CardDescription>
                     </div>
-                    <Button
-                        onClick={handleAddStoreVariable}
-                        className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Variable
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                          onClick={() => setShowVariableGenerator(true)}
+                          variant="outline"
+                          className="border-purple-300 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700"
+                      >
+                        <Zap className="h-4 w-4 mr-2" />
+                        Auto-Generate
+                      </Button>
+                      <Button
+                          onClick={handleAddStoreVariable}
+                          className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Variable
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1735,6 +1786,35 @@ Example:
           </Tabs>
         </div>
       </div>
+      
+      <AssertionGenerator
+        isOpen={showAssertionGenerator}
+        onClose={() => setShowAssertionGenerator(false)}
+        onAddAssertions={handleAddGeneratedAssertions}
+        testCaseType={testCaseType}
+        baseUrl={effectiveBaseUrl}
+        initialData={{
+          method: editedTestData.method,
+          endpoint: editedTestData.endpoint,
+          headers: editedTestData.headers,
+          body: editedTestData.body
+        }}
+      />
+      
+      <VariableGenerator
+        isOpen={showVariableGenerator}
+        onClose={() => setShowVariableGenerator(false)}
+        onAddVariables={handleAddGeneratedVariables}
+        testCaseType={testCaseType}
+        baseUrl={effectiveBaseUrl}
+        initialData={{
+          method: editedTestData.method,
+          endpoint: editedTestData.endpoint,
+          headers: editedTestData.headers,
+          body: editedTestData.body
+        }}
+      />
+    </>
   )
 }
 
