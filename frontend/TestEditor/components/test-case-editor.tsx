@@ -464,6 +464,7 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
         ? {
           ...prev,
           locator: {
+            ...prev.locator,
             strategy: prev.locator?.strategy || "css",
             value: prev.locator?.value || "",
             [field]: value,

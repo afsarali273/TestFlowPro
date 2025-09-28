@@ -208,11 +208,39 @@ export function AIChat() {
     }
   }
 
-  const addMessage = (content: string, type: 'user' | 'ai') => {
+  const addMessage = (content: string, type: 'user' | 'ai', isTestSuiteGeneration = false, isUITest = false) => {
+    let displayContent = content
+    
+    // If it's a test suite generation response, show generic steps instead of full JSON
+    if (type === 'ai' && isTestSuiteGeneration) {
+      if (isUITest) {
+        displayContent = `✅ UI test suite generated successfully!
+
+🎭 Generated UI components:
+• Browser automation steps
+• Element selectors and interactions
+• Page navigation flows
+• UI assertions and validations
+• Local variable storage
+
+👀 View the complete UI test suite in the "Test Suite" section below.`
+      } else {
+        displayContent = `✅ Test suite generated successfully!
+
+📋 Generated components:
+• Suite configuration
+• Test cases with endpoints
+• Request/response validation
+• Assertions and test data
+
+👀 View the complete test suite in the "Test Suite" section below.`
+      }
+    }
+    
     const newMessage: Message = {
       id: Date.now().toString(),
       type,
-      content,
+      content: displayContent,
       timestamp: new Date()
     }
     setMessages(prev => [...prev, newMessage])
@@ -255,22 +283,26 @@ export function AIChat() {
       const data = await response.json()
       
       if (aiProvider === 'github-copilot') {
-        addMessage(data.response, 'ai')
         // Try to extract JSON if it looks like a test suite
+        let hasTestSuite = false
         try {
           const jsonMatch = data.response.match(/```json\s*([\s\S]*?)\s*```/) || data.response.match(/{[\s\S]*}/)
           if (jsonMatch && jsonMatch[0].includes('testCases')) {
             const jsonStr = jsonMatch[1] || jsonMatch[0]
             const parsedSuite = JSON.parse(jsonStr)
             setGeneratedSuite(parsedSuite)
+            hasTestSuite = true
           }
         } catch (parseError) {
           // Ignore parsing errors for general chat
         }
+        
+        addMessage(data.response, 'ai', hasTestSuite)
       } else {
         if (data.testSuite) {
           setGeneratedSuite(data.testSuite)
-          addMessage('I\'ve generated a test suite based on your requirements. You can review and save it below.', 'ai')
+          const isUITest = data.testSuite.type === 'UI'
+          addMessage('', 'ai', true, isUITest) // Use generic message for test suite generation
         } else {
           addMessage(data.response, 'ai')
         }
@@ -316,6 +348,8 @@ export function AIChat() {
             const jsonStr = jsonMatch[1] || jsonMatch[0]
             const parsedSuite = JSON.parse(jsonStr)
             setGeneratedSuite(parsedSuite)
+            const isUITest = parsedSuite.type === 'UI'
+            addMessage('', 'ai', true, isUITest) // Add generic success message to chat
           } else {
             throw new Error('No JSON found in response')
           }
@@ -326,6 +360,8 @@ export function AIChat() {
         }
       } else {
         setGeneratedSuite(data.testSuite)
+        const isUITest = data.testSuite.type === 'UI'
+        addMessage('', 'ai', true, isUITest) // Add generic success message to chat
       }
       toast({ title: 'Test Suite Generated', description: 'Generated from cURL command' })
     } catch (error) {
@@ -416,6 +452,8 @@ export function AIChat() {
             const jsonStr = jsonMatch[1] || jsonMatch[0]
             const parsedSuite = JSON.parse(jsonStr)
             setGeneratedSuite(parsedSuite)
+            const isUITest = parsedSuite.type === 'UI'
+            addMessage('', 'ai', true, isUITest) // Add generic success message to chat
           } else {
             throw new Error('No JSON found in response')
           }
@@ -426,6 +464,8 @@ export function AIChat() {
         }
       } else {
         setGeneratedSuite(data.testSuite)
+        const isUITest = data.testSuite.type === 'UI'
+        addMessage('', 'ai', true, isUITest) // Add generic success message to chat
       }
       toast({ title: 'Test Suite Generated', description: 'Generated from Swagger specification' })
     } catch (error) {
@@ -460,6 +500,8 @@ export function AIChat() {
             const jsonStr = jsonMatch[1] || jsonMatch[0]
             const parsedSuite = JSON.parse(jsonStr)
             setGeneratedSuite(parsedSuite)
+            const isUITest = parsedSuite.type === 'UI'
+            addMessage('', 'ai', true, isUITest) // Add generic success message to chat
           } else {
             throw new Error('No JSON found in response')
           }
@@ -470,6 +512,8 @@ export function AIChat() {
         }
       } else {
         setGeneratedSuite(data.testSuite)
+        const isUITest = data.testSuite.type === 'UI'
+        addMessage('', 'ai', true, isUITest) // Add generic success message to chat
       }
       toast({ title: 'UI Test Suite Generated', description: 'Generated from test steps' })
     } catch (error) {
@@ -797,7 +841,7 @@ export function AIChat() {
                 </TabsList>
 
                 <TabsContent value="chat" className="flex-1 flex flex-col max-h-[calc(100vh-400px)]">
-                  <div className="flex-1 min-h-0 overflow-y-auto border rounded-lg p-4 mb-4 space-y-4">
+                  <div className="flex-1 min-h-0 overflow-y-auto border rounded-lg p-4 mb-6 space-y-4">
                     {messages.map((message) => (
                       <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[80%] p-3 rounded-lg ${

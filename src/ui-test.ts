@@ -2,6 +2,7 @@ import { chromium, Browser, Page, Locator, expect } from "@playwright/test";
 import { TestStep, TestCase, LocatorDefinition, FilterDefinition } from "./types";
 import { Reporter } from "./reporter";
 import { setVariable, setLocalVariable, injectVariables } from "./utils/variableStore";
+import { customStepHandler } from "./custom-steps/custom-step-handler";
 
 export class UIRunner {
     private browser!: Browser;
@@ -548,8 +549,38 @@ export class UIRunner {
                 if (!step.customCode) throw new Error("customCode requires code");
                 await this.executeCustomCode(step.customCode);
                 break;
+            case "customStep":
+                if (!step.customFunction) throw new Error("customStep requires customFunction");
+                await this.executeCustomStep(step);
+                break;
             default:
                 throw new Error(`Unknown keyword: ${step.keyword}`);
+        }
+    }
+
+    private async executeCustomStep(step: TestStep) {
+        if (!step.customFunction) throw new Error("customStep requires customFunction");
+        
+        const { function: functionName, args = [] } = step.customFunction;
+        console.log(`🔧 Executing custom function: ${functionName}${args.length ? ` with args: [${args.join(', ')}]` : ''}`);
+        
+        try {
+            const result = await customStepHandler.executeCustomStep(this.page, step.customFunction);
+            
+            // Handle page object returns (like clickFirstSearchResult)
+            if (result && typeof result === 'object' && result.constructor?.name === 'Page') {
+                this.page = result; // Switch to new page
+                console.log(`✅ ${functionName} completed - switched to new page/tab`);
+            } else if (result && typeof result === 'object') {
+                console.log(`✅ ${functionName} completed with result:`, JSON.stringify(result, null, 2));
+            } else {
+                console.log(`✅ ${functionName} completed successfully`);
+            }
+            
+            return result;
+        } catch (error: any) {
+            console.error(`❌ ${functionName} failed: ${error.message}`);
+            throw new Error(`Custom step failed: ${error.message}`);
         }
     }
 

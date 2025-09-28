@@ -1,0 +1,57 @@
+{
+  "id": "Flipkart_Custom_code_L1VzZXJz",
+  "suiteName": "Flipkart Custom code",
+  "applicationName": "Flipkart test1",
+  "type": "UI",
+  "baseUrl": "",
+  "tags": [],
+  "testCases": [
+    {
+      "id": "tc_1759085725159_w8slp0upu",
+      "name": "Flipkart test custom",
+      "status": "Not Started",
+      "type": "UI",
+      "testData": [],
+      "testSteps": [
+        {
+          "id": "step1",
+          "keyword": "customStep",
+          "assertions": [],
+          "customFunction": {
+            "function": "FlipkartHomePage.goto"
+          },
+          "store": {},
+          "localStore": {},
+          "skipOnFailure": false
+        },
+        {
+          "id": "step2",
+          "keyword": "customStep",
+          "assertions": [],
+          "customFunction": {
+            "function": "FlipkartHomePage.searchForProduct",
+            "args": [
+              "iPhone 15"
+            ]
+          },
+          "store": {},
+          "localStore": {},
+          "skipOnFailure": false
+        },
+        {
+          "id": "step3",
+          "keyword": "customStep",
+          "assertions": [],
+          "customFunction": {
+            "function": "FlipkartHomePage.clickFirstSearchResult"
+          },
+          "store": {},
+          "localStore": {},
+          "skipOnFailure": false
+        }
+      ]
+    }
+  ],
+  "status": "Not Started",
+  "filePath": "/Users/afsarali/Repository/TestFlowPro/testSuites/Flipkart_Custom_code.json"
+}
