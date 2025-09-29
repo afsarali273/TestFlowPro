@@ -585,35 +585,48 @@ export class UIRunner {
     }
 
     private async executeCustomCode(code: string) {
+        console.log(`🔧 Executing custom Playwright code`);
+        console.log(`📝 Code preview: ${code.substring(0, 100)}${code.length > 100 ? '...' : ''}`);
+        
         try {
-            // Create context with available variables
             const context = {
                 page: this.page,
                 browser: this.browser,
                 expect,
-                console
+                console: {
+                    log: (...args: any[]) => console.log('📋', ...args),
+                    error: (...args: any[]) => console.error('❌', ...args),
+                    warn: (...args: any[]) => console.warn('⚠️', ...args)
+                }
             };
             
-            // Wrap code in async function and execute
             const asyncFunction = new Function('page', 'browser', 'expect', 'console', `
                 return (async () => {
                     ${code}
                 })();
             `);
             
+            console.log(`🚀 Starting code execution...`);
             await asyncFunction(context.page, context.browser, context.expect, context.console);
-        } catch (error: any) {
-            // Enhanced error message with context
-            const errorMessage = error.message || error.toString();
-            const customCodeError = `Custom code execution failed: ${errorMessage}`;
+            console.log(`✅ Custom code executed successfully`);
             
-            // If it's a Playwright error, extract key information
-            if (errorMessage.includes('locator.') || errorMessage.includes('expect(')) {
-                throw new Error(`${customCodeError}\n\nCode:\n${code.trim()}`);
+        } catch (error: any) {
+            const errorMessage = error.message || error.toString();
+            console.error(`❌ Custom code failed: ${errorMessage}`);
+            
+            if (errorMessage.includes('Timeout') || errorMessage.includes('timeout')) {
+                throw new Error(`⏱️ Timeout error in custom code: ${errorMessage}`);
             }
             
-            // For other JavaScript errors
-            throw new Error(`${customCodeError}\n\nCode:\n${code.trim()}`);
+            if (errorMessage.includes('locator') || errorMessage.includes('selector')) {
+                throw new Error(`🎯 Element not found in custom code: ${errorMessage}`);
+            }
+            
+            if (errorMessage.includes('expect')) {
+                throw new Error(`🔍 Assertion failed in custom code: ${errorMessage}`);
+            }
+            
+            throw new Error(`💥 Custom code execution failed: ${errorMessage}`);
         }
     }
 
