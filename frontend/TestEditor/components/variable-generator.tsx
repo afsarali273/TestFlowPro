@@ -43,10 +43,17 @@ export function VariableGenerator({
   const [pathFilter, setPathFilter] = useState("")
   const [pathVariables, setPathVariables] = useState<Record<string, string>>({})
 
-  // Update baseUrl when prop changes (when modal opens)
+  // Update baseUrl when prop changes or modal opens
   useEffect(() => {
-    console.log("VariableGenerator - received baseUrl:", baseUrl)
-    setCurrentBaseUrl(baseUrl || "")
+    if (isOpen) {
+      // Try to get base URL from local storage first, then fall back to prop
+      const storedBaseUrl = localStorage.getItem('suiteBaseUrl')
+      const effectiveBaseUrl = storedBaseUrl || baseUrl || ""
+      console.log("VariableGenerator - stored baseUrl:", storedBaseUrl)
+      console.log("VariableGenerator - prop baseUrl:", baseUrl)
+      console.log("VariableGenerator - using baseUrl:", effectiveBaseUrl)
+      setCurrentBaseUrl(effectiveBaseUrl)
+    }
   }, [baseUrl, isOpen])
 
   const handleTestApi = async () => {

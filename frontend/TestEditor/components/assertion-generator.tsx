@@ -36,10 +36,17 @@ export function AssertionGenerator({
   const [currentBaseUrl, setCurrentBaseUrl] = useState(baseUrl || "")
   const [endpoint, setEndpoint] = useState(initialData?.endpoint || "")
 
-  // Update baseUrl when prop changes (when modal opens)
+  // Update baseUrl when prop changes or modal opens
   useEffect(() => {
-    console.log("AssertionGenerator - received baseUrl:", baseUrl)
-    setCurrentBaseUrl(baseUrl || "")
+    if (isOpen) {
+      // Try to get base URL from local storage first, then fall back to prop
+      const storedBaseUrl = localStorage.getItem('suiteBaseUrl')
+      const effectiveBaseUrl = storedBaseUrl || baseUrl || ""
+      console.log("AssertionGenerator - stored baseUrl:", storedBaseUrl)
+      console.log("AssertionGenerator - prop baseUrl:", baseUrl)
+      console.log("AssertionGenerator - using baseUrl:", effectiveBaseUrl)
+      setCurrentBaseUrl(effectiveBaseUrl)
+    }
   }, [baseUrl, isOpen])
   const [headers, setHeaders] = useState(initialData?.headers || {})
   const [body, setBody] = useState(JSON.stringify(initialData?.body || {}, null, 2))

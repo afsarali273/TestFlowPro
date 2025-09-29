@@ -1386,14 +1386,7 @@ Example:
                         <h3 className="text-lg font-semibold text-gray-800">Global Variables</h3>
                         <p className="text-sm text-gray-600">Available across all test cases in the suite</p>
                       </div>
-                      <Button
-                          onClick={handleAddStoreVariable}
-                          size="sm"
-                          className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Global Variable
-                      </Button>
+
                     </div>
                     <div className="space-y-3">
                       {Object.entries(editedTestData.store || {}).map(([key, value]) => (

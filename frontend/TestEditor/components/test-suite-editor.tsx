@@ -24,9 +24,11 @@ import {
   Edit3,
   ArrowRight,
   Play,
+  Zap,
 } from "lucide-react"
 import dynamic from "next/dynamic"
 import { TestCaseEditor } from "@/components/test-case-editor"
+import { QuickTestBuilder } from "@/components/quick-test-builder"
 import { type TestSuite, type TestCase, type Tag, validateTestSuite } from "@/types/test-suite"
 
 const ReactJson = dynamic(() => import("react-json-view"), { ssr: false })
@@ -62,6 +64,7 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null)
   const [showSaveBeforeViewDialog, setShowSaveBeforeViewDialog] = useState(false)
   const [pendingViewTestCase, setPendingViewTestCase] = useState<{ testCase: any; index: number } | null>(null)
+  const [showQuickTestBuilder, setShowQuickTestBuilder] = useState(false)
 
   // Check for test data edit context on mount
   React.useEffect(() => {
@@ -197,6 +200,14 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
     }
     setIsEditingTestCase(false)
     setSelectedTestCase(null)
+    triggerAutoSave()
+  }
+
+  const handleSaveQuickTest = (testCase: TestCase) => {
+    setEditedSuite((prev) => ({
+      ...prev,
+      testCases: [...prev.testCases, testCase],
+    }))
     triggerAutoSave()
   }
 
@@ -720,13 +731,25 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold text-gray-900">Test Cases</h3>
-                  <Button
-                      onClick={handleAddTestCase}
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Test Case
-                  </Button>
+                  <div className="flex gap-2">
+                    {editedSuite.type === "API" && (
+                      <Button
+                          onClick={() => setShowQuickTestBuilder(true)}
+                          variant="outline"
+                          className="border-green-300 hover:border-green-400 hover:bg-green-50 hover:text-green-700"
+                      >
+                        <Zap className="h-4 w-4 mr-2" />
+                        Quick Test Builder
+                      </Button>
+                    )}
+                    <Button
+                        onClick={handleAddTestCase}
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Test Case
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="grid gap-4">
@@ -811,13 +834,25 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
                           </div>
                           <p className="text-gray-500 mb-4 font-medium">No test cases defined yet</p>
                           <p className="text-sm text-gray-400 mb-6">Create your first test case to get started</p>
-                          <Button
-                              onClick={handleAddTestCase}
-                              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Your First Test Case
-                          </Button>
+                          <div className="flex gap-3 justify-center">
+                            {editedSuite.type === "API" && (
+                              <Button
+                                  onClick={() => setShowQuickTestBuilder(true)}
+                                  variant="outline"
+                                  className="border-green-300 hover:border-green-400 hover:bg-green-50 hover:text-green-700"
+                              >
+                                <Zap className="h-4 w-4 mr-2" />
+                                Quick Test Builder
+                              </Button>
+                            )}
+                            <Button
+                                onClick={handleAddTestCase}
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Test Case
+                            </Button>
+                          </div>
                         </CardContent>
                       </Card>
                   )}
@@ -986,6 +1021,13 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
             </TabsContent>
           </Tabs>
         </div>
+        
+        <QuickTestBuilder
+          isOpen={showQuickTestBuilder}
+          onClose={() => setShowQuickTestBuilder(false)}
+          onSave={handleSaveQuickTest}
+          baseUrl={editedSuite.baseUrl}
+        />
       </div>
   )
 }
