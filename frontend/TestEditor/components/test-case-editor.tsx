@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Trash2, Save, X, ArrowLeft, Copy, HelpCircle, Play } from "lucide-react"
+import { Plus, Trash2, Save, X, ArrowLeft, Copy, HelpCircle, Play, ArrowRight, Zap } from "lucide-react"
 import { TestDataEditor } from "@/components/test-data-editor"
 import { SuiteRunnerModal } from "@/components/suite-runner-modal"
 import { type TestCase, type TestData, type TestStep, validateTestCase } from "@/types/test-suite"
@@ -491,46 +491,88 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
 
   // Main TestCaseEditor render
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={onCancel}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <h1 className="text-2xl font-bold">Edit Test Case</h1>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onCancel}>
-              <X className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Test Case
-            </Button>
+        {/* Modern Header with Glass Morphism */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 p-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                onClick={onCancel}
+                className="hover:bg-white/60 transition-all duration-200 rounded-xl"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                  Edit Test Case
+                </h1>
+                <p className="text-slate-600 mt-1">Configure and manage your test case settings</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={onCancel}
+                className="bg-white/60 hover:bg-white/80 border-slate-200 hover:border-slate-300 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSave}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save Test Case
+              </Button>
+            </div>
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="general">General</TabsTrigger>
-            {testType === "API" ? (
-              <TabsTrigger value="testdata">Test Data ({editedTestCase.testData?.length || 0})</TabsTrigger>
-            ) : (
-              <TabsTrigger value="teststeps">Test Steps ({editedTestCase.testSteps?.length || 0})</TabsTrigger>
-            )}
-            <TabsTrigger value="json">JSON View</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          {/* Modern Tab Navigation */}
+          <div className="bg-white/60 backdrop-blur-xl rounded-xl p-2 shadow-xl border border-white/20">
+            <TabsList className="grid w-full grid-cols-3 bg-transparent gap-2">
+              <TabsTrigger 
+                value="general"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium"
+              >
+                General
+              </TabsTrigger>
+              {testType === "API" ? (
+                <TabsTrigger 
+                  value="testdata"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium"
+                >
+                  Test Data ({editedTestCase.testData?.length || 0})
+                </TabsTrigger>
+              ) : (
+                <TabsTrigger 
+                  value="teststeps"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium"
+                >
+                  Test Steps ({editedTestCase.testSteps?.length || 0})
+                </TabsTrigger>
+              )}
+              <TabsTrigger 
+                value="json"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium"
+              >
+                JSON View
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="general">
-            <Card>
-              <CardHeader>
-                <CardTitle>Test Case Information</CardTitle>
-                <CardDescription>Configure the basic information for your test case</CardDescription>
+            <Card className="bg-white/80 backdrop-blur-xl shadow-2xl border-0 rounded-xl overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-200/50">
+                <CardTitle className="text-xl font-semibold text-slate-800">Test Case Information</CardTitle>
+                <CardDescription className="text-slate-600">Configure the basic information for your test case</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6 p-8">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Test Case Name</Label>
@@ -667,11 +709,16 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-4 border-t">
-                  <Button onClick={() => {
-                    triggerAutoSave()
-                    setActiveTab(testType === "API" ? "testdata" : "teststeps")
-                  }} size="lg">
+                <div className="flex justify-end pt-6 border-t border-slate-200/50">
+                  <Button 
+                    onClick={() => {
+                      triggerAutoSave()
+                      setActiveTab(testType === "API" ? "testdata" : "teststeps")
+                    }} 
+                    size="lg"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl px-8"
+                  >
+                    <ArrowRight className="h-4 w-4 mr-2" />
                     Next: {testType === "API" ? "Test Data" : "Test Steps"}
                   </Button>
                 </div>
@@ -681,34 +728,44 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
 
           {testType === "API" && (
             <TabsContent value="testdata">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">Test Data</h3>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        if (suiteId) {
-                          setRunTarget(`${suiteId}:${suiteName || 'Suite'} > ${editedTestCase.id}:${editedTestCase.name}`)
-                          setShowRunnerModal(true)
-                        }
-                      }}
-                      disabled={!suiteId}
-                    >
-                      <Play className="h-4 w-4 mr-2" />
-                      Run Test Case
-                    </Button>
-                    <Button onClick={handleAddTestData}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Test Data
-                    </Button>
+              <div className="space-y-6">
+                {/* Modern Header */}
+                <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-xl border border-white/20 p-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">Test Data</h3>
+                      <p className="text-slate-600 mt-1">Manage test data configurations for API testing</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          if (suiteId) {
+                            setRunTarget(`${suiteId}:${suiteName || 'Suite'} > ${editedTestCase.id}:${editedTestCase.name}`)
+                            setShowRunnerModal(true)
+                          }
+                        }}
+                        disabled={!suiteId}
+                        className="bg-white/60 hover:bg-white/80 border-slate-200 hover:border-slate-300 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl"
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Run Test Case
+                      </Button>
+                      <Button 
+                        onClick={handleAddTestData}
+                        className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Test Data
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-6">
                   {(editedTestCase.testData || []).map((testData: TestData, index: number) => (
-                    <Card key={index} className={testData.enabled === false ? "opacity-60 border-gray-300" : ""}>
-                      <CardHeader>
+                    <Card key={index} className={`${testData.enabled === false ? "opacity-60" : ""} bg-white/80 backdrop-blur-xl shadow-xl border-0 rounded-xl overflow-hidden hover:shadow-2xl transition-all duration-200`}>
+                      <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-200/50">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="flex items-center space-x-2">
@@ -776,10 +833,16 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                   ))}
 
                   {(!editedTestCase.testData || editedTestCase.testData.length === 0) && (
-                    <Card>
-                      <CardContent className="text-center py-8">
-                        <p className="text-gray-500 mb-4">No test data defined yet</p>
-                        <Button onClick={handleAddTestData}>
+                    <Card className="bg-white/80 backdrop-blur-xl shadow-xl border-0 rounded-xl overflow-hidden">
+                      <CardContent className="text-center py-12">
+                        <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Plus className="h-8 w-8 text-blue-600" />
+                        </div>
+                        <p className="text-slate-600 mb-6 text-lg">No test data defined yet</p>
+                        <Button 
+                          onClick={handleAddTestData}
+                          className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl px-8"
+                        >
                           <Plus className="h-4 w-4 mr-2" />
                           Add Your First Test Data
                         </Button>
@@ -793,20 +856,29 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
 
           {testType === "UI" && (
             <TabsContent value="teststeps">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">Test Steps</h3>
-                  <Button onClick={handleAddTestStep}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Test Step
-                  </Button>
+              <div className="space-y-6">
+                {/* Modern Header */}
+                <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-xl border border-white/20 p-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">Test Steps</h3>
+                      <p className="text-slate-600 mt-1">Define UI automation steps and interactions</p>
+                    </div>
+                    <Button 
+                      onClick={handleAddTestStep}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Test Step
+                    </Button>
+                  </div>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-6">
                   {(editedTestCase.testSteps || []).map((testStep: TestStep, index: number) => (
-                    <Card key={testStep.id || `step-${index}`}>
+                    <Card key={testStep.id || `step-${index}`} className="bg-white/80 backdrop-blur-xl shadow-xl border-0 rounded-xl overflow-hidden hover:shadow-2xl transition-all duration-200">
                       {inlineEditingStepIndex === index ? (
-                        <CardContent className="p-6">
+                        <CardContent className="p-8 bg-gradient-to-r from-blue-50 to-indigo-50">
                           <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
@@ -1366,7 +1438,7 @@ await page.waitForFunction(() => {
                           </div>
                         </CardContent>
                       ) : (
-                        <CardHeader>
+                        <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-200/50">
                           <div className="flex items-center justify-between">
                             <div>
                               <CardTitle className="text-base">
@@ -1422,8 +1494,8 @@ await page.waitForFunction(() => {
                   ))}
 
                   {isAddingNewStep && inlineEditingStep && (
-                    <Card className="border-2 border-blue-200 bg-blue-50/50">
-                      <CardContent className="p-6">
+                    <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 backdrop-blur-xl shadow-2xl border-2 border-blue-200/50 rounded-xl overflow-hidden">
+                      <CardContent className="p-8">
                         <div className="space-y-4">
                           <h4 className="font-medium text-blue-900">Add New Test Step</h4>
 
@@ -1988,10 +2060,16 @@ await page.waitForFunction(() => {
                   )}
 
                   {(!editedTestCase.testSteps || editedTestCase.testSteps.length === 0) && !isAddingNewStep && (
-                    <Card>
-                      <CardContent className="text-center py-8">
-                        <p className="text-gray-500 mb-4">No test steps defined yet</p>
-                        <Button onClick={handleAddTestStep}>
+                    <Card className="bg-white/80 backdrop-blur-xl shadow-xl border-0 rounded-xl overflow-hidden">
+                      <CardContent className="text-center py-12">
+                        <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Zap className="h-8 w-8 text-purple-600" />
+                        </div>
+                        <p className="text-slate-600 mb-6 text-lg">No test steps defined yet</p>
+                        <Button 
+                          onClick={handleAddTestStep}
+                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl px-8"
+                        >
                           <Plus className="h-4 w-4 mr-2" />
                           Add Your First Test Step
                         </Button>
@@ -2001,15 +2079,24 @@ await page.waitForFunction(() => {
                 </div>
 
                 {(editedTestCase.testSteps?.length || 0) > 0 && (
-                  <div className="flex justify-between items-center pt-4 border-t">
-                    <Button onClick={handleAddTestStep}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Test Step
-                    </Button>
-                    <Button onClick={handleSave} size="lg">
-                      <Save className="h-4 w-4 mr-2" />
-                      Save All Changes
-                    </Button>
+                  <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-xl border border-white/20 p-6">
+                    <div className="flex justify-between items-center">
+                      <Button 
+                        onClick={handleAddTestStep}
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Test Step
+                      </Button>
+                      <Button 
+                        onClick={handleSave} 
+                        size="lg"
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl px-8"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Save All Changes
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

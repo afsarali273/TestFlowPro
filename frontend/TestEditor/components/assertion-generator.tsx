@@ -220,26 +220,30 @@ export function AssertionGenerator({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Auto-Generate Assertions</DialogTitle>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-xl">
+        <DialogHeader className="bg-gradient-to-r from-slate-50 to-blue-50 -m-6 mb-6 p-6 border-b border-slate-200/50">
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+            Auto-Generate Assertions
+          </DialogTitle>
+          <p className="text-slate-600 mt-1">Test your API and automatically generate validation assertions</p>
         </DialogHeader>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Base URL</Label>
+              <Label className="text-sm font-medium text-slate-700">Base URL</Label>
               <Input 
                 value={currentBaseUrl} 
                 onChange={(e) => setCurrentBaseUrl(e.target.value)}
                 placeholder="https://api.example.com"
+                className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Method</Label>
+                <Label className="text-sm font-medium text-slate-700">Method</Label>
                 <Select value={method} onValueChange={setMethod}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -252,28 +256,34 @@ export function AssertionGenerator({
                 </Select>
               </div>
               <div>
-                <Label>Endpoint</Label>
+                <Label className="text-sm font-medium text-slate-700">Endpoint</Label>
                 <Input 
                   value={endpoint} 
                   onChange={(e) => setEndpoint(e.target.value)}
                   placeholder="/api/endpoint"
+                  className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
                 />
               </div>
             </div>
 
             {method !== "GET" && (
               <div>
-                <Label>Request Body (JSON)</Label>
+                <Label className="text-sm font-medium text-slate-700">Request Body (JSON)</Label>
                 <Textarea 
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   rows={6}
                   placeholder="{}"
+                  className="border-slate-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl font-mono text-sm"
                 />
               </div>
             )}
 
-            <Button onClick={handleTestApi} disabled={isLoading || !endpoint}>
+            <Button 
+              onClick={handleTestApi} 
+              disabled={isLoading || !endpoint}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl h-11"
+            >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2" />}
               Test API
             </Button>
@@ -283,32 +293,32 @@ export function AssertionGenerator({
             {response && (
               <>
                 <div>
-                  <Label>Response Status: {response.status}</Label>
+                  <Label className="text-sm font-medium text-slate-700">Response Status: {response.status}</Label>
                   <Textarea 
                     value={JSON.stringify(response.data, null, 2)}
                     readOnly
                     rows={8}
-                    className="font-mono text-sm"
+                    className="font-mono text-sm border-slate-300 rounded-xl bg-slate-50"
                   />
                 </div>
 
                 {jsonPaths.length > 0 && (
                   <div>
-                    <Label>Select Paths for Assertions</Label>
+                    <Label className="text-sm font-medium text-slate-700">Select Paths for Assertions</Label>
                     <Input 
                       placeholder="Filter paths (e.g., id, user, email)..."
                       value={pathFilter}
                       onChange={(e) => setPathFilter(e.target.value)}
-                      className="mb-2 text-sm"
+                      className="mb-2 text-sm h-10 border-slate-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
                     />
-                    <div className="max-h-60 overflow-y-auto border rounded p-2 space-y-2">
+                    <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-xl p-3 space-y-2 bg-slate-50/50">
                       {filteredPaths.map((path, index) => {
                         const value = getValueByPath(response.data, path)
                         const isSelected = selectedPaths.has(path)
                         const pathAssertion = pathAssertions[path]
                         
                         return (
-                          <div key={`${path}-${index}`} className="border rounded p-2 bg-gray-50">
+                          <div key={`${path}-${index}`} className="border border-slate-200 rounded-lg p-3 bg-white/80 backdrop-blur-sm shadow-sm">
                             <div className="flex items-center space-x-2 mb-2">
                               <Checkbox 
                                 checked={isSelected}
@@ -326,7 +336,7 @@ export function AssertionGenerator({
                                   value={pathAssertion?.type || "exists"} 
                                   onValueChange={(type) => updatePathAssertion(path, "type", type)}
                                 >
-                                  <SelectTrigger className="h-8 text-xs">
+                                  <SelectTrigger className="h-8 text-xs border-slate-300 rounded-lg">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -349,7 +359,7 @@ export function AssertionGenerator({
                                     placeholder="Expected value"
                                     value={pathAssertion?.expected || ""}
                                     onChange={(e) => updatePathAssertion(path, "expected", e.target.value)}
-                                    className="h-8 text-xs"
+                                    className="h-8 text-xs border-slate-300 rounded-lg"
                                   />
                                 )}
                               </div>
@@ -370,11 +380,18 @@ export function AssertionGenerator({
           </div>
         </div>
 
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <div className="flex justify-end space-x-3 pt-6 border-t border-slate-200/50">
+          <Button 
+            variant="outline" 
+            onClick={onClose}
+            className="bg-white/60 hover:bg-white/80 border-slate-200 hover:border-slate-300 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl"
+          >
+            Cancel
+          </Button>
           <Button 
             onClick={generateAssertions} 
             disabled={!response || selectedPaths.size === 0}
+            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add {selectedPaths.size} Assertion{selectedPaths.size !== 1 ? 's' : ''}

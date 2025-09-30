@@ -48,7 +48,8 @@
               "expected": 200
             }
           ],
-          "store": {}
+          "store": {},
+          "enabled": true
         },
         {
           "name": "Missing Query Parameter",
@@ -92,7 +93,8 @@
               "expected": "Query parameter is missing"
             }
           ],
-          "store": {}
+          "store": {},
+          "enabled": true
         },
         {
           "name": "Invalid Currency",
@@ -131,10 +133,12 @@
               "expected": 400
             }
           ],
-          "store": {}
+          "store": {},
+          "enabled": true
         }
       ],
-      "testSteps": []
+      "testSteps": [],
+      "enabled": true
     }
   ],
   "status": "Running",

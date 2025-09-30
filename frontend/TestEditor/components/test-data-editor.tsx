@@ -517,56 +517,112 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="max-w-6xl mx-auto p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" onClick={onCancel} className="hover:bg-white/80">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                Edit Test Data ({testCaseType})
-              </h1>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={onCancel} className="hover:bg-white/80 bg-transparent">
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-              <Button
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Modern Header with Glass Morphism */}
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="ghost" 
+                  onClick={onCancel} 
+                  className="hover:bg-white/60 transition-all duration-200 rounded-xl"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                    Edit Test Data ({testCaseType})
+                  </h1>
+                  <p className="text-slate-600 mt-1">Configure and manage your test data settings</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={onCancel} 
+                  className="bg-white/60 hover:bg-white/80 border-slate-200 hover:border-slate-300 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button
                   onClick={handleSave}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Save Test Data
-              </Button>
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Test Data
+                </Button>
+              </div>
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-8 bg-white/80 backdrop-blur-sm shadow-sm">
-              <TabsTrigger value="general">General</TabsTrigger>
-              <TabsTrigger value="headers">Headers</TabsTrigger>
-              <TabsTrigger value="preprocess">Pre-Process</TabsTrigger>
-              <TabsTrigger value="body">{testCaseType === "SOAP" ? "XML Body" : "JSON Body"}</TabsTrigger>
-              <TabsTrigger value="assertions">Assertions</TabsTrigger>
-              <TabsTrigger value="store">Store</TabsTrigger>
-              <TabsTrigger value="schema">Schema</TabsTrigger>
-              <TabsTrigger value="json">JSON</TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+            {/* Modern Tab Navigation */}
+            <div className="bg-white/60 backdrop-blur-xl rounded-xl p-2 shadow-xl border border-white/20">
+              <TabsList className="grid w-full grid-cols-8 bg-transparent gap-1">
+                <TabsTrigger 
+                  value="general"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium text-xs"
+                >
+                  General
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="headers"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium text-xs"
+                >
+                  Headers
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="preprocess"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium text-xs"
+                >
+                  Pre-Process
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="body"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium text-xs"
+                >
+                  {testCaseType === "SOAP" ? "XML Body" : "JSON Body"}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="assertions"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium text-xs"
+                >
+                  Assertions
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="store"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium text-xs"
+                >
+                  Store
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="schema"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium text-xs"
+                >
+                  Schema
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="json"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium text-xs"
+                >
+                  JSON
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="general">
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              <Card className="bg-white/80 backdrop-blur-xl shadow-2xl border-0 rounded-xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-200/50">
+                  <CardTitle className="flex items-center gap-2 text-xl font-semibold text-slate-800">
                     <Code className="h-5 w-5 text-blue-600" />
                     General Information
                   </CardTitle>
-                  <CardDescription>Configure the basic request information</CardDescription>
+                  <CardDescription className="text-slate-600">Configure the basic request information</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-6 p-8">
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-sm font-medium text-gray-700">
                       Test Data Name
