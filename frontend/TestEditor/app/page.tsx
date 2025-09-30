@@ -22,6 +22,9 @@ import {
   List,
   Grid3X3,
   Folder,
+  FolderOpen,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -38,7 +41,7 @@ import { PathConfigModal } from "@/components/path-config-modal"
 import { FrameworkConfigModal } from "@/components/framework-config-modal"
 import { SuiteRunnerModal } from "@/components/suite-runner-modal"
 import { RunAllSuitesModal } from "@/components/run-all-suites-modal"
-import { FolderTree } from "@/components/folder-tree"
+import { FolderTreeSidebar } from "@/components/folder-tree-sidebar"
 import { AIChat } from "@/components/ai-chat"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { TestCaseView } from "@/components/test-case-view"
@@ -70,9 +73,7 @@ export default function APITestFramework() {
   const [expandedSuites, setExpandedSuites] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'all' | 'ui' | 'api'>('all')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
-  const [folderSuites, setFolderSuites] = useState<TestSuite[]>([])
-  const [showFolderView, setShowFolderView] = useState(false)
+
   const [suiteToDelete, setSuiteToDelete] = useState<TestSuite | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showTestCaseView, setShowTestCaseView] = useState(false)
@@ -81,6 +82,7 @@ export default function APITestFramework() {
   const [resultsSource, setResultsSource] = useState<'dashboard' | 'editor'>('dashboard')
   const [resultsContext, setResultsContext] = useState<{ suite: TestSuite; testCase: any; testCaseIndex: number } | null>(null)
   const [selectedApp, setSelectedApp] = useState<string | null>(null)
+  const [sidebarViewMode, setSidebarViewMode] = useState<'application' | 'folder'>('application')
   const [showCurlImportModal, setShowCurlImportModal] = useState(false)
   const [showSwaggerImportModal, setShowSwaggerImportModal] = useState(false)
   const [showPostmanImportModal, setShowPostmanImportModal] = useState(false)
@@ -456,10 +458,7 @@ export default function APITestFramework() {
     setShowTestCaseView(true)
   }
 
-  const handleFolderSelect = (folderPath: string, suites: TestSuite[]) => {
-    setSelectedFolder(folderPath)
-    setFolderSuites(suites)
-  }
+
 
   // Filter suites with unique check
   const filteredSuites = testSuites
@@ -742,39 +741,25 @@ export default function APITestFramework() {
                 </TabsList>
               </Tabs>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
                 <Button
-                  variant={showFolderView ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setShowFolderView(!showFolderView)}
-                  className="h-8 px-3"
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    className="h-8 px-3"
                 >
-                  <Folder className="h-4 w-4 mr-1" />
-                  Folders
+                  <List className="h-4 w-4 mr-1" />
+                  List
                 </Button>
-                
-                {!showFolderView && (
-                  <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-                    <Button
-                        variant={viewMode === 'list' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => setViewMode('list')}
-                        className="h-8 px-3"
-                    >
-                      <List className="h-4 w-4 mr-1" />
-                      List
-                    </Button>
-                    <Button
-                        variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => setViewMode('grid')}
-                        className="h-8 px-3"
-                    >
-                      <Grid3X3 className="h-4 w-4 mr-1" />
-                      Grid
-                    </Button>
-                  </div>
-                )}
+                <Button
+                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    className="h-8 px-3"
+                >
+                  <Grid3X3 className="h-4 w-4 mr-1" />
+                  Grid
+                </Button>
               </div>
             </div>
 
@@ -791,121 +776,21 @@ export default function APITestFramework() {
             )}
 
             {/* Main Content Area */}
-            {showFolderView ? (
-              <div className="flex gap-6 h-[calc(100vh-200px)]">
-                {/* Folder Sidebar */}
-                <div className="w-80 bg-white rounded-lg border border-gray-200 shadow-sm h-full">
-                  <FolderTree
-                    testSuites={testSuites}
-                    activeTab={activeTab}
-                    onFolderSelect={handleFolderSelect}
-                    selectedFolder={selectedFolder}
-                    searchTerm={searchTerm}
-                  />
-                </div>
-                
-                {/* Suite Display Area */}
-                <div className="flex-1 bg-white rounded-lg border border-gray-200 shadow-sm h-full">
-                  {selectedFolder !== null ? (
-                    <div className="p-6">
-                      <div className="mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {selectedFolder === '' ? 'All Test Suites' : `Folder: ${selectedFolder}`}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {folderSuites.length} suite{folderSuites.length !== 1 ? 's' : ''} found
-                        </p>
-                      </div>
-                      
-                      <div className="space-y-4 max-h-[calc(100vh-500px)] overflow-y-auto">
-                        {folderSuites.map((suite) => {
-                          const isUISuite = suite.type === "UI"
-                          const totalSteps = isUISuite 
-                            ? suite.testCases.reduce((acc, tc) => acc + (tc.testSteps?.length || 0), 0)
-                            : suite.testCases.reduce((acc, tc) => acc + (tc.testData?.length || 0), 0)
-                          
-                          return (
-                            <Card key={suite.id} className="hover:shadow-md transition-shadow">
-                              <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                      isUISuite ? 'bg-purple-100' : 'bg-blue-100'
-                                    }`}>
-                                      {isUISuite ? (
-                                        <MousePointer className="h-5 w-5 text-purple-600" />
-                                      ) : (
-                                        <Globe className="h-5 w-5 text-blue-600" />
-                                      )}
-                                    </div>
-                                    <div>
-                                      <CardTitle className="text-base">{suite.suiteName}</CardTitle>
-                                      <CardDescription className="text-sm">
-                                        {suite.testCases.length} cases • {totalSteps} {isUISuite ? 'steps' : 'items'}
-                                      </CardDescription>
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-2">
-                                    <Badge className={getStatusBadge(suite.status || "Not Started")}>
-                                      {suite.status}
-                                    </Badge>
-                                    <Button size="sm" variant="outline" onClick={() => {
-                                      setSelectedSuite(suite)
-                                      setShowTestCasesModal(true)
-                                    }}>
-                                      <Eye className="h-3 w-3 mr-1" />
-                                      Details
-                                    </Button>
-                                    <Button size="sm" variant="outline" onClick={() => {
-                                      setSelectedSuite(suite)
-                                      setIsEditing(true)
-                                    }}>
-                                      <Edit className="h-3 w-3 mr-1" />
-                                      Edit
-                                    </Button>
-                                    <Button size="sm" onClick={() => handleRunSuite(suite)} className="bg-green-600 hover:bg-green-700 text-white">
-                                      <Play className="h-3 w-3 mr-1" />
-                                      Run
-                                    </Button>
-                                  </div>
-                                </div>
-                              </CardHeader>
-                            </Card>
-                          )
-                        })}
-                        
-                        {folderSuites.length === 0 && (
-                          <div className="text-center py-12 text-gray-500">
-                            <Folder className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                            <p>No test suites in this folder</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500">
-                      <div className="text-center">
-                        <Folder className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                        <p className="text-lg font-medium">Select a folder</p>
-                        <p className="text-sm">Choose a folder from the sidebar to view test suites</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
               <div className="flex gap-6">
-                {/* Application Navigation Sidebar */}
+                {/* Navigation Sidebar */}
                 <div className="w-80 bg-white/80 backdrop-blur-xl rounded-xl border border-white/20 shadow-2xl">
                   <div className="p-4 border-b border-slate-200/50 bg-gradient-to-r from-slate-50 to-blue-50">
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center shadow-lg">
-                          <Folder className="h-3 w-3 text-white" />
+                          {sidebarViewMode === 'application' ? (
+                            <Folder className="h-3 w-3 text-white" />
+                          ) : (
+                            <FolderOpen className="h-3 w-3 text-white" />
+                          )}
                         </div>
-                        Applications
-                      </div>
+                        {sidebarViewMode === 'application' ? 'Applications' : 'Folder Structure'}
+                      </h3>
                       <button
                         onClick={handleCreateSuite}
                         className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-600 to-teal-600 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
@@ -913,146 +798,186 @@ export default function APITestFramework() {
                       >
                         <Plus className="h-3 w-3 text-white" />
                       </button>
-                    </h3>
+                    </div>
+                    
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center gap-2 p-2 bg-white/60 rounded-lg border border-slate-200/50">
+                      <button
+                        onClick={() => setSidebarViewMode('application')}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                          sidebarViewMode === 'application'
+                            ? 'bg-slate-600 text-white shadow-md'
+                            : 'text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        <Folder className="h-3 w-3" />
+                        Apps
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSidebarViewMode('folder')
+                          setSelectedApp(null) // Reset app selection when switching to folder view
+                        }}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                          sidebarViewMode === 'folder'
+                            ? 'bg-slate-600 text-white shadow-md'
+                            : 'text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        <FolderOpen className="h-3 w-3" />
+                        Folders
+                      </button>
+                    </div>
                   </div>
-                  <div className="p-3 max-h-[calc(100vh-300px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
-                    {(() => {
-                      // Group suites by applicationName
-                      const groupedSuites = filteredSuites.reduce((acc, suite) => {
-                        const appName = suite.applicationName || 'Uncategorized'
-                        if (!acc[appName]) {
-                          acc[appName] = []
-                        }
-                        acc[appName].push(suite)
-                        return acc
-                      }, {} as Record<string, typeof filteredSuites>)
-                      
-
-                      
-                      return (
-                        <div className="space-y-2">
-                          {Object.entries(groupedSuites).map(([appName, suites]) => {
-                            const isSelected = selectedApp === appName
-                            const uiCount = suites.filter(s => s.type === 'UI').length
-                            const apiCount = suites.filter(s => s.type === 'API').length
-                            
-                            return (
-                              <div key={appName} className="group">
-                                <button
-                                  onClick={() => setSelectedApp(isSelected ? null : appName)}
-                                  className={`w-full flex items-center justify-between p-3 rounded-xl text-left transition-all duration-300 transform hover:scale-[1.02] ${
-                                    isSelected 
-                                      ? 'bg-slate-50 text-slate-700 border border-slate-300 subtle-shadow-lg' 
-                                      : 'hover:bg-slate-50/50 text-slate-700 hover:shadow-md hover:border-slate-300/50 border border-transparent'
-                                  }`}
-                                >
-                                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+                  <div className="p-3 max-h-[calc(100vh-350px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+                    {sidebarViewMode === 'application' ? (
+                      // Application-wise grouping
+                      (() => {
+                        const groupedSuites = filteredSuites.reduce((acc, suite) => {
+                          const appName = suite.applicationName || 'Uncategorized'
+                          if (!acc[appName]) {
+                            acc[appName] = []
+                          }
+                          acc[appName].push(suite)
+                          return acc
+                        }, {} as Record<string, typeof filteredSuites>)
+                        
+                        return (
+                          <div className="space-y-2">
+                            {Object.entries(groupedSuites).map(([appName, suites]) => {
+                              const isSelected = selectedApp === appName
+                              const uiCount = suites.filter(s => s.type === 'UI').length
+                              const apiCount = suites.filter(s => s.type === 'API').length
+                              
+                              return (
+                                <div key={appName} className="group">
+                                  <button
+                                    onClick={() => setSelectedApp(isSelected ? null : appName)}
+                                    className={`w-full flex items-center justify-between p-3 rounded-xl text-left transition-all duration-300 transform hover:scale-[1.02] ${
                                       isSelected 
-                                        ? 'bg-slate-600 subtle-shadow-lg' 
-                                        : 'bg-slate-100 group-hover:bg-slate-200 group-hover:shadow-md'
-                                    }`}>
-                                      <Folder className={`h-4 w-4 transition-all duration-300 ${
-                                        isSelected ? 'text-white' : 'text-slate-600 group-hover:text-slate-700'
-                                      }`} />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <div className={`font-semibold text-sm transition-colors duration-300 mb-1 ${
-                                        isSelected ? 'text-slate-800' : 'text-slate-900 group-hover:text-slate-700'
-                                      }`}>{appName}</div>
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <div className={`text-xs transition-colors duration-300 ${
-                                          isSelected ? 'text-slate-600' : 'text-slate-500 group-hover:text-slate-500'
-                                        }`}>
-                                          {suites.length} suite{suites.length !== 1 ? 's' : ''}
+                                        ? 'bg-slate-50 text-slate-700 border border-slate-300 subtle-shadow-lg' 
+                                        : 'hover:bg-slate-50/50 text-slate-700 hover:shadow-md hover:border-slate-300/50 border border-transparent'
+                                    }`}
+                                  >
+                                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+                                        isSelected 
+                                          ? 'bg-slate-600 subtle-shadow-lg' 
+                                          : 'bg-slate-100 group-hover:bg-slate-200 group-hover:shadow-md'
+                                      }`}>
+                                        <Folder className={`h-4 w-4 transition-all duration-300 ${
+                                          isSelected ? 'text-white' : 'text-slate-600 group-hover:text-slate-700'
+                                        }`} />
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <div className={`font-semibold text-sm transition-colors duration-300 mb-1 ${
+                                          isSelected ? 'text-slate-800' : 'text-slate-900 group-hover:text-slate-700'
+                                        }`}>{appName}</div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <div className={`text-xs transition-colors duration-300 ${
+                                            isSelected ? 'text-slate-600' : 'text-slate-500 group-hover:text-slate-500'
+                                          }`}>
+                                            {suites.length} suite{suites.length !== 1 ? 's' : ''}
+                                          </div>
+                                          {uiCount > 0 && (
+                                            <Badge variant="outline" className={`text-xs px-1.5 py-0.5 transition-all duration-300 ${
+                                              isSelected 
+                                                ? 'bg-violet-100 text-violet-800 border-violet-300 subtle-shadow' 
+                                                : 'bg-violet-50 text-violet-700 border-violet-200 group-hover:bg-violet-100 group-hover:shadow-sm'
+                                            }`}>
+                                              UI {uiCount}
+                                            </Badge>
+                                          )}
+                                          {apiCount > 0 && (
+                                            <Badge variant="outline" className={`text-xs px-1.5 py-0.5 transition-all duration-300 ${
+                                              isSelected 
+                                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300 subtle-shadow' 
+                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200 group-hover:bg-emerald-100 group-hover:shadow-sm'
+                                            }`}>
+                                              API {apiCount}
+                                            </Badge>
+                                          )}
                                         </div>
-                                        {uiCount > 0 && (
-                                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 transition-all duration-300 ${
-                                            isSelected 
-                                              ? 'bg-violet-100 text-violet-800 border-violet-300 subtle-shadow' 
-                                              : 'bg-violet-50 text-violet-700 border-violet-200 group-hover:bg-violet-100 group-hover:shadow-sm'
-                                          }`}>
-                                            UI {uiCount}
-                                          </Badge>
-                                        )}
-                                        {apiCount > 0 && (
-                                          <Badge variant="outline" className={`text-xs px-1.5 py-0.5 transition-all duration-300 ${
-                                            isSelected 
-                                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300 subtle-shadow' 
-                                              : 'bg-emerald-50 text-emerald-700 border-emerald-200 group-hover:bg-emerald-100 group-hover:shadow-sm'
-                                          }`}>
-                                            API {apiCount}
-                                          </Badge>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center flex-shrink-0 ml-2">
+                                      <div className={`transition-all duration-300 ${
+                                        isSelected ? 'rotate-180' : 'group-hover:rotate-12'
+                                      }`}>
+                                        {isSelected ? (
+                                          <ChevronDown className="h-4 w-4 text-slate-500" />
+                                        ) : (
+                                          <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-500" />
                                         )}
                                       </div>
                                     </div>
-                                  </div>
-                                  <div className="flex items-center flex-shrink-0 ml-2">
-                                    <div className={`transition-all duration-300 ${
-                                      isSelected ? 'rotate-180' : 'group-hover:rotate-12'
-                                    }`}>
-                                      {isSelected ? (
-                                        <ChevronDown className="h-4 w-4 text-slate-500" />
-                                      ) : (
-                                        <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-500" />
-                                      )}
+                                  </button>
+                                  
+                                  {isSelected && (
+                                    <div className="ml-4 mt-3 space-y-2 border-l-2 border-slate-300 pl-4 animate-slideDown">
+                                      {suites.map((suite) => {
+                                        const isUISuite = suite.type === 'UI'
+                                        return (
+                                          <button
+                                            key={suite.id}
+                                            onClick={() => {
+                                              setSelectedSuite(suite)
+                                              setShowTestCasesModal(true)
+                                            }}
+                                            className="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-300 transform hover:scale-[1.02] hover:bg-slate-50 hover:shadow-md hover:border-slate-200 border border-transparent group/suite"
+                                          >
+                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                                              isUISuite 
+                                                ? 'bg-violet-100 group-hover/suite:bg-violet-200 group-hover/suite:shadow-md' 
+                                                : 'bg-slate-100 group-hover/suite:bg-slate-200 group-hover/suite:shadow-md'
+                                            }`}>
+                                              {isUISuite ? (
+                                                <MousePointer className="h-3 w-3 text-violet-600 group-hover/suite:text-violet-700 transition-colors duration-300" />
+                                              ) : (
+                                                <Globe className="h-3 w-3 text-slate-600 group-hover/suite:text-slate-700 transition-colors duration-300" />
+                                              )}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                              <div className="text-sm font-medium text-slate-900 truncate group-hover/suite:text-slate-800 transition-colors duration-300">
+                                                {suite.suiteName}
+                                              </div>
+                                              <div className="text-xs text-slate-500 group-hover/suite:text-slate-600 transition-colors duration-300">
+                                                {suite.testCases.length} cases
+                                              </div>
+                                            </div>
+                                          </button>
+                                        )
+                                      })}
                                     </div>
-                                  </div>
-                                </button>
-                                
-                                {isSelected && (
-                                  <div className="ml-4 mt-3 space-y-2 border-l-2 border-slate-300 pl-4 animate-slideDown">
-                                    {suites.map((suite) => {
-                                      const isUISuite = suite.type === 'UI'
-                                      return (
-                                        <button
-                                          key={suite.id}
-                                          onClick={() => {
-                                            setSelectedSuite(suite)
-                                            setShowTestCasesModal(true)
-                                          }}
-                                          className="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-300 transform hover:scale-[1.02] hover:bg-slate-50 hover:shadow-md hover:border-slate-200 border border-transparent group/suite"
-                                        >
-                                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                                            isUISuite 
-                                              ? 'bg-violet-100 group-hover/suite:bg-violet-200 group-hover/suite:shadow-md' 
-                                              : 'bg-slate-100 group-hover/suite:bg-slate-200 group-hover/suite:shadow-md'
-                                          }`}>
-                                            {isUISuite ? (
-                                              <MousePointer className="h-3 w-3 text-violet-600 group-hover/suite:text-violet-700 transition-colors duration-300" />
-                                            ) : (
-                                              <Globe className="h-3 w-3 text-slate-600 group-hover/suite:text-slate-700 transition-colors duration-300" />
-                                            )}
-                                          </div>
-                                          <div className="min-w-0 flex-1">
-                                            <div className="text-sm font-medium text-slate-900 truncate group-hover/suite:text-slate-800 transition-colors duration-300">
-                                              {suite.suiteName}
-                                            </div>
-                                            <div className="text-xs text-slate-500 group-hover/suite:text-slate-600 transition-colors duration-300">
-                                              {suite.testCases.length} cases
-                                            </div>
-                                          </div>
-                                        </button>
-                                      )
-                                    })}
-                                  </div>
-                                )}
+                                  )}
+                                </div>
+                              )
+                            })}
+                            
+                            {Object.keys(groupedSuites).length === 0 && (
+                              <div className="text-center py-12 text-gray-500">
+                                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
+                                  <Folder className="h-8 w-8 opacity-50" />
+                                </div>
+                                <p className="text-sm font-medium">No applications found</p>
+                                <p className="text-xs text-slate-400 mt-1">Create test suites to see them here</p>
                               </div>
-                            )
-                          })}
-                          
-                          {Object.keys(groupedSuites).length === 0 && (
-                            <div className="text-center py-12 text-gray-500">
-                              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
-                                <Folder className="h-8 w-8 opacity-50" />
-                              </div>
-                              <p className="text-sm font-medium">No applications found</p>
-                              <p className="text-xs text-slate-400 mt-1">Create test suites to see them here</p>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })()}
+                            )}
+                          </div>
+                        )
+                      })()
+                    ) : (
+                      // Folder-wise grouping
+                      <FolderTreeSidebar
+                        testSuites={filteredSuites}
+                        activeTab={activeTab}
+                        searchTerm={searchTerm}
+                        onSuiteSelect={(suite) => {
+                          setSelectedSuite(suite)
+                          setShowTestCasesModal(true)
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
                 
@@ -1342,7 +1267,6 @@ export default function APITestFramework() {
                 })}
                 </div>
               </div>
-            )}
 
             {/* Empty state */}
             {!isLoading && filteredSuites.length === 0 && (
