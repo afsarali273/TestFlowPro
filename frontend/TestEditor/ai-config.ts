@@ -13,6 +13,9 @@ export interface AIConfig {
     provider: 'ollama' | 'github-copilot'
     timeout: number
   }
+  ui: {
+    showChatIcon: boolean
+  }
 }
 
 export const AI_CONFIG: AIConfig = {
@@ -29,5 +32,8 @@ export const AI_CONFIG: AIConfig = {
   defaults: {
     provider: 'ollama',
     timeout: 30000
+  },
+  ui: {
+    showChatIcon: true  // Set to false to hide AI chat icon
   }
 }

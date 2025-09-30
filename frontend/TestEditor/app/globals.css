@@ -107,6 +107,14 @@ body {
     animation: slideDown 0.3s ease-out;
   }
   
+  .animation-delay-75 {
+    animation-delay: 75ms;
+  }
+  
+  .animation-delay-150 {
+    animation-delay: 150ms;
+  }
+  
   .scrollbar-thin {
     scrollbar-width: thin;
   }
@@ -134,4 +142,17 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }

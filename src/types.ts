@@ -44,6 +44,7 @@ export interface TestData {
     responseSchemaFile?: string;
     store?: StoreMap;
     localStore?: StoreMap;
+    enabled?: boolean;
 }
 
 export interface TestCase {
@@ -55,6 +56,7 @@ export interface TestCase {
     testSteps: TestStep[];
     dependsOn?: string[]; // Array of test case names this test depends on
     priority?: number; // Lower number = higher priority (executes first)
+    enabled?: boolean;
 }
 
 export interface Tag {
@@ -195,6 +197,7 @@ export interface TestStep {
     store?: StoreMap; // Store variables from UI elements (global)
     localStore?: StoreMap; // Store variables from UI elements (local to test case)
     skipOnFailure?: boolean; // Skip this step if any previous step failed
+    enabled?: boolean; // Enable/disable step execution
 }
 
 

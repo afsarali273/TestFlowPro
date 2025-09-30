@@ -51,6 +51,12 @@ export async function runUITests(suite: TestSuite, reporter: Reporter) {
     const failedTestCases = new Set<string>();
     
     for (const testCase of orderedTestCases) {
+        // Skip disabled test cases
+        if (testCase.enabled === false) {
+            Logger.warning(`Skipping disabled UI test case: ${testCase.name}`);
+            continue;
+        }
+        
         Logger.section('🎭', `UI TEST CASE: ${testCase.name}`, colors.blue);
         
         // Check if dependencies are satisfied
@@ -108,6 +114,12 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
     const failedTestCases = new Set<string>();
     
     for (const testCase of orderedTestCases) {
+        // Skip disabled test cases
+        if (testCase.enabled === false) {
+            Logger.warning(`Skipping disabled API test case: ${testCase.name}`);
+            continue;
+        }
+        
         Logger.section('🔧', `API TEST CASE: ${testCase.name}`, colors.green);
         
         // Check if dependencies are satisfied
@@ -151,6 +163,12 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
         let testCaseFailed = false;
         
         for (const data of testCase.testData) {
+            // Skip disabled test data
+            if (data.enabled === false) {
+                Logger.warning(`Skipping disabled test data: ${data.name}`);
+                continue;
+            }
+            
             const start = Date.now();
             let responseData: any = null;
             const fullUrl = injectVariables(resolvedBaseUrl + data.endpoint);

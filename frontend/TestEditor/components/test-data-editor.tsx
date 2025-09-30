@@ -612,6 +612,24 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
                     </div>
                   </div>
 
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="enabled"
+                        className="h-4 w-4"
+                        checked={editedTestData.enabled !== false}
+                        onChange={(e) => handleChange("enabled", e.target.checked)}
+                      />
+                      <Label htmlFor="enabled" className="text-sm font-medium text-gray-700">
+                        Enable Test Data Execution
+                      </Label>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      When disabled, this test data will be skipped during test case execution
+                    </div>
+                  </div>
+
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <div className="flex justify-end">
                       <Button

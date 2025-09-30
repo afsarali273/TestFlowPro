@@ -30,6 +30,22 @@ export class UIRunner {
         const start = Date.now();
 
         for (const step of testCase.testSteps) {
+            // Skip disabled test steps
+            if (step.enabled === false) {
+                console.log(`⏭️ Skipping disabled step ${step.id}: ${step.keyword}`);
+                stepResults.push({
+                    stepId: step.id,
+                    keyword: step.keyword,
+                    locator: step.locator,
+                    value: step.value,
+                    status: 'SKIPPED',
+                    error: 'Step is disabled',
+                    executionTimeMs: 0,
+                    timestamp: new Date().toISOString()
+                });
+                continue;
+            }
+            
             // Skip step if previous step failed and this step has skipOnFailure enabled
             if (hasFailure && step.skipOnFailure) {
                 console.log(`⏭️ Skipping Step ${step.id}: ${step.keyword} (previous step failed)`);

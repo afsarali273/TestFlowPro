@@ -665,8 +665,6 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
     }
   )
 
-
-
   // Filter and sort runs
   const filteredRuns = allRuns
     .filter((run) => {

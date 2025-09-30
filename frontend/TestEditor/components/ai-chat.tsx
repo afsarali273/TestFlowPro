@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Bot, X, Send, Upload, FileText, Code, Globe, Sparkles, Copy, Check, RotateCcw, Play, Square, Download, Settings } from 'lucide-react'
+import { Bot, X, Send, Upload, FileText, Code, Globe, Sparkles, Copy, Check, RotateCcw, Play, Square, Download, Settings, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -660,13 +660,46 @@ export function AIChat() {
   return (
     <>
       {/* Floating Chat Icon */}
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 animate-pulse"
-        size="icon"
-      >
-        <Bot className="h-6 w-6 text-white" />
-      </Button>
+      {AI_CONFIG.ui.showChatIcon && (
+      <div className="fixed bottom-6 right-6 z-50 group">
+        {/* Ripple Animation Background */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 animate-ping opacity-20"></div>
+        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 animate-pulse opacity-30 animation-delay-75"></div>
+        
+        {/* Main Button */}
+        <Button
+          onClick={() => setIsOpen(true)}
+          className="relative h-16 w-16 rounded-full shadow-2xl bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 hover:from-purple-700 hover:via-blue-700 hover:to-indigo-800 border-2 border-white/20 backdrop-blur-sm transition-all duration-300 hover:scale-110 hover:shadow-purple-500/25 animate-float"
+          size="icon"
+        >
+          {/* Sparkle Effect */}
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-bounce opacity-80"></div>
+          <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-pink-400 rounded-full animate-pulse opacity-60"></div>
+          
+          {/* Bot Icon with Animation */}
+          <div className="relative">
+            <Sparkles className="absolute -top-2 -right-2 h-3 w-3 text-yellow-300 animate-spin opacity-70" />
+            <Bot className="h-7 w-7 text-white group-hover:scale-110 transition-transform duration-200" />
+          </div>
+          
+          {/* Notification Badge */}
+          {messages.length === 0 && (
+            <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center animate-bounce">
+              <span className="text-white text-xs font-bold">AI</span>
+            </div>
+          )}
+        </Button>
+        
+        {/* Tooltip */}
+        <div className="absolute bottom-full right-0 mb-3 px-3 py-2 bg-gray-900/90 backdrop-blur-sm text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none transform translate-y-1 group-hover:translate-y-0">
+          <div className="flex items-center gap-2">
+            <Zap className="h-3 w-3 text-yellow-400" />
+            <span className="font-medium">AI Test Generator</span>
+          </div>
+          <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900/90"></div>
+        </div>
+      </div>
+      )}
 
       {/* Chat Modal */}
       {isOpen && (

@@ -49,7 +49,10 @@ import BrunoImportModal from "@/components/BrunoImportModal"
 import EnvVariablesModal from "@/components/EnvVariablesModal"
 import { SoapImportModal } from "@/components/SoapImportModal"
 import { PlaywrightImportModal } from "@/components/PlaywrightImportModal"
+
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 
 import type { TestSuite } from "@/types/test-suite"
 
@@ -85,6 +88,7 @@ export default function APITestFramework() {
   const [showSoapImportModal, setShowSoapImportModal] = useState(false)
   const [showPlaywrightImportModal, setShowPlaywrightImportModal] = useState(false)
   const [showEnvVariablesModal, setShowEnvVariablesModal] = useState(false)
+
 
 
   // Add path configuration states
@@ -490,6 +494,28 @@ export default function APITestFramework() {
 
   /* ------------------------------------------------------------------ */
 
+
+
+  // Render results dashboard
+  const renderResultsDashboard = () => (
+    <TestResultsDashboard 
+      onClose={() => {
+        setShowResultsDashboard(false)
+        
+        // Navigate back to appropriate component
+        if (resultsSource === 'editor' && resultsContext) {
+          // Navigate back to TestCaseView component
+          setViewTestCase(resultsContext)
+          setViewTestCaseSource('editor')
+          setShowTestCaseView(true)
+        }
+        setResultsSource('dashboard')
+        setResultsContext(null)
+      }} 
+    />
+  )
+
+  // All conditional returns after all hooks are declared
   if (isEditing && selectedSuite) {
     return (
       <TestSuiteEditor 
@@ -503,26 +529,6 @@ export default function APITestFramework() {
 
   if (isRunning && selectedSuite) {
     return <TestSuiteRunner suite={selectedSuite} onClose={() => setIsRunning(false)} />
-  }
-
-  if (showResultsDashboard) {
-    return (
-      <TestResultsDashboard 
-        onClose={() => {
-          setShowResultsDashboard(false)
-          
-          // Navigate back to appropriate component
-          if (resultsSource === 'editor' && resultsContext) {
-            // Navigate back to TestCaseView component
-            setViewTestCase(resultsContext)
-            setViewTestCaseSource('editor')
-            setShowTestCaseView(true)
-          }
-          setResultsSource('dashboard')
-          setResultsContext(null)
-        }} 
-      />
-    )
   }
 
   if (showTestCaseView && viewTestCase) {
@@ -545,6 +551,12 @@ export default function APITestFramework() {
       />
     )
   }
+
+  if (showResultsDashboard) {
+    return renderResultsDashboard()
+  }
+
+
 
   return (
       <>
@@ -573,6 +585,11 @@ export default function APITestFramework() {
                       )}
                     </div>
                   </div>
+                </div>
+
+                {/* Dashboard Toggle */}
+                <div className="flex items-center space-x-4">
+
                 </div>
 
                 {/* Action Buttons */}
@@ -638,6 +655,7 @@ export default function APITestFramework() {
                           <Settings className="h-4 w-4 mr-2" />
                           Environment Variables
                         </DropdownMenuItem>
+
                       </DropdownMenuContent>
                     </DropdownMenu>
                     

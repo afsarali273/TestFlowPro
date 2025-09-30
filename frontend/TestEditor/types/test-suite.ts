@@ -41,6 +41,7 @@ export interface TestData {
     responseSchema?: any
     responseSchemaFile?: string
     store?: StoreMap
+    enabled?: boolean
 }
 
 // Locator options for basic locator refinement
@@ -183,6 +184,7 @@ export interface TestCase {
     dependsOn?: string[]
     testData: TestData[]
     testSteps: TestStep[]
+    enabled?: boolean
 }
 
 export interface Tag {
@@ -226,6 +228,7 @@ export function validateTestCase(testCase: any): TestCase {
         dependsOn: Array.isArray(testCase.dependsOn) ? testCase.dependsOn : undefined,
         testData: Array.isArray(testCase.testData) ? testCase.testData.map(validateTestData) : [],
         testSteps: Array.isArray(testCase.testSteps) ? testCase.testSteps.map(validateTestStep) : [],
+        enabled: testCase.enabled !== undefined ? testCase.enabled : true,
     }
 
     return validated
@@ -244,6 +247,7 @@ export function validateTestData(testData: any): TestData {
         responseSchema: testData.responseSchema,
         responseSchemaFile: testData.responseSchemaFile,
         store: testData.store || {},
+        enabled: testData.enabled !== undefined ? testData.enabled : true,
     }
 
     return validated

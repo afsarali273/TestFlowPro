@@ -474,6 +474,7 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
     )
   }
 
+  // Render TestDataEditor if editing test data
   if (isEditingTestData && selectedTestData) {
     return (
       <TestDataEditor
@@ -488,6 +489,7 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
     )
   }
 
+  // Main TestCaseEditor render
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
@@ -645,6 +647,24 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                       </div>
                     </div>
                   </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="enabled"
+                        className="h-4 w-4"
+                        checked={editedTestCase.enabled !== false}
+                        onChange={(e) => handleTestCaseChange("enabled", e.target.checked)}
+                      />
+                      <Label htmlFor="enabled" className="text-sm font-medium">
+                        Enable Test Case Execution
+                      </Label>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      When disabled, this test case will be skipped during suite execution
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex justify-end pt-4 border-t">
@@ -687,14 +707,43 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
 
                 <div className="grid gap-4">
                   {(editedTestCase.testData || []).map((testData: TestData, index: number) => (
-                    <Card key={index}>
+                    <Card key={index} className={testData.enabled === false ? "opacity-60 border-gray-300" : ""}>
                       <CardHeader>
                         <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="text-base">{testData.name}</CardTitle>
-                            <CardDescription>
-                              {testData.method} {testData.endpoint}
-                            </CardDescription>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`testdata-enabled-${index}`}
+                                className="h-4 w-4"
+                                checked={testData.enabled !== false}
+                                onChange={(e) => {
+                                  setEditedTestCase((prev) => ({
+                                    ...prev,
+                                    testData: prev.testData.map((td, i) => 
+                                      i === index ? { ...td, enabled: e.target.checked } : td
+                                    ),
+                                  }))
+                                  triggerAutoSave()
+                                }}
+                              />
+                              <div className={`w-2 h-2 rounded-full ${
+                                testData.enabled === false ? 'bg-gray-400' : 'bg-green-500'
+                              }`}></div>
+                            </div>
+                            <div>
+                              <CardTitle className={`text-base ${
+                                testData.enabled === false ? 'text-gray-500' : ''
+                              }`}>{testData.name}</CardTitle>
+                              <CardDescription className="flex items-center gap-2">
+                                <span>{testData.method} {testData.endpoint}</span>
+                                {testData.enabled === false && (
+                                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                                    Disabled
+                                  </span>
+                                )}
+                              </CardDescription>
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button 
@@ -706,7 +755,7 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                                   setShowRunnerModal(true)
                                 }
                               }}
-                              disabled={!suiteId}
+                              disabled={!suiteId || testData.enabled === false}
                             >
                               <Play className="h-3 w-3 mr-1" />
                               Run

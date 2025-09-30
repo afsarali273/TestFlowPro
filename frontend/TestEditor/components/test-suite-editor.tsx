@@ -378,7 +378,7 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
   }
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
         {showFileConflictDialog && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
@@ -453,18 +453,30 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
             </div>
         )}
 
-        <div className="max-w-6xl mx-auto p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" onClick={onCancel} className="hover:bg-white/80">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                Edit Test Suite
-              </h1>
-            </div>
-            <div className="flex gap-2">
+        <div className="max-w-7xl mx-auto p-6">
+          {/* Header Section */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="ghost" 
+                  onClick={onCancel} 
+                  className="h-10 px-4 hover:bg-slate-100/80 rounded-xl transition-all duration-200"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Dashboard
+                </Button>
+                <div className="h-8 w-px bg-slate-200"></div>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent">
+                    Test Suite Editor
+                  </h1>
+                  <p className="text-slate-600 mt-1">
+                    {editedSuite.suiteName || 'New Test Suite'} • {editedSuite.type || 'API'} Testing
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
               <Button
                   variant="outline"
                   onClick={async () => {
@@ -509,63 +521,86 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
                 <Save className="h-4 w-4 mr-2" />
                 Save Suite
               </Button>
+              </div>
             </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="bg-white/80 backdrop-blur-sm shadow-sm">
-              <TabsTrigger value="general">General</TabsTrigger>
-              <TabsTrigger value="testcases">Test Cases ({editedSuite.testCases.length})</TabsTrigger>
-              <TabsTrigger value="json">JSON View</TabsTrigger>
+            <TabsList className="bg-white/90 backdrop-blur-sm shadow-lg border border-white/20 rounded-xl p-1">
+              <TabsTrigger 
+                value="general" 
+                className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg px-6 py-3 font-medium transition-all duration-200"
+              >
+                <Globe className="h-4 w-4 mr-2" />
+                General
+              </TabsTrigger>
+              <TabsTrigger 
+                value="testcases" 
+                className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg px-6 py-3 font-medium transition-all duration-200"
+              >
+                <Code className="h-4 w-4 mr-2" />
+                Test Cases ({editedSuite.testCases.length})
+              </TabsTrigger>
+              <TabsTrigger 
+                value="json" 
+                className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg px-6 py-3 font-medium transition-all duration-200"
+              >
+                <TreePine className="h-4 w-4 mr-2" />
+                JSON View
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="general">
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe className="h-5 w-5 text-blue-600" />
-                    Suite Information
+              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/20 rounded-2xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 border-b border-white/20">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                      <Globe className="h-5 w-5 text-white" />
+                    </div>
+                    Suite Configuration
                   </CardTitle>
-                  <CardDescription>Configure the basic information for your test suite</CardDescription>
+                  <CardDescription className="text-slate-600 ml-13">
+                    Configure the essential settings and metadata for your test suite
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <CardContent className="p-8 space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-2">
-                      <Label htmlFor="suiteName" className="text-sm font-medium text-gray-700">
-                        Suite Name
+                      <Label htmlFor="suiteName" className="text-sm font-semibold text-slate-700 mb-2 block">
+                        Suite Name *
                       </Label>
                       <Input
                           id="suiteName"
                           value={editedSuite.suiteName}
                           onChange={(e) => handleSuiteChange("suiteName", e.target.value)}
-                          placeholder="Enter suite name"
-                          className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="e.g., User Management API Tests"
+                          className="h-12 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl bg-white/50 backdrop-blur-sm transition-all duration-200"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="applicationName" className="text-sm font-medium text-gray-700">
+                      <Label htmlFor="applicationName" className="text-sm font-semibold text-slate-700 mb-2 block">
                         Application Name
                       </Label>
                       <Input
                           id="applicationName"
                           value={editedSuite.applicationName || ""}
                           onChange={(e) => handleSuiteChange("applicationName", e.target.value)}
-                          placeholder="Enter application name"
-                          className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="e.g., E-commerce Platform"
+                          className="h-12 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl bg-white/50 backdrop-blur-sm transition-all duration-200"
                       />
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-2">
-                      <Label htmlFor="status" className="text-sm font-medium text-gray-700">
-                        Status
+                      <Label htmlFor="status" className="text-sm font-semibold text-slate-700 mb-2 block">
+                        Execution Status
                       </Label>
                       <Select
                           value={editedSuite.status}
                           onValueChange={(value) => setEditedSuite((prev) => ({ ...prev, status: value }))}
                       >
-                        <SelectTrigger className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                        <SelectTrigger className="h-12 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl bg-white/50 backdrop-blur-sm transition-all duration-200">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -580,78 +615,104 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
                   </div>
 
                   {/* Base URL Section */}
-                  <div className="space-y-2">
-                    <Label htmlFor="baseUrl" className="text-sm font-medium text-gray-700">
+                  <div className="space-y-3">
+                    <Label htmlFor="baseUrl" className="text-sm font-semibold text-slate-700">
                       Base URL
                     </Label>
                     <div className="relative">
-                      <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                        <Globe className="h-3 w-3 text-white" />
+                      </div>
                       <Input
                           id="baseUrl"
                           value={editedSuite.baseUrl || ""}
                           onChange={(e) => handleSuiteChange("baseUrl", e.target.value)}
-                          placeholder="https://api.example.com"
-                          className="h-11 pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="https://api.example.com/v1"
+                          className="h-12 pl-12 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl bg-white/50 backdrop-blur-sm transition-all duration-200"
                       />
                     </div>
-                    <p className="text-xs text-gray-500">
-                      The base URL will be prepended to all endpoint paths in this test suite
+                    <p className="text-xs text-slate-500 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                      💡 The base URL will be automatically prepended to all endpoint paths in this test suite
                     </p>
                   </div>
 
                   {/* Suite Type Selection */}
                   <div className="space-y-4">
-                    <Label className="text-sm font-medium text-gray-700">Suite Type</Label>
-                    <div className="flex gap-6">
-                      <div className="flex items-center space-x-2">
+                    <Label className="text-sm font-semibold text-slate-700">Test Suite Type</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <label className={`relative flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                        editedSuite.type === "API" 
+                          ? 'border-blue-300 bg-blue-50/50 shadow-md' 
+                          : 'border-slate-200 bg-white/50 hover:border-slate-300 hover:bg-slate-50/50'
+                      }`}>
                         <input
                             type="radio"
-                            id="api-suite"
                             name="suiteType"
                             value="API"
                             checked={editedSuite.type === "API"}
                             onChange={(e) => handleSuiteChange("type", "API")}
-                            className="h-4 w-4"
+                            className="sr-only"
                         />
-                        <Label htmlFor="api-suite" className="font-normal">
-                          API Test Suite
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            editedSuite.type === "API" ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-600'
+                          }`}>
+                            <Globe className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-slate-900">API Testing</div>
+                            <div className="text-xs text-slate-600">REST, SOAP, GraphQL endpoints</div>
+                          </div>
+                        </div>
+                      </label>
+                      <label className={`relative flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                        editedSuite.type === "UI" 
+                          ? 'border-purple-300 bg-purple-50/50 shadow-md' 
+                          : 'border-slate-200 bg-white/50 hover:border-slate-300 hover:bg-slate-50/50'
+                      }`}>
                         <input
                             type="radio"
-                            id="ui-suite"
                             name="suiteType"
                             value="UI"
                             checked={editedSuite.type === "UI"}
                             onChange={(e) => handleSuiteChange("type", "UI")}
-                            className="h-4 w-4"
+                            className="sr-only"
                         />
-                        <Label htmlFor="ui-suite" className="font-normal">
-                          UI Test Suite
-                        </Label>
-                      </div>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            editedSuite.type === "UI" ? 'bg-purple-500 text-white' : 'bg-slate-200 text-slate-600'
+                          }`}>
+                            <Eye className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-slate-900">UI Testing</div>
+                            <div className="text-xs text-slate-600">Browser automation, E2E flows</div>
+                          </div>
+                        </div>
+                      </label>
                     </div>
-                    <p className="text-xs text-gray-500">Choose the primary type of testing this suite will perform</p>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium text-gray-700">Tags</Label>
+                      <div>
+                        <Label className="text-sm font-semibold text-slate-700">Tags & Labels</Label>
+                        <p className="text-xs text-slate-500 mt-1">Organize and categorize your test suite</p>
+                      </div>
                       <Button
                           size="sm"
                           onClick={handleAddTag}
-                          className="h-8 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                          className="h-9 px-4 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 shadow-lg hover:shadow-xl transition-all duration-200 rounded-lg"
                       >
-                        <Plus className="h-3 w-3 mr-1" />
+                        <Plus className="h-3 w-3 mr-2" />
                         Add Tag
                       </Button>
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {(editedSuite.tags || []).map((tag, index) => (
                           <div
                               key={index}
-                              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50/50"
+                              className="flex items-center gap-4 p-5 border border-slate-200 rounded-xl bg-gradient-to-r from-white/80 to-slate-50/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200"
                           >
                             {Object.entries(tag).map(([key, value], entryIndex) => (
                                 <div key={entryIndex} className="flex items-center gap-2 flex-1">
@@ -665,13 +726,14 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
                                         newTag[newKey] = value
                                         handleTagChange(index, "replace", newTag)
                                       }}
-                                      className="flex-1 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                      className="flex-1 h-11 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-lg bg-white/70 backdrop-blur-sm transition-all duration-200"
                                   />
+                                  <div className="text-slate-400 font-medium">:</div>
                                   <Input
                                       placeholder="Value (e.g., @UserService)"
                                       value={value}
                                       onChange={(e) => handleTagChange(index, key, e.target.value)}
-                                      className="flex-1 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                      className="flex-1 h-11 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-lg bg-white/70 backdrop-blur-sm transition-all duration-200"
                                   />
                                 </div>
                             ))}
@@ -697,30 +759,33 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleRemoveTag(index)}
-                                className="h-10 px-3 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+                                className="h-11 px-3 border-red-200 hover:border-red-300 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all duration-200"
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                       ))}
                       {(!editedSuite.tags || editedSuite.tags.length === 0) && (
-                          <div className="text-center py-8 text-gray-500 bg-gray-50/50 rounded-lg border-2 border-dashed border-gray-200">
-                            <p className="text-sm">No tags defined yet</p>
-                            <p className="text-xs mt-1">Tags help organize and filter your test suites</p>
+                          <div className="text-center py-12 text-slate-500 bg-gradient-to-br from-slate-50/50 to-blue-50/30 rounded-xl border-2 border-dashed border-slate-200">
+                            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                              <Plus className="h-6 w-6 text-slate-400" />
+                            </div>
+                            <p className="text-sm font-medium">No tags defined yet</p>
+                            <p className="text-xs mt-2 text-slate-400">Add tags to organize and filter your test suites effectively</p>
                           </div>
                       )}
                     </div>
                   </div>
-                  <div className="flex justify-end pt-4 border-t border-gray-200">
+                  <div className="flex justify-end pt-6 border-t border-slate-200">
                     <Button
                         onClick={() => {
                           triggerAutoSave()
                           setActiveTab("testcases")
                         }}
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                        className="h-12 px-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl font-medium"
                     >
-                      Next: Test Cases
-                      <ArrowRight className="h-4 w-4 ml-2" />
+                      Continue to Test Cases
+                      <ArrowRight className="h-4 w-4 ml-3" />
                     </Button>
                   </div>
                 </CardContent>
@@ -728,188 +793,279 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
             </TabsContent>
 
             <TabsContent value="testcases">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-gray-900">Test Cases</h3>
-                  <div className="flex gap-2">
-                    {editedSuite.type === "API" && (
-                      <Button
-                          onClick={() => setShowQuickTestBuilder(true)}
-                          variant="outline"
-                          className="border-green-300 hover:border-green-400 hover:bg-green-50 hover:text-green-700"
-                      >
-                        <Zap className="h-4 w-4 mr-2" />
-                        Quick Test Builder
-                      </Button>
-                    )}
-                    <Button
-                        onClick={handleAddTestCase}
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Test Case
-                    </Button>
-                  </div>
-                </div>
+              <div className="space-y-6">
+                <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/20 rounded-2xl overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-indigo-50/50 to-purple-50/50 border-b border-white/20">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                          <Code className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-xl">Test Cases Management</CardTitle>
+                          <CardDescription className="text-slate-600">
+                            Create and manage individual test cases for your suite
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex gap-3">
+                        {editedSuite.type === "API" && (
+                          <Button
+                              onClick={() => setShowQuickTestBuilder(true)}
+                              variant="outline"
+                              className="h-10 px-4 border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl transition-all duration-200"
+                          >
+                            <Zap className="h-4 w-4 mr-2" />
+                            Quick Builder
+                          </Button>
+                        )}
+                        <Button
+                            onClick={handleAddTestCase}
+                            className="h-10 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl font-medium"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Test Case
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
 
-                <div className="grid gap-4">
-                  {editedSuite.testCases.map((testCase, index) => (
-                      <Card
-                          key={index}
-                          className="bg-white/80 backdrop-blur-sm shadow-md border-0 hover:shadow-lg transition-shadow duration-200"
-                      >
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <CardTitle className="text-base text-gray-900">{testCase.name}</CardTitle>
-                              <CardDescription>
-                                {testCase.type === "UI"
-                                    ? `${testCase.testSteps?.length || 0} test step${testCase.testSteps?.length !== 1 ? "s" : ""}`
-                                    : `${testCase.testData?.length || 0} test data item${testCase.testData?.length !== 1 ? "s" : ""}`}
-                              </CardDescription>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="bg-gray-100 text-gray-700">
-                                {testCase.status}
-                              </Badge>
-                              <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    // Check if suite has unsaved changes
-                                    if (!editedSuite.filePath) {
-                                      // Show save dialog first
-                                      setPendingViewTestCase({ testCase, index })
-                                      setShowSaveBeforeViewDialog(true)
-                                    } else {
-                                      // Navigate directly
-                                      if (onViewTestCase) {
-                                        onViewTestCase(editedSuite, testCase, index)
-                                      }
-                                    }
-                                  }}
-                                  className="hover:bg-purple-50 hover:border-purple-400 hover:text-purple-700"
-                              >
-                                <Eye className="h-3 w-3 mr-1" />
-                                View
-                              </Button>
+                  <CardContent className="p-6">
 
-                              <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleEditTestCase(testCase, index)}
-                                  className="hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700"
-                              >
-                                <Edit3 className="h-3 w-3 mr-1" />
-                                Edit
-                              </Button>
-                              <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleCloneTestCase(testCase, index)}
-                                  className="hover:bg-orange-50 hover:border-orange-400 hover:text-orange-700"
-                                  title="Clone test case"
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleDeleteTestCase(index)}
-                                  className="hover:bg-red-50 hover:border-red-400 hover:text-red-700"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </CardHeader>
-                      </Card>
+                    <div className="grid gap-4">
+                      {editedSuite.testCases.map((testCase, index) => (
+                          <Card
+                              key={index}
+                              className={`bg-gradient-to-r from-white/90 to-slate-50/50 backdrop-blur-sm shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 rounded-xl overflow-hidden ${
+                                testCase.enabled === false ? "opacity-60 border-slate-300" : ""
+                              }`}
+                          >
+                            <CardHeader className="pb-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                  <div className="flex items-center space-x-3">
+                                    <input
+                                      type="checkbox"
+                                      id={`testcase-enabled-${index}`}
+                                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                      checked={testCase.enabled !== false}
+                                      onChange={(e) => {
+                                        setEditedSuite((prev) => ({
+                                          ...prev,
+                                          testCases: prev.testCases.map((tc, i) => 
+                                            i === index ? { ...tc, enabled: e.target.checked } : tc
+                                          ),
+                                        }))
+                                        triggerAutoSave()
+                                      }}
+                                    />
+                                    <div className={`w-3 h-3 rounded-full shadow-sm ${
+                                      testCase.enabled === false ? 'bg-slate-400' : 'bg-emerald-500'
+                                    }`}></div>
+                                  </div>
+                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md ${
+                                    testCase.type === "UI" 
+                                      ? 'bg-gradient-to-br from-purple-500 to-pink-500' 
+                                      : 'bg-gradient-to-br from-blue-500 to-indigo-600'
+                                  }`}>
+                                    {testCase.type === "UI" ? (
+                                      <Eye className="h-5 w-5 text-white" />
+                                    ) : (
+                                      <Globe className="h-5 w-5 text-white" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <CardTitle className={`text-lg font-semibold ${
+                                      testCase.enabled === false ? 'text-slate-500' : 'text-slate-900'
+                                    }`}>{testCase.name}</CardTitle>
+                                    <CardDescription className="flex items-center gap-3 mt-1">
+                                      <Badge variant="outline" className={`text-xs ${
+                                        testCase.type === "UI" 
+                                          ? 'bg-purple-50 text-purple-700 border-purple-200' 
+                                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                                      }`}>
+                                        {testCase.type}
+                                      </Badge>
+                                      <span className="text-slate-600">
+                                        {testCase.type === "UI"
+                                            ? `${testCase.testSteps?.length || 0} step${testCase.testSteps?.length !== 1 ? "s" : ""}`
+                                            : `${testCase.testData?.length || 0} data item${testCase.testData?.length !== 1 ? "s" : ""}`}
+                                      </span>
+                                      {testCase.enabled === false && (
+                                        <Badge variant="secondary" className="text-xs bg-slate-100 text-slate-600">
+                                          Disabled
+                                        </Badge>
+                                      )}
+                                    </CardDescription>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200">
+                                    {testCase.status}
+                                  </Badge>
+                                  <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        // Check if suite has unsaved changes
+                                        if (!editedSuite.filePath) {
+                                          // Show save dialog first
+                                          setPendingViewTestCase({ testCase, index })
+                                          setShowSaveBeforeViewDialog(true)
+                                        } else {
+                                          // Navigate directly
+                                          if (onViewTestCase) {
+                                            onViewTestCase(editedSuite, testCase, index)
+                                          }
+                                        }
+                                      }}
+                                      disabled={testCase.enabled === false}
+                                      className="h-9 px-3 hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 rounded-lg transition-all duration-200"
+                                  >
+                                    <Eye className="h-3 w-3 mr-1" />
+                                    View
+                                  </Button>
+
+                                  <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleEditTestCase(testCase, index)}
+                                      className="h-9 px-3 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 rounded-lg transition-all duration-200"
+                                  >
+                                    <Edit3 className="h-3 w-3 mr-1" />
+                                    Edit
+                                  </Button>
+                                  <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleCloneTestCase(testCase, index)}
+                                      className="h-9 px-3 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 rounded-lg transition-all duration-200"
+                                      title="Clone test case"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleDeleteTestCase(index)}
+                                      className="h-9 px-3 hover:bg-red-50 hover:border-red-300 hover:text-red-700 rounded-lg transition-all duration-200"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardHeader>
+                          </Card>
                   ))}
 
-                  {editedSuite.testCases.length === 0 && (
-                      <Card className="bg-white/80 backdrop-blur-sm shadow-md border-0">
-                        <CardContent className="text-center py-12">
-                          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl mb-4">
-                            <Plus className="h-8 w-8 text-blue-600" />
-                          </div>
-                          <p className="text-gray-500 mb-4 font-medium">No test cases defined yet</p>
-                          <p className="text-sm text-gray-400 mb-6">Create your first test case to get started</p>
-                          <div className="flex gap-3 justify-center">
-                            {editedSuite.type === "API" && (
+                      {editedSuite.testCases.length === 0 && (
+                          <div className="text-center py-16">
+                            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl mb-6 shadow-lg">
+                              <Plus className="h-10 w-10 text-indigo-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-slate-900 mb-2">No test cases yet</h3>
+                            <p className="text-slate-500 mb-8 max-w-md mx-auto">Start building your test suite by creating your first test case. You can add API endpoints, UI interactions, or use our quick builder.</p>
+                            <div className="flex gap-4 justify-center">
+                              {editedSuite.type === "API" && (
+                                <Button
+                                    onClick={() => setShowQuickTestBuilder(true)}
+                                    variant="outline"
+                                    className="h-11 px-6 border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 rounded-xl transition-all duration-200"
+                                >
+                                  <Zap className="h-4 w-4 mr-2" />
+                                  Quick Builder
+                                </Button>
+                              )}
                               <Button
-                                  onClick={() => setShowQuickTestBuilder(true)}
-                                  variant="outline"
-                                  className="border-green-300 hover:border-green-400 hover:bg-green-50 hover:text-green-700"
+                                  onClick={handleAddTestCase}
+                                  className="h-11 px-8 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl font-medium"
                               >
-                                <Zap className="h-4 w-4 mr-2" />
-                                Quick Test Builder
+                                <Plus className="h-4 w-4 mr-2" />
+                                Create Test Case
                               </Button>
-                            )}
-                            <Button
-                                onClick={handleAddTestCase}
-                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add Test Case
-                            </Button>
+                            </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                  )}
-                </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
 
             <TabsContent value="json">
-              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
-                <CardHeader>
+              <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/20 rounded-2xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-slate-50/50 to-blue-50/50 border-b border-white/20">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <Code className="h-5 w-5 text-blue-600" />
-                        JSON View
-                      </CardTitle>
-                      <CardDescription>View and edit the test suite structure with rich JSON editors</CardDescription>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-blue-600 flex items-center justify-center shadow-lg">
+                        <Code className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl">JSON Structure Editor</CardTitle>
+                        <CardDescription className="text-slate-600">
+                          Advanced JSON editing with multiple view modes and real-time validation
+                        </CardDescription>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-white/70 backdrop-blur-sm rounded-xl p-1 shadow-sm">
                       <Button
                           size="sm"
-                          variant={jsonViewMode === "tree" ? "default" : "outline"}
+                          variant={jsonViewMode === "tree" ? "default" : "ghost"}
                           onClick={() => setJsonViewMode("tree")}
-                          className="h-8"
+                          className={`h-9 px-4 rounded-lg transition-all duration-200 ${
+                            jsonViewMode === "tree" 
+                              ? 'bg-white shadow-md text-slate-900' 
+                              : 'hover:bg-white/50 text-slate-600'
+                          }`}
                       >
-                        <TreePine className="h-3 w-3 mr-1" />
-                        Tree
+                        <TreePine className="h-3 w-3 mr-2" />
+                        Tree View
                       </Button>
                       <Button
                           size="sm"
-                          variant={jsonViewMode === "code" ? "default" : "outline"}
+                          variant={jsonViewMode === "code" ? "default" : "ghost"}
                           onClick={() => setJsonViewMode("code")}
-                          className="h-8"
+                          className={`h-9 px-4 rounded-lg transition-all duration-200 ${
+                            jsonViewMode === "code" 
+                              ? 'bg-white shadow-md text-slate-900' 
+                              : 'hover:bg-white/50 text-slate-600'
+                          }`}
                       >
-                        <Edit3 className="h-3 w-3 mr-1" />
-                        Editor
+                        <Edit3 className="h-3 w-3 mr-2" />
+                        Code Editor
                       </Button>
                       <Button
                           size="sm"
-                          variant={jsonViewMode === "raw" ? "default" : "outline"}
+                          variant={jsonViewMode === "raw" ? "default" : "ghost"}
                           onClick={() => setJsonViewMode("raw")}
-                          className="h-8"
+                          className={`h-9 px-4 rounded-lg transition-all duration-200 ${
+                            jsonViewMode === "raw" 
+                              ? 'bg-white shadow-md text-slate-900' 
+                              : 'hover:bg-white/50 text-slate-600'
+                          }`}
                       >
-                        <Eye className="h-3 w-3 mr-1" />
-                        Raw
+                        <Eye className="h-3 w-3 mr-2" />
+                        Raw Text
                       </Button>
                     </div>
                   </div>
                   {jsonError && (
-                      <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-700">{jsonError}</p>
+                      <div className="mt-4 p-4 bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-xl">
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <X className="h-3 w-3 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-red-800">JSON Validation Error</p>
+                            <p className="text-sm text-red-700 mt-1">{jsonError}</p>
+                          </div>
+                        </div>
                       </div>
                   )}
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   {jsonViewMode === "tree" && (
-                      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 min-h-[500px]">
+                      <div className="border border-slate-200 rounded-xl p-6 bg-gradient-to-br from-slate-50/50 to-white/50 backdrop-blur-sm min-h-[500px] shadow-inner">
                         <ReactJson
                             src={editedSuite}
                             theme="rjv-default"
@@ -934,7 +1090,7 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
                   )}
 
                   {jsonViewMode === "code" && (
-                      <div className="border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="border border-slate-200 rounded-xl overflow-hidden shadow-inner">
                         <MonacoEditor
                             height="500px"
                             language="json"
@@ -982,15 +1138,15 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
                               setJsonError(`Invalid JSON: ${error.message}`)
                             }
                           }}
-                          className="font-mono text-sm min-h-[500px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                          placeholder="Edit JSON structure..."
+                          className="font-mono text-sm min-h-[500px] border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl bg-gradient-to-br from-slate-50/50 to-white/50 backdrop-blur-sm shadow-inner transition-all duration-200"
+                          placeholder="Edit JSON structure directly..."
                       />
                   )}
 
-                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                    <div className="flex items-start gap-2">
-                      <div className="text-blue-600 mt-0.5">
-                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                  <div className="mt-6 p-5 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-sm border border-blue-200/50 rounded-xl">
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                        <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path
                               fillRule="evenodd"
                               d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
@@ -998,21 +1154,22 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
                           />
                         </svg>
                       </div>
-                      <div className="text-sm text-blue-700">
-                        <p className="font-medium mb-1">JSON Editor Tips:</p>
-                        <ul className="text-xs space-y-1">
-                          <li>
-                            <strong>Tree View:</strong> Click to expand/collapse nodes, edit values inline, add/remove
-                            properties
-                          </li>
-                          <li>
-                            <strong>Code Editor:</strong> Full VS Code experience with syntax highlighting, folding, and
-                            validation
-                          </li>
-                          <li>
-                            <strong>Raw View:</strong> Simple textarea for quick edits and copy/paste operations
-                          </li>
-                        </ul>
+                      <div className="text-sm text-blue-800">
+                        <p className="font-semibold mb-3 text-blue-900">JSON Editor Guide</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                          <div className="bg-white/60 p-3 rounded-lg">
+                            <p className="font-medium text-blue-900 mb-1">🌳 Tree View</p>
+                            <p className="text-blue-700">Interactive tree structure with inline editing, expand/collapse nodes, and property management</p>
+                          </div>
+                          <div className="bg-white/60 p-3 rounded-lg">
+                            <p className="font-medium text-blue-900 mb-1">💻 Code Editor</p>
+                            <p className="text-blue-700">Full-featured Monaco editor with syntax highlighting, auto-completion, and error detection</p>
+                          </div>
+                          <div className="bg-white/60 p-3 rounded-lg">
+                            <p className="font-medium text-blue-900 mb-1">📝 Raw Text</p>
+                            <p className="text-blue-700">Direct JSON editing with real-time validation for quick modifications and bulk operations</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

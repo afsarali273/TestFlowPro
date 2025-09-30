@@ -62,26 +62,51 @@ export class SwaggerParser {
     return 'https://api.example.com';
   }
 
-  private generateExampleFromSchema(schema: any): any {
+  private resolveRef(ref: string, spec: SwaggerSpec): any {
+    if (!ref.startsWith('#/')) return null;
+    
+    const path = ref.substring(2).split('/');
+    let current: any = spec;
+    
+    for (const segment of path) {
+      current = current?.[segment];
+      if (!current) return null;
+    }
+    
+    return current;
+  }
+
+  private generateExampleFromSchema(schema: any, spec?: SwaggerSpec): any {
     if (!schema) return {};
+    
+    // Handle $ref
+    if (schema.$ref && spec) {
+      const resolved = this.resolveRef(schema.$ref, spec);
+      if (resolved) {
+        return this.generateExampleFromSchema(resolved, spec);
+      }
+    }
     
     if (schema.example) return schema.example;
     
     switch (schema.type) {
       case 'string':
+        if (schema.format === 'email') return '{{faker.email}}';
+        if (schema.format === 'date') return '{{date.now}}';
+        if (schema.format === 'uuid') return '{{faker.uuid}}';
         return schema.enum ? schema.enum[0] : '{{faker.name}}';
       case 'number':
       case 'integer':
-        return 123;
+        return schema.minimum || 123;
       case 'boolean':
         return true;
       case 'array':
-        return schema.items ? [this.generateExampleFromSchema(schema.items)] : [];
+        return schema.items ? [this.generateExampleFromSchema(schema.items, spec)] : [];
       case 'object':
         if (schema.properties) {
           const obj: any = {};
           Object.keys(schema.properties).forEach(key => {
-            obj[key] = this.generateExampleFromSchema(schema.properties[key]);
+            obj[key] = this.generateExampleFromSchema(schema.properties[key], spec);
           });
           return obj;
         }
@@ -126,7 +151,7 @@ export class SwaggerParser {
     return assertions;
   }
 
-  private generateTestData(path: string, method: string, operation: SwaggerOperation): any {
+  private generateTestData(path: string, method: string, operation: SwaggerOperation, spec: SwaggerSpec): any {
     const testData: any = {
       name: operation.summary || `${method.toUpperCase()} ${path}`,
       method: method.toUpperCase(),
@@ -139,17 +164,19 @@ export class SwaggerParser {
       testData.headers['Content-Type'] = contentType;
     }
 
+    // Handle OpenAPI 3.0 requestBody
     if (operation.requestBody?.content) {
       const content = operation.requestBody.content[contentType];
       if (content?.schema) {
-        testData.body = this.generateExampleFromSchema(content.schema);
+        testData.body = this.generateExampleFromSchema(content.schema, spec);
       }
     }
 
+    // Handle Swagger 2.0 parameters
     if (operation.parameters) {
       const bodyParam = operation.parameters.find(p => p.in === 'body');
       if (bodyParam?.schema) {
-        testData.body = this.generateExampleFromSchema(bodyParam.schema);
+        testData.body = this.generateExampleFromSchema(bodyParam.schema, spec);
       }
 
       const queryParams = operation.parameters.filter(p => p.in === 'query');
@@ -161,6 +188,11 @@ export class SwaggerParser {
       const headerParams = operation.parameters.filter(p => p.in === 'header');
       headerParams.forEach(p => {
         testData.headers[p.name] = `{{${p.name}}}`;
+      });
+      
+      const pathParams = operation.parameters.filter(p => p.in === 'path');
+      pathParams.forEach(p => {
+        testData.endpoint = testData.endpoint.replace(`{${p.name}}`, `{{${p.name}}}`);
       });
     }
 
@@ -210,7 +242,7 @@ export class SwaggerParser {
       };
 
       operations.forEach(({ path, method, operation }) => {
-        const positiveTest = this.generateTestData(path, method, operation);
+        const positiveTest = this.generateTestData(path, method, operation, testSuite);
         testCase.testData.push(positiveTest);
 
         if (['post', 'put', 'patch'].includes(method.toLowerCase())) {
