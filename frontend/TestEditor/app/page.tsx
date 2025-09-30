@@ -561,25 +561,25 @@ export default function APITestFramework() {
   return (
       <>
         {/* ------------ Main Page ------------- */}
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
           {/* Header Section */}
-          <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 subtle-shadow">
+          <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-2xl">
             <div className="max-w-7xl mx-auto px-6 py-6">
               <div className="flex items-center justify-between">
                 {/* Logo and Title Section */}
                 <div className="flex items-center space-x-4">
                   {/* Company Logo */}
-                  <div className="flex items-center justify-center w-12 h-12 bg-slate-700 rounded-xl subtle-shadow-lg">
+                  <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl shadow-2xl">
                     <Zap className="h-7 w-7 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-slate-800">
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
                       TestFlow Pro
                     </h1>
                     <div className="flex items-center gap-3 mt-1">
                       <p className="text-slate-600 font-medium">Advanced Test Automation Platform</p>
                       {testSuitePath && (
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          <Badge variant="outline" className="text-xs bg-blue-100/80 text-blue-700 border-blue-200/50 backdrop-blur-sm">
                             📁 {testSuitePath.split("/").pop() || testSuitePath}
                           </Badge>
                       )}
@@ -597,20 +597,20 @@ export default function APITestFramework() {
                   <Button
                       variant="outline"
                       onClick={() => setShowResultsDashboard(true)}
-                      className="h-10 px-4 border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200"
+                      className="h-10 px-4 bg-white/60 hover:bg-white/80 border-slate-200 hover:border-slate-300 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl"
                   >
                     <BarChart3 className="h-4 w-4 mr-2" />
                     Test Reports
                   </Button>
 
-                  <div className="h-6 w-px bg-slate-300"></div>
+                  <div className="h-6 w-px bg-slate-300/50"></div>
 
                   <div className="flex items-center space-x-2">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                             variant="outline"
-                            className="h-10 px-4 border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200"
+                            className="h-10 px-4 bg-white/60 hover:bg-white/80 border-slate-200 hover:border-slate-300 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl"
                         >
                           <Settings className="h-4 w-4 mr-2" />
                           Settings
@@ -662,7 +662,7 @@ export default function APITestFramework() {
                     <Button
                         variant="outline"
                         onClick={() => setShowCurlImportModal(true)}
-                        className="h-10 px-4 border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-all duration-200"
+                        className="h-10 px-4 bg-white/60 hover:bg-white/80 border-slate-200 hover:border-slate-300 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl"
                     >
                       <Zap className="h-4 w-4 mr-2" />
                       cURL
@@ -673,7 +673,7 @@ export default function APITestFramework() {
 
                   <Button
                       onClick={handleCreateSuite}
-                      className="h-10 px-6 bg-slate-700 hover:bg-slate-800 subtle-shadow-lg hover:shadow-lg transition-all duration-200"
+                      className="h-10 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     New Test Suite
@@ -693,7 +693,7 @@ export default function APITestFramework() {
                       placeholder="Search suites, tags, test cases..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-80 h-11 pl-4 pr-4 border-slate-300 focus:border-slate-500 focus:ring-slate-500 subtle-shadow"
+                      className="w-80 h-11 pl-4 pr-4 bg-white/80 backdrop-blur-sm border-slate-200 focus:border-blue-500 focus:ring-blue-500 shadow-lg rounded-xl"
                   />
                 </div>
                 {filteredSuites.length > 0 && (
@@ -715,7 +715,7 @@ export default function APITestFramework() {
                   variant="outline"
                   onClick={() => setShowRunAllSuitesModal(true)}
                   disabled={!frameworkPath}
-                  className="h-11 px-6 border-slate-300 hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-200 subtle-shadow"
+                  className="h-11 px-6 bg-white/60 hover:bg-white/80 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-200 shadow-lg rounded-xl"
                   title={!frameworkPath ? "Configure framework path first" : "Run all test suites"}
               >
                 <PlayCircle className="h-4 w-4 mr-2" />
@@ -897,18 +897,18 @@ export default function APITestFramework() {
             ) : (
               <div className="flex gap-6">
                 {/* Application Navigation Sidebar */}
-                <div className="w-80 bg-white rounded-xl border border-slate-200 subtle-shadow-lg">
-                  <div className="p-4 border-b border-slate-200">
+                <div className="w-80 bg-white/80 backdrop-blur-xl rounded-xl border border-white/20 shadow-2xl">
+                  <div className="p-4 border-b border-slate-200/50 bg-gradient-to-r from-slate-50 to-blue-50">
                     <h3 className="text-sm font-bold text-slate-900 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-slate-600 flex items-center justify-center subtle-shadow">
+                        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center shadow-lg">
                           <Folder className="h-3 w-3 text-white" />
                         </div>
                         Applications
                       </div>
                       <button
                         onClick={handleCreateSuite}
-                        className="w-6 h-6 rounded-lg bg-emerald-600 flex items-center justify-center subtle-shadow hover:shadow-md transition-all duration-200 hover:scale-105"
+                        className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-600 to-teal-600 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                         title="Create New Test Suite"
                       >
                         <Plus className="h-3 w-3 text-white" />
@@ -1070,11 +1070,11 @@ export default function APITestFramework() {
                 return (
                   <Card
                       key={suite.id}
-                      className={`group hover:shadow-lg transition-all duration-300 border subtle-shadow bg-white hover:bg-white ${
+                      className={`group hover:shadow-2xl transition-all duration-300 border-0 shadow-xl bg-white/80 backdrop-blur-xl hover:bg-white/90 rounded-xl overflow-hidden ${
                         isUISuite ? 'border-l-4 border-l-violet-500' : 'border-l-4 border-l-slate-500'
                       } ${viewMode === 'list' ? 'flex flex-row' : ''}`}
                   >
-                    <CardHeader className="pb-4">
+                    <CardHeader className="pb-4 bg-gradient-to-r from-slate-50/50 to-blue-50/50">
                       {/* Title Row - Full Width */}
                       <div className="mb-3">
                         <div className="flex items-center justify-between mb-2">
@@ -1099,10 +1099,10 @@ export default function APITestFramework() {
                       
                       {/* Details Row */}
                       <div className="flex items-center gap-3">
-                        <div className={`flex items-center justify-center w-12 h-12 rounded-xl subtle-shadow group-hover:shadow-md transition-shadow duration-300 ${
+                        <div className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow duration-300 ${
                           isUISuite 
-                            ? 'bg-violet-600' 
-                            : 'bg-slate-600'
+                            ? 'bg-gradient-to-br from-violet-600 to-purple-600' 
+                            : 'bg-gradient-to-br from-slate-600 to-slate-700'
                         }`}>
                           {isUISuite ? (
                             <MousePointer className="h-6 w-6 text-white" />
@@ -1248,7 +1248,7 @@ export default function APITestFramework() {
                                     setSelectedSuite(suite)
                                     setIsEditing(true)
                                   }}
-                                  className="h-8 px-3 border-gray-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200"
+                                  className="h-8 px-3 bg-white/60 hover:bg-white/80 border-slate-200 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
                               >
                                 <Edit className="h-3 w-3 mr-1" />
                                 Edit
@@ -1260,7 +1260,7 @@ export default function APITestFramework() {
                                     setSelectedSuite(suite)
                                     setShowTestCasesModal(true)
                                   }}
-                                  className={`h-8 px-3 border-gray-300 transition-all duration-200 ${
+                                  className={`h-8 px-3 bg-white/60 hover:bg-white/80 border-slate-200 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md ${
                                     isUISuite 
                                       ? 'hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700'
                                       : 'hover:border-green-400 hover:bg-green-50 hover:text-green-700'
@@ -1309,10 +1309,10 @@ export default function APITestFramework() {
                                 size="sm"
                                 onClick={() => handleRunSuite(suite)}
                                 disabled={!frameworkPath || !suite.filePath}
-                                className={`h-8 px-3 text-white transition-all duration-200 ${
+                                className={`h-8 px-3 text-white transition-all duration-200 rounded-lg shadow-lg hover:shadow-xl ${
                                   isUISuite
-                                    ? 'bg-purple-600 hover:bg-purple-700'
-                                    : 'bg-green-600 hover:bg-green-700'
+                                    ? 'bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700'
+                                    : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
                                 }`}
                                 title={
                                   !frameworkPath
@@ -1329,7 +1329,7 @@ export default function APITestFramework() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleDeleteSuite(suite)}
-                                className="h-8 px-2 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700 transition-all duration-200"
+                                className="h-8 px-2 bg-white/60 hover:bg-white/80 border-red-200 hover:border-red-400 hover:bg-red-50 hover:text-red-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -1347,13 +1347,13 @@ export default function APITestFramework() {
             {/* Empty state */}
             {!isLoading && filteredSuites.length === 0 && (
                 <div className="text-center py-16">
-                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl mb-6">
+                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-100/80 to-indigo-100/80 backdrop-blur-sm rounded-2xl mb-6 shadow-xl">
                     <FileText className="h-10 w-10 text-blue-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  <h3 className="text-xl font-semibold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-3">
                     {searchTerm ? "No matching test suites" : "No test suites found"}
                   </h3>
-                  <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                  <p className="text-slate-600 mb-8 max-w-md mx-auto">
                     {searchTerm
                         ? "Try adjusting your search criteria or browse all available test suites."
                         : "Get started by creating your first test suite or configuring a test suite path to load existing suites."}
@@ -1362,7 +1362,7 @@ export default function APITestFramework() {
                       <div className="flex items-center justify-center space-x-4">
                         <Button
                             onClick={handleCreateSuite}
-                            className="h-11 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                            className="h-11 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl"
                         >
                           <Plus className="h-4 w-4 mr-2" />
                           Create Test Suite
@@ -1370,7 +1370,7 @@ export default function APITestFramework() {
                         <Button
                             variant="outline"
                             onClick={() => setIsPathConfigOpen(true)}
-                            className="h-11 px-6 border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200"
+                            className="h-11 px-6 bg-white/60 hover:bg-white/80 border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl"
                         >
                           <Settings className="h-4 w-4 mr-2" />
                           Configure Path
