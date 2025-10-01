@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { AssertionGenerator } from "./assertion-generator"
 import { VariableGenerator } from "./variable-generator"
+import { useVariables } from "../hooks/useVariables"
 
 interface TestDataEditorProps {
   testData: any
@@ -59,6 +60,9 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
   const [schemaJsonError, setSchemaJsonError] = useState("")
   const [showAssertionGenerator, setShowAssertionGenerator] = useState(false)
   const [showVariableGenerator, setShowVariableGenerator] = useState(false)
+  const { addVariable, checkConflict, deleteVariable } = useVariables()
+  const [quickAddKey, setQuickAddKey] = useState("")
+  const [quickAddPath, setQuickAddPath] = useState("")
 
   const [activeTab, setActiveTab] = useState("general")
 
@@ -376,8 +380,23 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
     }))
   }
 
-  const handleUpdateStoreKey = (oldKey: string, newKey: string) => {
+  const handleUpdateStoreKey = async (oldKey: string, newKey: string) => {
     if (oldKey === newKey) return
+
+    // Check for conflicts with global variables
+    try {
+      const conflict = await checkConflict(newKey, suite?.id)
+      if (conflict.exists && conflict.conflictType === 'global') {
+        const confirmed = window.confirm(
+          `Global variable '${newKey}' already exists. Do you want to override it?`
+        )
+        if (!confirmed) {
+          return // Don't update if user cancels
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to check variable conflict:', error)
+    }
 
     const newStore = { ...editedTestData.store }
     const value = newStore[oldKey]
@@ -417,12 +436,21 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
     }))
   }
 
-  const handleRemoveStoreVariable = (key: string) => {
+  const handleRemoveStoreVariable = async (key: string) => {
+    // Remove from local state
     setEditedTestData((prev: any) => {
       const newStore = { ...prev.store }
       delete newStore[key]
       return { ...prev, store: newStore }
     })
+    
+    // Also remove from global variables config
+    try {
+      await deleteVariable(key, suite?.id)
+      console.log('Variable deleted from global config:', key)
+    } catch (error) {
+      console.error('Failed to delete variable from global config:', error)
+    }
   }
 
   const handleFileUpload = (field: string, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1517,18 +1545,45 @@ Example:
                         <Input
                             placeholder="Enter variable name..."
                             className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            onKeyDown={(e) => {
-                              if (e.key === "Tab" || e.key === "Enter") {
-                                const key = e.currentTarget.value.trim()
-                                if (key) {
-                                  handleNestedChange("store", key, "")
-                                  e.currentTarget.value = ""
-                                  // Focus next input (path field)
-                                  const nextInput = e.currentTarget.parentElement?.parentElement?.querySelector(
-                                      "div:nth-child(2) input",
-                                  ) as HTMLInputElement
-                                  if (nextInput) nextInput.focus()
+                            value={quickAddKey}
+                            onChange={(e) => setQuickAddKey(e.target.value)}
+                            onKeyDown={async (e) => {
+                              if (e.key === "Enter" && quickAddKey.trim() && quickAddPath.trim()) {
+                                // Check for conflicts with global variables
+                                try {
+                                  const conflict = await checkConflict(quickAddKey.trim(), suite?.id)
+                                  if (conflict.exists && conflict.conflictType === 'global') {
+                                    const confirmed = window.confirm(
+                                      `Global variable '${quickAddKey.trim()}' already exists. Do you want to override it?`
+                                    )
+                                    if (!confirmed) {
+                                      return // Don't add if user cancels
+                                    }
+                                  }
+                                } catch (error) {
+                                  console.warn('Failed to check variable conflict:', error)
                                 }
+                                
+                                handleNestedChange("store", quickAddKey.trim(), quickAddPath.trim())
+                                
+                                // Also add to global variables config
+                                console.log('Suite data:', suite)
+                                console.log('Adding variable:', quickAddKey.trim(), quickAddPath.trim())
+                                try {
+                                  const result = await addVariable({
+                                    name: quickAddKey.trim(),
+                                    value: quickAddPath.trim(),
+                                    type: 'global',
+                                    suiteName: suite?.suiteName || 'Test Suite',
+                                    description: 'Global variable from test data editor'
+                                  })
+                                  console.log('Add variable result:', result)
+                                } catch (error) {
+                                  console.error('Failed to add variable to global config:', error)
+                                }
+                                
+                                setQuickAddKey("")
+                                setQuickAddPath("")
                               }
                             }}
                         />
@@ -1540,20 +1595,45 @@ Example:
                         <Input
                             placeholder={testCaseType === "SOAP" ? "Enter XPath expression..." : "Enter JSON path..."}
                             className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                            onKeyDown={(e) => {
-                              if (e.key === "Tab" || e.key === "Enter") {
-                                const value = e.currentTarget.value.trim()
-                                const keyInput = e.currentTarget.parentElement?.parentElement?.querySelector(
-                                    "div:first-child input",
-                                ) as HTMLInputElement
-                                const key = keyInput?.value.trim()
-
-                                if (key && value) {
-                                  handleNestedChange("store", key, value)
-                                  keyInput.value = ""
-                                  e.currentTarget.value = ""
-                                  keyInput.focus()
+                            value={quickAddPath}
+                            onChange={(e) => setQuickAddPath(e.target.value)}
+                            onKeyDown={async (e) => {
+                              if (e.key === "Enter" && quickAddKey.trim() && quickAddPath.trim()) {
+                                // Check for conflicts with global variables
+                                try {
+                                  const conflict = await checkConflict(quickAddKey.trim(), suite?.id)
+                                  if (conflict.exists && conflict.conflictType === 'global') {
+                                    const confirmed = window.confirm(
+                                      `Global variable '${quickAddKey.trim()}' already exists. Do you want to override it?`
+                                    )
+                                    if (!confirmed) {
+                                      return // Don't add if user cancels
+                                    }
+                                  }
+                                } catch (error) {
+                                  console.warn('Failed to check variable conflict:', error)
                                 }
+                                
+                                handleNestedChange("store", quickAddKey.trim(), quickAddPath.trim())
+                                
+                                // Also add to global variables config
+                                console.log('Suite data:', suite)
+                                console.log('Adding variable:', quickAddKey.trim(), quickAddPath.trim())
+                                try {
+                                  const result = await addVariable({
+                                    name: quickAddKey.trim(),
+                                    value: quickAddPath.trim(),
+                                    type: 'global',
+                                    suiteName: suite?.suiteName || 'Test Suite',
+                                    description: 'Global variable from test data editor'
+                                  })
+                                  console.log('Add variable result:', result)
+                                } catch (error) {
+                                  console.error('Failed to add variable to global config:', error)
+                                }
+                                
+                                setQuickAddKey("")
+                                setQuickAddPath("")
                               }
                             }}
                         />

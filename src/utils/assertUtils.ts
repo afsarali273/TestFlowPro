@@ -4,12 +4,12 @@ import { DOMParser } from 'xmldom';
 import * as xpath from 'xpath';
 import {injectVariables} from "./variableStore";
 
-export function assertJson(response: any, statusCode: number, assertions: Assertion[]) {
+export function assertJson(response: any, statusCode: number, assertions: Assertion[], suiteId?: string, testCaseId?: string) {
     for (const a of assertions) {
         const { type, jsonPath } = a;
         let {expected} = a;
         if( typeof expected === 'string' ){
-            expected = injectVariables(expected);
+            expected = injectVariables(expected, suiteId, testCaseId);
         }
         let result;
         if (jsonPath && type !== 'arrayObjectMatch') {

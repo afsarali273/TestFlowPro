@@ -89,8 +89,8 @@ export class CustomStepHandler {
         return result;
     }
 
-    private processArguments(args: any[]): any[] {
-        return args.map(arg => typeof arg === 'string' ? injectVariables(arg) : arg);
+    private processArguments(args: any[], suiteId?: string, testCaseId?: string): any[] {
+        return args.map(arg => typeof arg === 'string' ? injectVariables(arg, suiteId, testCaseId) : arg);
     }
 
     private storeResults(result: any, mapTo: { [key: string]: string }): void {

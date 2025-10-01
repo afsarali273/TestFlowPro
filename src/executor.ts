@@ -6,6 +6,7 @@ import { loadRequestBody } from "./utils/loadRequestBody";
 import { TestSuite } from "./types";
 import { loadEnvironment } from "./utils/envManager";
 import { injectVariables, storeResponseVariables, clearLocalVariables } from "./utils/variableStore";
+import { variableConfig } from "./variables/VariableConfig";
 import { runPreProcessors } from "./preProcessor";
 import { loadSchema } from "./utils/loadSchema";
 import {UIRunner} from "./ui-test";
@@ -88,7 +89,7 @@ export async function runUITests(suite: TestSuite, reporter: Reporter) {
         
         try {
             await runner.init();
-            await runner.runTestCase(testCase);
+            await runner.runTestCase(testCase, suite.id);
             await runner.close();
             executedTestCases.add(testCase.name);
             Logger.success(`UI test case ${testCase.name} completed successfully`);
@@ -99,6 +100,8 @@ export async function runUITests(suite: TestSuite, reporter: Reporter) {
         } finally {
             // Clear local variables after test case completion
             clearLocalVariables();
+            // Clean up test case variables from config
+            variableConfig.cleanupTestCase(suite.id, testCase.name);
         }
     }
 }
@@ -171,11 +174,11 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
             
             const start = Date.now();
             let responseData: any = null;
-            const fullUrl = injectVariables(resolvedBaseUrl + data.endpoint);
+            const fullUrl = injectVariables(resolvedBaseUrl + data.endpoint, suite.id, testCase.name);
             let headers = data.headers;
             const soap = isSoapRequest(headers);
 
-            if (data.preProcess) await runPreProcessors(data.preProcess);
+            if (data.preProcess) await runPreProcessors(data.preProcess, suite.id, testCase.name);
 
             Logger.section('📡', `TEST DATA: ${data.name}`, colors.cyan);
             console.log(`${colors.blue}🌐 REQUEST DETAILS${colors.reset}`);
@@ -185,7 +188,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
             
             let body: any;
             try {
-                body = loadRequestBody(data.bodyFile, data.body, soap);
+                body = loadRequestBody(data.bodyFile, data.body, soap, suite.id, testCase.name);
                 
                 if (body) {
                     console.log(`${colors.yellow}📄 Request Body:${colors.reset}`);
@@ -242,7 +245,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
             };
 
             try {
-                headers = injectVariableInHeaders(headers || {});
+                headers = injectVariableInHeaders(headers || {}, suite.id, testCase.name);
                 apiDetails.requestHeaders = headers;
                 
                 if (Object.keys(headers).length > 0) {
@@ -303,7 +306,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                         if (soap) {
                             assertXPath(res.data, assertion);
                         } else {
-                            assertJson(res.data, res.status, [assertion]);
+                            assertJson(res.data, res.status, [assertion], suite.id, testCase.name);
                         }
                         passed++;
                         Logger.success(`${assertionDesc} passed`);
@@ -334,7 +337,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                     Logger.section('💾', 'STORING GLOBAL VARIABLES', colors.magenta);
                     
                     try {
-                        storeResponseVariables(res.data, data.store);
+                        storeResponseVariables(res.data, data.store, false, suite.id, testCase.name, suite.suiteName, testCase.name);
                         Logger.info(`Global variables stored: ${Object.keys(data.store).join(', ')}`);
                         
                         apiDetails.variableStorage = {
@@ -360,7 +363,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                     Logger.section('💾', 'STORING LOCAL VARIABLES', colors.magenta);
                     
                     try {
-                        storeResponseVariables(res.data, data.localStore, true);
+                        storeResponseVariables(res.data, data.localStore, true, suite.id, testCase.name, suite.suiteName, testCase.name);
                         Logger.info(`Local variables stored: ${Object.keys(data.localStore).join(', ')}`);
                         
                         apiDetails.localVariableStorage = {
@@ -407,7 +410,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                             if (soap) {
                                 assertXPath(res.data, assertion);
                             } else {
-                                assertJson(res.data, res.status, [assertion]);
+                                assertJson(res.data, res.status, [assertion], suite.id, testCase.name);
                             }
                             passed++;
                             console.log(`✅ ${assertionDesc} passed`);
@@ -437,7 +440,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                         console.log(`➡️ Storing global variables from error response...`);
                         
                         try {
-                            storeResponseVariables(res.data, data.store);
+                            storeResponseVariables(res.data, data.store, false, suite.id, testCase.name, suite.suiteName, testCase.name);
                             console.log(`✅ Global variables stored from error response`);
                             
                             apiDetails.variableStorage = {
@@ -462,7 +465,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                         console.log(`➡️ Storing local variables from error response...`);
                         
                         try {
-                            storeResponseVariables(res.data, data.localStore, true);
+                            storeResponseVariables(res.data, data.localStore, true, suite.id, testCase.name, suite.suiteName, testCase.name);
                             console.log(`✅ Local variables stored from error response`);
                             
                             apiDetails.localVariableStorage = {
@@ -516,6 +519,8 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
         
         // Clear local variables after test case completion
         clearLocalVariables();
+        // Clean up test case variables from config
+        variableConfig.cleanupTestCase(suite.id, testCase.name);
         
         // Mark test case as executed or failed
         if (testCaseFailed) {
@@ -578,10 +583,10 @@ function resolveDependencies(testCases: any[]): any[] {
     return result;
 }
 
-export function injectVariableInHeaders(headers: Record<string, string>): Record<string, string> {
+export function injectVariableInHeaders(headers: Record<string, string>, suiteId?: string, testCaseId?: string): Record<string, string> {
     const result: Record<string, string> = {};
     for (const [key, value] of Object.entries(headers)) {
-        result[key] = injectVariables(value);
+        result[key] = injectVariables(value, suiteId, testCaseId);
     }
 
     return result;

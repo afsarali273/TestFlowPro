@@ -9,6 +9,7 @@ import {
     runTarget
 } from "./runner/RunController";
 import {parseExecutionTarget} from "./runner/ExecutionTarget";
+import { variableConfig } from "./variables/VariableConfig";
 
 dotenv.config({
     path: path.resolve(__dirname, '../../.env')
@@ -35,6 +36,8 @@ async function main() {
         await runAllSuitesParallel(filters);
     }
 
+    // Clean up all local variables after test run completion
+    variableConfig.cleanupAllLocalVariables();
     console.log(`\n📊 Execution completed. Run ID: ${runId}`);
 }
 

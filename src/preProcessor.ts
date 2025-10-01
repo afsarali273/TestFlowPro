@@ -11,12 +11,12 @@ interface PreProcessStep {
     mapTo?: Record<string, string>; // key = variable name, value = key in returned object
 }
 
-export async function runPreProcessors(steps: PreProcessStep[]) {
+export async function runPreProcessors(steps: PreProcessStep[], suiteId?: string, testCaseId?: string) {
     for (const step of steps) {
         let value: any;
 
         const injectedArgs = (step.args || []).map(arg =>
-            typeof arg === 'string' ? injectVariables(arg) : arg
+            typeof arg === 'string' ? injectVariables(arg, suiteId, testCaseId) : arg
         );
 
         switch (step.function) {

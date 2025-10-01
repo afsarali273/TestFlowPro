@@ -16,7 +16,7 @@ export class UIRunner {
         this.page.setDefaultTimeout(3000);
     }
 
-    async runTestCase(testCase: TestCase) {
+    async runTestCase(testCase: TestCase, suiteId?: string) {
         if (testCase.type !== "UI" || !testCase.testSteps) {
             throw new Error(`Invalid UI test case: ${testCase.name}`);
         }
@@ -68,7 +68,7 @@ export class UIRunner {
             
             try {
                 console.log(`➡️ Executing Step ${step.id}: ${step.keyword}`);
-                await this.runTestStepWithRetry(step);
+                await this.runTestStepWithRetry(step, suiteId, testCase.name);
                 passed++;
                 console.log(`✅ Step ${step.id} passed`);
             } catch (err: any) {
@@ -120,7 +120,7 @@ export class UIRunner {
         });
     }
 
-    async runTestStepWithRetry(step: TestStep, maxRetries: number = 2, retryDelay: number = 2000) {
+    async runTestStepWithRetry(step: TestStep, suiteId?: string, testCaseId?: string, maxRetries: number = 2, retryDelay: number = 2000) {
         let lastError: Error | undefined;
         
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -129,7 +129,7 @@ export class UIRunner {
                     console.log(`🔄 Retry attempt ${attempt}/${maxRetries} for step ${step.id}`);
                     await this.page.waitForTimeout(retryDelay);
                 }
-                await this.runTestStep(step);
+                await this.runTestStep(step, suiteId, testCaseId);
                 return; // Success, exit retry loop
             } catch (error: any) {
                 lastError = error;
@@ -141,14 +141,14 @@ export class UIRunner {
         }
     }
 
-    async runTestStep(step: TestStep) {
+    async runTestStep(step: TestStep, suiteId?: string, testCaseId?: string) {
         const locator = step.locator ? await this.resolveLocator(step) : step.target ? this.page.locator(step.target) : undefined;
-        await this.executeKeyword(step, locator);
+        await this.executeKeyword(step, locator, suiteId, testCaseId);
     }
 
 
 
-    private async executeKeyword(step: TestStep, locator?: Locator) {
+    private async executeKeyword(step: TestStep, locator?: Locator, suiteId?: string, testCaseId?: string) {
         switch (step.keyword) {
             case "openBrowser":
                 break; // already handled in init
@@ -160,7 +160,7 @@ export class UIRunner {
                 break;
             case "goto":
                 if (!step.value) throw new Error("goto requires URL");
-                const url = injectVariables(step.value);
+                const url = injectVariables(step.value, suiteId, testCaseId);
                 await this.page.goto(url);
                 break;
             case "waitForNavigation":
@@ -193,7 +193,7 @@ export class UIRunner {
             case "type":
                 if (!locator) throw new Error(`${step.keyword} requires a locator`);
                 if (!step.value) throw new Error(`${step.keyword} requires a value`);
-                const fillValue = injectVariables(step.value);
+                const fillValue = injectVariables(step.value, suiteId, testCaseId);
                 await locator.fill(fillValue);
                 break;
             case "press":
@@ -438,7 +438,7 @@ export class UIRunner {
             case "assertText":
                 if (!locator) throw new Error("assertText requires a locator");
                 if (!step.value) throw new Error("assertText requires expected text");
-                const expectedText = injectVariables(step.value);
+                const expectedText = injectVariables(step.value, suiteId, testCaseId);
                 await expect(locator).toHaveText(expectedText);
                 break;
 
@@ -453,7 +453,7 @@ export class UIRunner {
             case "assertValue":
                 if (!locator) throw new Error("assertValue requires a locator");
                 if (!step.value) throw new Error("assertValue requires expected value");
-                const expectedValue = injectVariables(step.value);
+                const expectedValue = injectVariables(step.value, suiteId, testCaseId);
                 await expect(locator).toHaveValue(expectedValue);
                 break;
             case "assertAttribute":
@@ -465,7 +465,7 @@ export class UIRunner {
             case "assertHaveText":
                 if (!locator) throw new Error("assertHaveText requires a locator");
                 if (!step.value) throw new Error("assertHaveText requires expected text");
-                const expectedHaveText = injectVariables(step.value);
+                const expectedHaveText = injectVariables(step.value, suiteId, testCaseId);
                 await expect(locator).toHaveText(expectedHaveText);
                 break;
             case "assertHaveCount":
@@ -481,17 +481,17 @@ export class UIRunner {
             case "assertContainsText":
                 if (!locator) throw new Error("assertContainsText requires a locator");
                 if (!step.value) throw new Error("assertContainsText requires expected text");
-                const expectedContainsText = injectVariables(step.value);
+                const expectedContainsText = injectVariables(step.value, suiteId, testCaseId);
                 await expect(locator).toContainText(expectedContainsText);
                 break;
             case "assertUrl":
                 if (!step.value) throw new Error("assertUrl requires expected URL");
-                const expectedUrl = injectVariables(step.value);
+                const expectedUrl = injectVariables(step.value, suiteId, testCaseId);
                 await expect(this.page).toHaveURL(expectedUrl);
                 break;
             case "assertTitle":
                 if (!step.value) throw new Error("assertTitle requires expected title");
-                const expectedTitle = injectVariables(step.value);
+                const expectedTitle = injectVariables(step.value, suiteId, testCaseId);
                 await expect(this.page).toHaveTitle(expectedTitle);
                 break;
 

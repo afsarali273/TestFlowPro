@@ -41,6 +41,7 @@ export interface TestData {
     responseSchema?: any
     responseSchemaFile?: string
     store?: StoreMap
+    localStore?: StoreMap
     enabled?: boolean
 }
 
@@ -247,6 +248,7 @@ export function validateTestData(testData: any): TestData {
         responseSchema: testData.responseSchema,
         responseSchemaFile: testData.responseSchemaFile,
         store: testData.store || {},
+        localStore: testData.localStore || {},
         enabled: testData.enabled !== undefined ? testData.enabled : true,
     }
 

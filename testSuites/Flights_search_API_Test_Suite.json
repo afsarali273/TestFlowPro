@@ -49,6 +49,7 @@
             }
           ],
           "store": {},
+          "localStore": {},
           "enabled": true
         },
         {
@@ -94,6 +95,7 @@
             }
           ],
           "store": {},
+          "localStore": {},
           "enabled": true
         },
         {
@@ -134,6 +136,7 @@
             }
           ],
           "store": {},
+          "localStore": {},
           "enabled": true
         }
       ],

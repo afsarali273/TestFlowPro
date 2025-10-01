@@ -1,0 +1,74 @@
+[
+  {
+    "name": "baseUrl",
+    "value": "https://api.example.com",
+    "type": "global",
+    "suiteName": "API Tests",
+    "description": "Base URL for API endpoints",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  },
+  {
+    "name": "apiKey",
+    "value": "sk-test-123456789",
+    "type": "global",
+    "suiteName": "Authentication Suite",
+    "description": "API key for authentication",
+    "createdAt": "2024-01-15T11:00:00.000Z",
+    "updatedAt": "2024-01-15T11:00:00.000Z"
+  },
+  {
+    "name": "id",
+    "value": "8",
+    "type": "global",
+    "suiteName": "API Test Suite for Object Endpoint",
+    "description": "Runtime global variable",
+    "createdAt": "2025-10-01T13:57:04.983Z",
+    "updatedAt": "2025-10-01T13:57:04.983Z"
+  },
+  {
+    "name": "name",
+    "value": "Apple Watch Series 8",
+    "type": "global",
+    "suiteName": "API Test Suite for Object Endpoint",
+    "description": "Runtime global variable",
+    "createdAt": "2025-10-01T13:57:04.984Z",
+    "updatedAt": "2025-10-01T13:57:04.984Z"
+  },
+  {
+    "name": "StrapColour",
+    "value": "Elderberry",
+    "type": "global",
+    "suiteName": "API Test Suite for Object Endpoint",
+    "description": "Runtime global variable",
+    "createdAt": "2025-10-01T13:57:04.984Z",
+    "updatedAt": "2025-10-01T13:57:04.984Z"
+  },
+  {
+    "name": "afsar",
+    "value": "$.data",
+    "type": "global",
+    "suiteName": "Test Suite",
+    "description": "Global variable from test data editor",
+    "createdAt": "2025-10-01T14:55:50.518Z",
+    "updatedAt": "2025-10-01T14:55:50.518Z"
+  },
+  {
+    "name": "afsar1",
+    "value": "afsar",
+    "type": "global",
+    "suiteName": "Test Suite",
+    "description": "Global variable from test data editor",
+    "createdAt": "2025-10-01T15:02:39.189Z",
+    "updatedAt": "2025-10-01T15:02:39.189Z"
+  },
+  {
+    "name": "afsf",
+    "value": "afsfs",
+    "type": "global",
+    "suiteName": "Test Suite",
+    "description": "Global variable from test data editor",
+    "createdAt": "2025-10-01T15:04:08.571Z",
+    "updatedAt": "2025-10-01T15:04:08.571Z"
+  }
+]
