@@ -453,7 +453,7 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
             </div>
         )}
 
-        <div className="max-w-7xl mx-auto p-6">
+        <div className="max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto p-6 xl:p-8 2xl:p-10">
           {/* Header Section */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 mb-8">
             <div className="flex items-center justify-between">

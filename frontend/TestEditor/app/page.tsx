@@ -82,6 +82,7 @@ export default function APITestFramework() {
   const [resultsSource, setResultsSource] = useState<'dashboard' | 'editor'>('dashboard')
   const [resultsContext, setResultsContext] = useState<{ suite: TestSuite; testCase: any; testCaseIndex: number } | null>(null)
   const [selectedApp, setSelectedApp] = useState<string | null>(null)
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
   const [sidebarViewMode, setSidebarViewMode] = useState<'application' | 'folder'>('application')
   const [showCurlImportModal, setShowCurlImportModal] = useState(false)
   const [showSwaggerImportModal, setShowSwaggerImportModal] = useState(false)
@@ -485,7 +486,10 @@ export default function APITestFramework() {
         // Application filter
         const matchesApp = !selectedApp || (suite.applicationName || 'Uncategorized') === selectedApp
         
-        return matchesSearch && matchesTab && matchesApp
+        // Folder filter
+        const matchesFolder = !selectedFolder || (suite.filePath && suite.filePath.includes(selectedFolder))
+        
+        return matchesSearch && matchesTab && matchesApp && matchesFolder
       })
       .filter(
           (suite, index, self) => index === self.findIndex((s) => s.id === suite.id), // Remove any remaining duplicates
@@ -563,7 +567,7 @@ export default function APITestFramework() {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
           {/* Header Section */}
           <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-2xl">
-            <div className="max-w-7xl mx-auto px-6 py-6">
+            <div className="max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] mx-auto px-6 lg:px-8 xl:px-10 py-6">
               <div className="flex items-center justify-between">
                 {/* Logo and Title Section */}
                 <div className="flex items-center space-x-4">
@@ -683,7 +687,7 @@ export default function APITestFramework() {
           </div>
 
           {/* Main Content */}
-          <div className="max-w-7xl mx-auto px-6 py-8 pt-32">
+          <div className="max-w-6xl xl:max-w-7xl 2xl:max-w-[1600px] mx-auto px-6 lg:px-8 xl:px-10 py-8 pt-32">
             {/* Search and Stats Section */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
@@ -692,7 +696,7 @@ export default function APITestFramework() {
                       placeholder="Search suites, tags, test cases..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-80 h-11 pl-4 pr-4 bg-white/80 backdrop-blur-sm border-slate-200 focus:border-blue-500 focus:ring-blue-500 shadow-lg rounded-xl"
+                      className="w-80 xl:w-96 2xl:w-[420px] h-11 pl-4 pr-4 bg-white/80 backdrop-blur-sm border-slate-200 focus:border-blue-500 focus:ring-blue-500 shadow-lg rounded-xl"
                   />
                 </div>
                 {filteredSuites.length > 0 && (
@@ -776,9 +780,9 @@ export default function APITestFramework() {
             )}
 
             {/* Main Content Area */}
-              <div className="flex gap-6">
+              <div className="flex gap-6 xl:gap-8">
                 {/* Navigation Sidebar */}
-                <div className="w-80 bg-white/80 backdrop-blur-xl rounded-xl border border-white/20 shadow-2xl">
+                <div className="w-80 xl:w-96 2xl:w-[400px] bg-white/80 backdrop-blur-xl rounded-xl border border-white/20 shadow-2xl">
                   <div className="p-4 border-b border-slate-200/50 bg-gradient-to-r from-slate-50 to-blue-50">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -817,6 +821,7 @@ export default function APITestFramework() {
                         onClick={() => {
                           setSidebarViewMode('folder')
                           setSelectedApp(null) // Reset app selection when switching to folder view
+                          setSelectedFolder(null) // Reset folder selection
                         }}
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
                           sidebarViewMode === 'folder'
@@ -829,7 +834,7 @@ export default function APITestFramework() {
                       </button>
                     </div>
                   </div>
-                  <div className="p-3 max-h-[calc(100vh-350px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+                  <div className="p-3 max-h-[calc(100vh-340px)] xl:max-h-[calc(100vh-320px)] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
                     {sidebarViewMode === 'application' ? (
                       // Application-wise grouping
                       (() => {
@@ -976,6 +981,10 @@ export default function APITestFramework() {
                           setSelectedSuite(suite)
                           setShowTestCasesModal(true)
                         }}
+                        onFolderSelect={(folderPath) => {
+                          setSelectedFolder(folderPath === selectedFolder ? null : folderPath)
+                        }}
+                        selectedFolder={selectedFolder}
                       />
                     )}
                   </div>
@@ -983,7 +992,7 @@ export default function APITestFramework() {
                 
                 {/* Suite Cards Area */}
                 <div className={`flex-1 h-full overflow-y-auto ${viewMode === 'grid' 
-                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 content-start" 
+                  ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-4 xl:gap-6 content-start" 
                   : "space-y-4"
                 }`}>
                 {filteredSuites.map((suite) => {
@@ -1006,7 +1015,7 @@ export default function APITestFramework() {
                           <CardTitle className="text-lg font-semibold text-slate-900 group-hover:text-slate-700 transition-colors duration-200 flex-1">
                             {suite.suiteName}
                           </CardTitle>
-                          <Badge className={`${getStatusBadge(suite.status || "Not Started")} font-medium px-3 py-1 flex-shrink-0 ml-3`}>
+                          <Badge className={`${getStatusBadge(suite.status || "Not Started")} font-medium px-3 py-1 flex-shrink-0`}>
                             {suite.status}
                           </Badge>
                         </div>
@@ -1044,12 +1053,14 @@ export default function APITestFramework() {
                                 <span>{totalSteps} {isUISuite ? 'step' : 'data item'}{totalSteps !== 1 ? 's' : ''}</span>
                               </div>
                               {suite.fileName && (
-                                  <span className="block text-xs text-slate-500">📄 {suite.fileName}</span>
+                                  <span className="block text-xs text-slate-500">
+                                    📄 <span className="truncate inline-block max-w-[200px] align-bottom">{suite.fileName}</span>
+                                  </span>
                               )}
                               {suite.baseUrl && (
                                   <span className="flex items-center text-xs text-slate-600">
                                 <Globe className="h-3 w-3 mr-1 flex-shrink-0" />
-                                <span className="break-all">{suite.baseUrl}</span>
+                                <span className="truncate inline-block max-w-[200px]">{suite.baseUrl}</span>
                               </span>
                               )}
                             </div>
@@ -1163,9 +1174,9 @@ export default function APITestFramework() {
                         )}
 
                         {/* Action Buttons */}
-                        <div className={`flex items-center ${viewMode === 'list' ? 'justify-end gap-2 pt-4 border-t border-gray-100' : 'justify-between pt-4 border-t border-gray-100'}`}>
+                        <div className={`flex items-center ${viewMode === 'list' ? 'justify-end gap-2 pt-4 border-t border-gray-100' : 'justify-between pt-4 border-t border-gray-100'} min-w-0`}>
                           {viewMode === 'grid' && (
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2 flex-shrink-0">
                               <Button
                                   size="sm"
                                   variant="outline"
@@ -1173,7 +1184,7 @@ export default function APITestFramework() {
                                     setSelectedSuite(suite)
                                     setIsEditing(true)
                                   }}
-                                  className="h-8 px-3 bg-white/60 hover:bg-white/80 border-slate-200 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
+                                  className="h-8 px-3 bg-white/60 hover:bg-white/80 border-slate-200 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md flex-shrink-0"
                               >
                                 <Edit className="h-3 w-3 mr-1" />
                                 Edit
@@ -1185,7 +1196,7 @@ export default function APITestFramework() {
                                     setSelectedSuite(suite)
                                     setShowTestCasesModal(true)
                                   }}
-                                  className={`h-8 px-3 bg-white/60 hover:bg-white/80 border-slate-200 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md ${
+                                  className={`h-8 px-3 bg-white/60 hover:bg-white/80 border-slate-200 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md flex-shrink-0 ${
                                     isUISuite 
                                       ? 'hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700'
                                       : 'hover:border-green-400 hover:bg-green-50 hover:text-green-700'
@@ -1197,7 +1208,7 @@ export default function APITestFramework() {
                             </div>
                           )}
 
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-2 flex-shrink-0">
                             {viewMode === 'list' && (
                               <>
                                 <Button
@@ -1207,7 +1218,7 @@ export default function APITestFramework() {
                                       setSelectedSuite(suite)
                                       setIsEditing(true)
                                     }}
-                                    className="h-8 px-3 border-gray-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200"
+                                    className="h-8 px-3 border-gray-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 flex-shrink-0"
                                 >
                                   <Edit className="h-3 w-3 mr-1" />
                                   Edit
@@ -1219,7 +1230,7 @@ export default function APITestFramework() {
                                       setSelectedSuite(suite)
                                       setShowTestCasesModal(true)
                                     }}
-                                    className={`h-8 px-3 border-gray-300 transition-all duration-200 ${
+                                    className={`h-8 px-3 border-gray-300 transition-all duration-200 flex-shrink-0 ${
                                       isUISuite 
                                         ? 'hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700'
                                         : 'hover:border-green-400 hover:bg-green-50 hover:text-green-700'
@@ -1234,7 +1245,7 @@ export default function APITestFramework() {
                                 size="sm"
                                 onClick={() => handleRunSuite(suite)}
                                 disabled={!frameworkPath || !suite.filePath}
-                                className={`h-8 px-3 text-white transition-all duration-200 rounded-lg shadow-lg hover:shadow-xl ${
+                                className={`h-8 px-3 text-white transition-all duration-200 rounded-lg shadow-lg hover:shadow-xl flex-shrink-0 ${
                                   isUISuite
                                     ? 'bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700'
                                     : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
@@ -1254,7 +1265,7 @@ export default function APITestFramework() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleDeleteSuite(suite)}
-                                className="h-8 px-2 bg-white/60 hover:bg-white/80 border-red-200 hover:border-red-400 hover:bg-red-50 hover:text-red-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md"
+                                className="h-8 px-2 bg-white/60 hover:bg-white/80 border-red-200 hover:border-red-400 hover:bg-red-50 hover:text-red-700 transition-all duration-200 rounded-lg shadow-sm hover:shadow-md flex-shrink-0"
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -1471,16 +1482,16 @@ export default function APITestFramework() {
         <BrunoImportModal
           isOpen={showBrunoImportModal}
           onClose={() => setShowBrunoImportModal(false)}
-          onImport={(testSuite) => {
+          onSave={(testSuite) => {
             // Add the imported suite to the list
-            setTestSuites((prev) => [...prev, testSuite]);
+            setTestSuites((prev) => [...prev, testSuite as any]);
             // Show success message
             toast({
               title: "Bruno Collection Imported",
               description: "Test suite created from Bruno collection successfully.",
             });
             // Open the editor with the new suite
-            setSelectedSuite(testSuite);
+            setSelectedSuite(testSuite as any);
             setIsEditing(true);
           }}
         />

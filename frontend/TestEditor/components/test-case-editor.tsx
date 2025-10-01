@@ -368,14 +368,12 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
       cleaned.options = step.options
     }
 
-    // Include store and localStore for variable extraction keywords
-    if (["getText", "getAttribute", "getTitle", "getUrl", "getValue", "getCount"].includes(step.keyword)) {
-      if (step.store && Object.keys(step.store).length > 0) {
-        cleaned.store = step.store
-      }
-      if (step.localStore && Object.keys(step.localStore).length > 0) {
-        cleaned.localStore = step.localStore
-      }
+    // Always include store and localStore if they exist (not just for specific keywords)
+    if (step.store && Object.keys(step.store).length > 0) {
+      cleaned.store = step.store
+    }
+    if (step.localStore && Object.keys(step.localStore).length > 0) {
+      cleaned.localStore = step.localStore
     }
 
     if (step.skipOnFailure) {
@@ -492,7 +490,7 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
   // Main TestCaseEditor render
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mx-auto">
         {/* Modern Header with Glass Morphism */}
         <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 p-6 mb-8">
           <div className="flex items-center justify-between">

@@ -360,51 +360,108 @@ export function TestCasesModal({ suite, isOpen, onClose, onRunTestCase }: TestCa
 
   return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-6xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Test Cases - {suite.suiteName}
-            </DialogTitle>
-            <DialogDescription>View all test cases and their test data or test steps for this suite</DialogDescription>
-            {suite.baseUrl && (
-                <div className="flex items-center gap-2 mt-2">
-                  <Globe className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm text-blue-600 break-all">{suite.baseUrl}</span>
+        <DialogContent className="max-w-7xl max-h-[85vh] bg-white/95 backdrop-blur-xl border-0 shadow-2xl">
+          <DialogHeader className="pb-6 border-b border-slate-200/50 bg-gradient-to-r from-slate-50/50 to-blue-50/50 -m-6 mb-6 p-6 rounded-t-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${
+                  suite.type === 'UI' 
+                    ? 'bg-gradient-to-br from-violet-600 to-purple-600' 
+                    : 'bg-gradient-to-br from-slate-600 to-slate-700'
+                }`}>
+                  {suite.type === 'UI' ? (
+                    <MousePointer className="h-5 w-5 text-white" />
+                  ) : (
+                    <Globe className="h-5 w-5 text-white" />
+                  )}
                 </div>
-            )}
+                <div>
+                  <DialogTitle className="text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                    {suite.suiteName}
+                  </DialogTitle>
+                  <div className="flex items-center gap-3 mt-1">
+                    <DialogDescription className="text-slate-600">
+                      {suite.testCases?.length || 0} test case{(suite.testCases?.length || 0) !== 1 ? 's' : ''}
+                    </DialogDescription>
+                    <Badge className={`text-xs ${
+                      suite.type === 'UI' 
+                        ? 'bg-violet-100 text-violet-700 border-violet-200' 
+                        : 'bg-slate-100 text-slate-700 border-slate-200'
+                    }`}>
+                      {suite.type === 'UI' ? '🖱️ UI Tests' : '🌐 API Tests'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                {suite.baseUrl && (
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <Globe className="h-4 w-4" />
+                    <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded truncate max-w-xs">{suite.baseUrl}</span>
+                  </div>
+                )}
+                {suite.applicationName && (
+                  <div className="text-xs text-slate-500 mt-1">📁 {suite.applicationName}</div>
+                )}
+              </div>
+            </div>
           </DialogHeader>
 
-          <ScrollArea className="max-h-[60vh]">
-            <div className="space-y-4 p-1">
+          <ScrollArea className="max-h-[65vh] pr-4">
+            <div className="space-y-6">
               {suite.testCases && suite.testCases.length > 0 ? (
                   suite.testCases.map((testCase: any, testCaseIndex: number) => (
-                      <Card key={testCaseIndex} className="border-l-4 border-l-blue-500">
-                        <CardHeader>
+                      <Card key={testCaseIndex} className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-xl hover:bg-white/90 rounded-xl overflow-hidden ${
+                        testCase.type === 'UI' ? 'border-l-4 border-l-violet-500' : 'border-l-4 border-l-slate-500'
+                      }`}>
+                        <CardHeader className="pb-4 bg-gradient-to-r from-slate-50/30 to-blue-50/30">
                           <div className="flex items-center justify-between">
-                            <div>
-                              <CardTitle className="text-lg flex items-center gap-2">
-                                {getStatusIcon(testCase.status)}
-                                {testCase.name}
-                                {testCase.type && (
-                                    <Badge variant="outline" className="ml-2">
-                                      {testCase.type}
-                                    </Badge>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300 ${
+                                testCase.type === 'UI' 
+                                  ? 'bg-gradient-to-br from-violet-600 to-purple-600' 
+                                  : 'bg-gradient-to-br from-slate-600 to-slate-700'
+                              }`}>
+                                {testCase.type === 'UI' ? (
+                                  <MousePointer className="h-5 w-5 text-white" />
+                                ) : (
+                                  <Globe className="h-5 w-5 text-white" />
                                 )}
-                              </CardTitle>
-                              <CardDescription>
-                                {testCase.type === "UI"
-                                    ? `${testCase.testSteps?.length || 0} test step${testCase.testSteps?.length !== 1 ? "s" : ""}`
-                                    : `${testCase.testData?.length || 0} test data item${testCase.testData?.length !== 1 ? "s" : ""}`}
-                              </CardDescription>
+                              </div>
+                              <div>
+                                <CardTitle className="text-lg font-semibold text-slate-900 group-hover:text-slate-700 transition-colors duration-200 flex items-center gap-2">
+                                  {getStatusIcon(testCase.status)}
+                                  {testCase.name}
+                                  {testCase.type && (
+                                      <Badge variant="outline" className={`text-xs ${
+                                        testCase.type === 'UI' 
+                                          ? 'bg-violet-50 text-violet-700 border-violet-200' 
+                                          : 'bg-slate-50 text-slate-700 border-slate-200'
+                                      }`}>
+                                        {testCase.type}
+                                      </Badge>
+                                  )}
+                                </CardTitle>
+                                <CardDescription className="text-slate-600">
+                                  {testCase.type === "UI"
+                                      ? `${testCase.testSteps?.length || 0} test step${testCase.testSteps?.length !== 1 ? "s" : ""}`
+                                      : `${testCase.testData?.length || 0} test data item${testCase.testData?.length !== 1 ? "s" : ""}`}
+                                </CardDescription>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Badge className={getStatusColor(testCase.status)}>{testCase.status}</Badge>
+                            <div className="flex items-center gap-3">
+                              <Badge className={`${getStatusColor(testCase.status)} font-medium px-3 py-1`}>
+                                {testCase.status || 'Not Started'}
+                              </Badge>
                               <Button
                                 size="sm"
                                 onClick={() => handleRunTestCase(testCase)}
                                 disabled={!suite.filePath}
-                                className="bg-green-600 hover:bg-green-700 text-white"
+                                className={`h-9 px-4 text-white transition-all duration-200 rounded-lg shadow-lg hover:shadow-xl ${
+                                  testCase.type === 'UI'
+                                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700'
+                                    : 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700'
+                                }`}
                                 title={!suite.filePath ? "Save the suite first" : "Run this test case"}
                               >
                                 <Play className="h-3 w-3 mr-1" />
@@ -415,23 +472,34 @@ export function TestCasesModal({ suite, isOpen, onClose, onRunTestCase }: TestCa
                         </CardHeader>
 
                         {testCase.type === "UI" && testCase.testSteps && testCase.testSteps.length > 0 && (
-                            <CardContent>
+                            <CardContent className="pt-0">
                               <div className="space-y-4">
-                                <h4 className="font-medium text-sm text-gray-700 flex items-center gap-2">
-                                  <Play className="h-4 w-4 text-blue-500" />
-                                  Test Steps:
-                                </h4>
+                                <div className="flex items-center gap-2 pb-2 border-b border-slate-200/50">
+                                  <div className="w-6 h-6 rounded-lg bg-violet-100 flex items-center justify-center">
+                                    <Play className="h-3 w-3 text-violet-600" />
+                                  </div>
+                                  <h4 className="font-semibold text-sm text-slate-700">
+                                    Test Steps ({testCase.testSteps.length})
+                                  </h4>
+                                </div>
                                 {renderTestSteps(testCase.testSteps)}
                               </div>
                             </CardContent>
                         )}
 
                         {testCase.type !== "UI" && testCase.testData && testCase.testData.length > 0 && (
-                            <CardContent>
+                            <CardContent className="pt-0">
                               <div className="space-y-4">
-                                <h4 className="font-medium text-sm text-gray-700">Test Data:</h4>
+                                <div className="flex items-center gap-2 pb-2 border-b border-slate-200/50">
+                                  <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center">
+                                    <Database className="h-3 w-3 text-slate-600" />
+                                  </div>
+                                  <h4 className="font-semibold text-sm text-slate-700">
+                                    Test Data ({testCase.testData.length})
+                                  </h4>
+                                </div>
                                 {testCase.testData.map((testData: any, dataIndex: number) => (
-                                    <Card key={dataIndex} className="bg-gray-50">
+                                    <Card key={dataIndex} className="bg-gradient-to-r from-slate-50/50 to-blue-50/50 border border-slate-200/50 shadow-sm hover:shadow-md transition-shadow duration-200">
                                       <CardContent className="p-4">
                                         <div className="space-y-4">
                                           <div className="flex items-center justify-between">
@@ -617,8 +685,17 @@ export function TestCasesModal({ suite, isOpen, onClose, onRunTestCase }: TestCa
             </div>
           </ScrollArea>
 
-          <div className="flex justify-end pt-4 border-t">
-            <Button onClick={onClose}>
+          <div className="flex items-center justify-between pt-6 border-t border-slate-200/50 bg-gradient-to-r from-slate-50/30 to-blue-50/30 -m-6 mt-6 p-6 rounded-b-lg">
+            <div className="text-sm text-slate-600">
+              {suite.testCases?.length || 0} test case{(suite.testCases?.length || 0) !== 1 ? 's' : ''} • 
+              {suite.testCases?.reduce((acc: number, tc: any) => 
+                acc + (tc.type === 'UI' ? (tc.testSteps?.length || 0) : (tc.testData?.length || 0)), 0
+              ) || 0} total {suite.type === 'UI' ? 'steps' : 'data items'}
+            </div>
+            <Button 
+              onClick={onClose}
+              className="h-10 px-6 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-lg"
+            >
               <X className="h-4 w-4 mr-2" />
               Close
             </Button>

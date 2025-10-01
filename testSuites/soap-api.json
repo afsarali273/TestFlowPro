@@ -35,10 +35,13 @@
               "expected": "one hundred "
             }
           ],
-          "store": {}
+          "store": {},
+          "localStore": {},
+          "enabled": true
         }
       ],
-      "testSteps": []
+      "testSteps": [],
+      "enabled": true
     },
     {
       "name": "Number to Dollars",
@@ -62,12 +65,15 @@
               "expected": "one hundred twenty three dollars and forty five cents"
             }
           ],
-          "store": {}
+          "store": {},
+          "localStore": {},
+          "enabled": true
         }
       ],
-      "testSteps": []
+      "testSteps": [],
+      "enabled": true
     }
   ],
   "status": "Not Started",
-  "filePath": "/Users/afsarali/Repository/TestFlowPro/testData/soap-api.json"
+  "filePath": "/Users/afsarali/Repository/TestFlowPro/testSuites/soap-api.json"
 }

@@ -260,8 +260,8 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
   const handleAddGeneratedVariables = (variables: Record<string, string>) => {
     setEditedTestData((prev: any) => ({
       ...prev,
-      store: {
-        ...prev.store,
+      localStore: {
+        ...prev.localStore,
         ...variables
       }
     }))
@@ -510,6 +510,10 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
       assertions: (editedTestData.assertions || []).map(cleanAssertionData),
       // Clean preProcess to remove UI-specific fields and empty entries
       preProcess: (editedTestData.preProcess || []).filter((process: any) => process.function).map(cleanPreProcessData),
+      // Include localStore if it exists and has content
+      ...(editedTestData.localStore && Object.keys(editedTestData.localStore).length > 0 && {
+        localStore: editedTestData.localStore
+      })
     }
 
     onSave(cleanedTestData)
@@ -518,7 +522,7 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mx-auto">
           {/* Modern Header with Glass Morphism */}
           <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 p-6 mb-8">
             <div className="flex items-center justify-between">
@@ -1453,6 +1457,115 @@ Example:
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-8">
+                  {/* Local Variables Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">Local Variables</h3>
+                        <p className="text-sm text-gray-600">Only available within this test case (shared among testData)</p>
+                      </div>
+                      <Button
+                          onClick={() => {
+                            const newLocalStore = { ...editedTestData.localStore }
+                            let newKey = ""
+                            let counter = 1
+                            while (newLocalStore[newKey] !== undefined) {
+                              newKey = `local_variable_${counter}`
+                              counter++
+                            }
+                            newLocalStore[newKey] = ""
+                            setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
+                          }}
+                          size="sm"
+                          className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Local Variable
+                      </Button>
+                    </div>
+                    <div className="space-y-3">
+                      {Object.entries(editedTestData.localStore || {}).map(([key, value], index) => (
+                          <div
+                              key={`local-var-${index}`}
+                              className="flex items-center gap-3 p-4 border border-blue-200 rounded-lg bg-blue-50/50"
+                          >
+                            <div className="flex-1 relative">
+                              <Label className="text-xs font-medium text-blue-700 mb-1 block">Local Variable Name</Label>
+                              <Input
+                                  value={key}
+                                  onChange={(e) => {
+                                    const newKey = e.target.value
+                                    const newLocalStore = { ...editedTestData.localStore }
+                                    const currentValue = newLocalStore[key]
+                                    delete newLocalStore[key]
+                                    newLocalStore[newKey] = currentValue
+                                    setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
+                                  }}
+                                  placeholder="localVariableName"
+                                  className="h-10 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div className="flex-1 relative">
+                              <Label className="text-xs font-medium text-blue-700 mb-1 block">
+                                {testCaseType === "SOAP" ? "XPath Expression" : "JSON Path"}
+                              </Label>
+                              <Input
+                                  value={value as string}
+                                  onChange={(e) => {
+                                    const newLocalStore = { ...editedTestData.localStore }
+                                    newLocalStore[key] = e.target.value
+                                    setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
+                                  }}
+                                  className="h-10 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                                  placeholder={testCaseType === "SOAP" ? "//*[local-name()='id']" : "$.id"}
+                              />
+                            </div>
+                            <div className="flex items-end gap-2">
+                              <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const newKey = `${key}_copy`
+                                    let finalKey = newKey
+                                    let counter = 1
+                                    while (editedTestData.localStore && editedTestData.localStore[finalKey]) {
+                                      finalKey = `${newKey}_${counter}`
+                                      counter++
+                                    }
+                                    const newLocalStore = { ...editedTestData.localStore }
+                                    newLocalStore[finalKey] = value as string
+                                    setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
+                                  }}
+                                  className="h-10 px-3 border-blue-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
+                                  title="Clone local variable"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const newLocalStore = { ...editedTestData.localStore }
+                                    delete newLocalStore[key]
+                                    setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
+                                  }}
+                                  className="h-10 px-3 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                      ))}
+
+                      {(!editedTestData.localStore || Object.keys(editedTestData.localStore).length === 0) && (
+                          <div className="text-center py-6 text-gray-500 bg-blue-50/50 rounded-lg border-2 border-dashed border-blue-200">
+                            <p className="text-sm">No local variables defined yet</p>
+                            <p className="text-xs mt-1">Local variables are only available within this test case</p>
+                          </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Global Variables Section */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -1572,115 +1685,6 @@ Example:
                           <div className="text-center py-6 text-gray-500 bg-gray-50/50 rounded-lg border-2 border-dashed border-gray-200">
                             <p className="text-sm">No global variables defined yet</p>
                             <p className="text-xs mt-1">Global variables are available across all test cases</p>
-                          </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Local Variables Section */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800">Local Variables</h3>
-                        <p className="text-sm text-gray-600">Only available within this test case (shared among testData)</p>
-                      </div>
-                      <Button
-                          onClick={() => {
-                            const newLocalStore = { ...editedTestData.localStore }
-                            let newKey = ""
-                            let counter = 1
-                            while (newLocalStore[newKey] !== undefined) {
-                              newKey = `local_variable_${counter}`
-                              counter++
-                            }
-                            newLocalStore[newKey] = ""
-                            setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
-                          }}
-                          size="sm"
-                          className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Local Variable
-                      </Button>
-                    </div>
-                    <div className="space-y-3">
-                      {Object.entries(editedTestData.localStore || {}).map(([key, value], index) => (
-                          <div
-                              key={`local-var-${index}`}
-                              className="flex items-center gap-3 p-4 border border-blue-200 rounded-lg bg-blue-50/50"
-                          >
-                            <div className="flex-1 relative">
-                              <Label className="text-xs font-medium text-blue-700 mb-1 block">Local Variable Name</Label>
-                              <Input
-                                  value={key}
-                                  onChange={(e) => {
-                                    const newKey = e.target.value
-                                    const newLocalStore = { ...editedTestData.localStore }
-                                    const currentValue = newLocalStore[key]
-                                    delete newLocalStore[key]
-                                    newLocalStore[newKey] = currentValue
-                                    setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
-                                  }}
-                                  placeholder="localVariableName"
-                                  className="h-10 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
-                              />
-                            </div>
-                            <div className="flex-1 relative">
-                              <Label className="text-xs font-medium text-blue-700 mb-1 block">
-                                {testCaseType === "SOAP" ? "XPath Expression" : "JSON Path"}
-                              </Label>
-                              <Input
-                                  value={value as string}
-                                  onChange={(e) => {
-                                    const newLocalStore = { ...editedTestData.localStore }
-                                    newLocalStore[key] = e.target.value
-                                    setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
-                                  }}
-                                  className="h-10 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
-                                  placeholder={testCaseType === "SOAP" ? "//*[local-name()='id']" : "$.id"}
-                              />
-                            </div>
-                            <div className="flex items-end gap-2">
-                              <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    const newKey = `${key}_copy`
-                                    let finalKey = newKey
-                                    let counter = 1
-                                    while (editedTestData.localStore && editedTestData.localStore[finalKey]) {
-                                      finalKey = `${newKey}_${counter}`
-                                      counter++
-                                    }
-                                    const newLocalStore = { ...editedTestData.localStore }
-                                    newLocalStore[finalKey] = value as string
-                                    setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
-                                  }}
-                                  className="h-10 px-3 border-blue-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
-                                  title="Clone local variable"
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    const newLocalStore = { ...editedTestData.localStore }
-                                    delete newLocalStore[key]
-                                    setEditedTestData((prev: any) => ({ ...prev, localStore: newLocalStore }))
-                                  }}
-                                  className="h-10 px-3 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                      ))}
-
-                      {(!editedTestData.localStore || Object.keys(editedTestData.localStore).length === 0) && (
-                          <div className="text-center py-6 text-gray-500 bg-blue-50/50 rounded-lg border-2 border-dashed border-blue-200">
-                            <p className="text-sm">No local variables defined yet</p>
-                            <p className="text-xs mt-1">Local variables are only available within this test case</p>
                           </div>
                       )}
                     </div>

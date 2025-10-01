@@ -18,9 +18,11 @@ interface FolderTreeSidebarProps {
   activeTab: 'all' | 'ui' | 'api'
   searchTerm?: string
   onSuiteSelect: (suite: TestSuite) => void
+  onFolderSelect?: (folderPath: string) => void
+  selectedFolder?: string | null
 }
 
-export function FolderTreeSidebar({ testSuites, activeTab, searchTerm = '', onSuiteSelect }: FolderTreeSidebarProps) {
+export function FolderTreeSidebar({ testSuites, activeTab, searchTerm = '', onSuiteSelect, onFolderSelect, selectedFolder }: FolderTreeSidebarProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['']))
   const [folderTree, setFolderTree] = useState<FolderNode | null>(null)
 
@@ -179,9 +181,16 @@ export function FolderTreeSidebar({ testSuites, activeTab, searchTerm = '', onSu
         {/* Folder Header */}
         {node.isFolder && (
           <div
-            className="group relative flex items-center gap-2 py-2 px-2 cursor-pointer rounded-lg transition-all duration-200 hover:bg-slate-50/80"
+            className={`group relative flex items-center gap-2 py-2 px-2 cursor-pointer rounded-lg transition-all duration-200 hover:bg-slate-50/80 ${
+              selectedFolder === node.path ? 'bg-blue-50 border border-blue-200' : ''
+            }`}
             style={{ marginLeft: `${depth * 16}px` }}
-            onClick={() => toggleFolder(node.path)}
+            onClick={() => {
+              toggleFolder(node.path)
+              if (onFolderSelect) {
+                onFolderSelect(node.path)
+              }
+            }}
           >
             <div className="flex items-center justify-center w-4 h-4">
               {hasChildren ? (
