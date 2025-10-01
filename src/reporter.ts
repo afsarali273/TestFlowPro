@@ -104,7 +104,7 @@ export class Reporter {
         const fileName = `result-${this.suiteName.replace(/\s+/g, '_')}-${new Date()
             .toISOString()
             .replace(/[:.]/g, '-')}.json`;
-        const fullPath = path.join(__dirname, '../reports', fileName);
+        const fullPath = path.normalize(path.join(__dirname, '../reports', fileName));
         fs.mkdirSync(path.dirname(fullPath), { recursive: true });
         fs.writeFileSync(fullPath, JSON.stringify(output, null, 2), 'utf-8');
         console.log(`\n📄 Report written to: ${fullPath}`);

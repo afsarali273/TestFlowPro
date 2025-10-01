@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Resolve to absolute path if it's relative
-    const resolvedPath = path.isAbsolute(testSuitePath) ? testSuitePath : path.resolve(process.cwd(), testSuitePath)
+    // Resolve to absolute path if it's relative and normalize for cross-platform compatibility
+    const resolvedPath = path.normalize(path.isAbsolute(testSuitePath) ? testSuitePath : path.resolve(process.cwd(), testSuitePath))
 
     // Check if the directory exists
     const stats = await fs.stat(resolvedPath)
@@ -42,7 +42,7 @@ async function loadTestSuitesFromDirectory(dirPath: string): Promise<any[]> {
     //console.log('📁 [loadTestSuitesFromDirectory] Found entries:', entries.length, entries.map(e => `${e.name} (${e.isDirectory() ? 'dir' : 'file'})`))
 
     for (const entry of entries) {
-      const fullPath = path.join(dirPath, entry.name)
+      const fullPath = path.normalize(path.join(dirPath, entry.name))
       //console.log('🔍 [loadTestSuitesFromDirectory] Processing:', fullPath)
 
       if (entry.isDirectory()) {
@@ -117,8 +117,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "File path is required" }, { status: 400 })
     }
 
-    // Ensure the directory exists
-    const dirPath = path.dirname(filePath)
+    // Normalize and ensure the directory exists
+    const normalizedFilePath = path.normalize(filePath)
+    const dirPath = path.dirname(normalizedFilePath)
     try {
       await fs.mkdir(dirPath, { recursive: true })
     } catch (error) {
@@ -129,19 +130,19 @@ export async function POST(request: NextRequest) {
     // Check if file already exists
     let fileExists = false
     try {
-      await fs.access(filePath)
+      await fs.access(normalizedFilePath)
       fileExists = true
     } catch {
       // File doesn't exist, which is fine for new files
     }
 
     // Write the test suite to the file
-    await fs.writeFile(filePath, JSON.stringify(testSuite, null, 2), "utf-8")
+    await fs.writeFile(normalizedFilePath, JSON.stringify(testSuite, null, 2), "utf-8")
 
     return NextResponse.json({
       success: true,
       message: fileExists ? "Test suite updated successfully" : "Test suite created successfully",
-      filePath: filePath,
+      filePath: normalizedFilePath,
     })
   } catch (error) {
     console.error("Error saving test suite:", error)

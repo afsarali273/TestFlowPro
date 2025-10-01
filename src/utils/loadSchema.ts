@@ -4,7 +4,7 @@ import path from 'path';
 const schemaCache = new Map<string, object>();
 
 export function loadSchema(schemaPath: string): object {
-    const fullPath = path.resolve(__dirname, '../', schemaPath);
+    const fullPath = path.normalize(path.resolve(__dirname, '../', schemaPath));
     if (schemaCache.has(fullPath)) return schemaCache.get(fullPath)!;
 
     const raw = fs.readFileSync(fullPath, 'utf-8');

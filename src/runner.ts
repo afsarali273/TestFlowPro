@@ -23,14 +23,14 @@ async function main() {
 
     if (target) {
         const executionTarget = parseExecutionTarget(target);
-        let fullPath = file ? (path.isAbsolute(file) ? file : path.join(suitesDir, file)) : null;
+        let fullPath = file ? path.normalize(path.isAbsolute(file) ? file : path.join(suitesDir, file)) : null;
 
         if (!fullPath) fullPath = await findSuiteFile(executionTarget.suiteId, executionTarget.suiteName);
         if (!fullPath) return console.error(`❌ Suite not found: ${executionTarget.suiteName}`);
 
         await runTarget(fullPath, executionTarget, filters, runId);
     } else if (file) {
-        await runSuiteFromFile(path.isAbsolute(file) ? file : path.join(suitesDir, file), filters, runId);
+        await runSuiteFromFile(path.normalize(path.isAbsolute(file) ? file : path.join(suitesDir, file)), filters, runId);
     } else {
         await runAllSuitesParallel(filters);
     }

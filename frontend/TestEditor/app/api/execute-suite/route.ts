@@ -15,14 +15,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Build the command arguments - use the framework path directly with runner.ts
-    const runnerPath = path.join(frameworkPath, "src/runner.ts")
-    const args = ["ts-node", runnerPath, "--file", suiteFilePath]
+    const normalizedFrameworkPath = path.normalize(frameworkPath)
+    const normalizedSuiteFilePath = path.normalize(suiteFilePath)
+    const runnerPath = path.join(normalizedFrameworkPath, "src/runner.ts")
+    const args = ["ts-node", runnerPath, "--file", normalizedSuiteFilePath]
 
     // Create a readable stream for real-time output
     const stream = new ReadableStream({
       start(controller) {
         const process = spawn("npx", args, {
-          cwd: frameworkPath,
+          cwd: normalizedFrameworkPath,
           stdio: ["pipe", "pipe", "pipe"],
           shell: true,
         })
@@ -33,8 +35,8 @@ export async function POST(request: NextRequest) {
             `data: ${JSON.stringify({
               type: "command",
               command: `npx ${args.join(" ")}`,
-              workingDirectory: frameworkPath,
-              suiteFile: suiteFilePath,
+              workingDirectory: normalizedFrameworkPath,
+              suiteFile: normalizedSuiteFilePath,
             })}\n\n`,
           ),
         )

@@ -121,13 +121,13 @@ export function convertSwaggerToTestSuite(swagger: any): TestSuite {
     };
 
     if (suite.fileName != null) {
-        suite.filePath = path.join('./testSuites', suite.fileName);
+        suite.filePath = path.normalize(path.join('./testSuites', suite.fileName));
     }
     return suite;
 }
 
 export function saveTestSuite(suite: TestSuite) {
-    fs.mkdirSync(path.dirname(suite.filePath!), { recursive: true });
+    fs.mkdirSync(path.dirname(path.normalize(suite.filePath!)), { recursive: true });
     fs.writeFileSync(suite.filePath!, JSON.stringify(suite, null, 2));
     console.log(`✅ Test suite saved: ${suite.filePath}`);
 }

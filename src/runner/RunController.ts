@@ -71,7 +71,7 @@ export async function runAllSuitesParallel(filters: Record<string, string>) {
     console.log(`\n🚀 Starting ${runId}`);
     if (Object.keys(filters).length) console.log(`📋 Filters: ${JSON.stringify(filters)}`);
 
-    await Promise.all(files.map(file => limit(() => runSuiteFromFile(path.join(suitesDir, file), filters, runId))));
+    await Promise.all(files.map(file => limit(() => runSuiteFromFile(path.normalize(path.join(suitesDir, file)), filters, runId))));
     console.log(`\n✅ ${runId} completed with max parallelism = ${maxParallel}`);
 }
 
@@ -82,8 +82,8 @@ export function generateRunName(): string {
 export async function findSuiteFile(suiteId: string, suiteName: string): Promise<string | null> {
     const files = fs.readdirSync(suitesDir).filter(f => f.endsWith(".json"));
     for (const file of files) {
-        const suite: TestSuite = JSON.parse(fs.readFileSync(path.join(suitesDir, file), "utf-8"));
-        if (suite.id === suiteId || suite.suiteName === suiteName) return path.join(suitesDir, file);
+        const suite: TestSuite = JSON.parse(fs.readFileSync(path.normalize(path.join(suitesDir, file)), "utf-8"));
+        if (suite.id === suiteId || suite.suiteName === suiteName) return path.normalize(path.join(suitesDir, file));
     }
     return null;
 }

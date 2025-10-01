@@ -6,7 +6,7 @@ const folderPath = './reports/';
 const files = fs.readdirSync(folderPath).filter(f => f.endsWith('.json'));
 
 const suites = files.map(file => {
-    const raw = fs.readFileSync(path.join(folderPath, file), 'utf-8');
+    const raw = fs.readFileSync(path.normalize(path.join(folderPath, file)), 'utf-8');
     return JSON.parse(raw);
 });
 

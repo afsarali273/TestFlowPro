@@ -14,8 +14,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Normalize path for cross-platform compatibility
+    const normalizedPath = path.normalize(testPath)
+    
     // Check if the path exists
-    const stats = await fs.stat(testPath)
+    const stats = await fs.stat(normalizedPath)
 
     if (!stats.isDirectory()) {
       return NextResponse.json({
@@ -25,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Count JSON files in the directory
-    const fileCount = await countJsonFiles(testPath)
+    const fileCount = await countJsonFiles(normalizedPath)
 
     return NextResponse.json({
       isValid: true,
@@ -57,7 +60,7 @@ async function countJsonFiles(dirPath: string): Promise<number> {
     const entries = await fs.readdir(dirPath, { withFileTypes: true })
 
     for (const entry of entries) {
-      const fullPath = path.join(dirPath, entry.name)
+      const fullPath = path.normalize(path.join(dirPath, entry.name))
 
       if (entry.isDirectory()) {
         // Recursively count in subdirectories

@@ -579,7 +579,7 @@ export default function APITestFramework() {
                       <p className="text-slate-600 font-medium">Advanced Test Automation Platform</p>
                       {testSuitePath && (
                           <Badge variant="outline" className="text-xs bg-blue-100/80 text-blue-700 border-blue-200/50 backdrop-blur-sm">
-                            📁 {testSuitePath.split("/").pop() || testSuitePath}
+                            📁 {testSuitePath.split(/[\/\\]/).pop() || testSuitePath}
                           </Badge>
                       )}
                     </div>
