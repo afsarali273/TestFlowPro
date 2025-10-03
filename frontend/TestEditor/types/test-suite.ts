@@ -176,6 +176,18 @@ export interface TestStep {
     skipOnFailure?: boolean // skip this step if any previous step failed
 }
 
+export interface ParameterSource {
+    type: "csv" | "json" | "inline"
+    filePath?: string
+    data?: any[]
+}
+
+export interface TestCaseParameters {
+    enabled: boolean
+    dataSource: ParameterSource
+    parameterMapping?: Record<string, string>
+}
+
 export interface TestCase {
     id?: string
     name: string
@@ -185,7 +197,20 @@ export interface TestCase {
     dependsOn?: string[]
     testData: TestData[]
     testSteps: TestStep[]
+    parameters?: TestCaseParameters
     enabled?: boolean
+    // Direct API properties (used when parameters enabled and no testData)
+    method?: string
+    endpoint?: string
+    headers?: Record<string, string>
+    body?: any
+    bodyFile?: string
+    assertions?: Assertion[]
+    responseSchema?: any
+    responseSchemaFile?: string
+    store?: StoreMap
+    localStore?: StoreMap
+    preProcess?: any
 }
 
 export interface Tag {
@@ -229,6 +254,11 @@ export function validateTestCase(testCase: any): TestCase {
         dependsOn: Array.isArray(testCase.dependsOn) ? testCase.dependsOn : undefined,
         testData: Array.isArray(testCase.testData) ? testCase.testData.map(validateTestData) : [],
         testSteps: Array.isArray(testCase.testSteps) ? testCase.testSteps.map(validateTestStep) : [],
+        parameters: testCase.parameters ? {
+            enabled: testCase.parameters.enabled || false,
+            dataSource: testCase.parameters.dataSource || { type: "inline", data: [] },
+            parameterMapping: testCase.parameters.parameterMapping || {}
+        } : undefined,
         enabled: testCase.enabled !== undefined ? testCase.enabled : true,
     }
 

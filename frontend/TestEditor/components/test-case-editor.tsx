@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Trash2, Save, X, ArrowLeft, Copy, HelpCircle, Play, ArrowRight, Zap } from "lucide-react"
 import { TestDataEditor } from "@/components/test-data-editor"
 import { SuiteRunnerModal } from "@/components/suite-runner-modal"
-import { type TestCase, type TestData, type TestStep, validateTestCase } from "@/types/test-suite"
+import { ParameterManager } from "@/components/parameter-manager"
+import { type TestCase, type TestData, type TestStep, type TestCaseParameters, validateTestCase } from "@/types/test-suite"
 
 import dynamic from "next/dynamic"
 
@@ -20,6 +21,7 @@ const ReactJson = dynamic(() => import("react-json-view"), {
   loading: () => <div className="p-4 text-center text-gray-500">Loading JSON viewer...</div>
 })
 import MonacoEditor from "@monaco-editor/react"
+
 
 interface TestCaseEditorProps {
   testCase: TestCase & { index?: number }
@@ -264,20 +266,6 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
     onSave(finalTestCase)
   }
 
-  const handleJsonTreeEdit = (edit: any) => {
-    try {
-      const updated = edit.updated_src
-      const validated = validateTestCase(updated)
-      setEditedTestCase({
-        ...validated,
-        index: editedTestCase.index,
-      })
-      setJsonError(null)
-    } catch (error: any) {
-      setJsonError(`Invalid JSON: ${error.message}`)
-    }
-  }
-
   const handleMonacoChange = (value: string | undefined) => {
     if (!value) return
     try {
@@ -292,6 +280,22 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
       setJsonError(`Invalid JSON: ${error.message}`)
     }
   }
+
+  const handleJsonTreeEdit = (edit: any) => {
+    try {
+      const updated = edit.updated_src
+      const validated = validateTestCase(updated)
+      setEditedTestCase({
+        ...validated,
+        index: editedTestCase.index,
+      })
+      setJsonError(null)
+    } catch (error: any) {
+      setJsonError(`Invalid JSON: ${error.message}`)
+    }
+  }
+
+
 
   // Helper function to clean step for JSON serialization
   const cleanStepForSerialization = (step: TestStep): TestStep => {
@@ -533,7 +537,7 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           {/* Modern Tab Navigation */}
           <div className="bg-white/60 backdrop-blur-xl rounded-xl p-2 shadow-xl border border-white/20">
-            <TabsList className="grid w-full grid-cols-3 bg-transparent gap-2">
+            <TabsList className="grid w-full grid-cols-4 bg-transparent gap-2">
               <TabsTrigger 
                 value="general"
                 className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium"
@@ -541,12 +545,20 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                 General
               </TabsTrigger>
               {testType === "API" ? (
-                <TabsTrigger 
-                  value="testdata"
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium"
-                >
-                  Test Data ({editedTestCase.testData?.length || 0})
-                </TabsTrigger>
+                <>
+                  <TabsTrigger 
+                    value="testdata"
+                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium"
+                  >
+                    Test Data ({editedTestCase.testData?.length || 0})
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="parameters"
+                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium"
+                  >
+                    Parameters {editedTestCase.parameters?.enabled ? '✓' : ''}
+                  </TabsTrigger>
+                </>
               ) : (
                 <TabsTrigger 
                   value="teststeps"
@@ -2098,6 +2110,19 @@ await page.waitForFunction(() => {
                   </div>
                 )}
               </div>
+            </TabsContent>
+          )}
+
+          {testType === "API" && (
+            <TabsContent value="parameters">
+              <ParameterManager
+                parameters={editedTestCase.parameters}
+                onParametersChange={(parameters) => {
+                  handleTestCaseChange("parameters", parameters)
+                  triggerAutoSave()
+                }}
+                testCaseName={editedTestCase.name}
+              />
             </TabsContent>
           )}
 

@@ -10,6 +10,7 @@ import { runPreProcessors } from "./preProcessor";
 import { loadSchema } from "./utils/loadSchema";
 import {UIRunner} from "./ui-test";
 import {Logger} from "./utils/Logger";
+import { loadParameterData, injectParametersInObject, ParameterSet } from "./utils/parameterProcessor";
 
 // Console colors
 const colors = {
@@ -162,30 +163,79 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
 
         let testCaseFailed = false;
         
-        for (const data of testCase.testData) {
+        // Load parameter data if parameters are enabled
+        let parameterSets: ParameterSet[] = [{}];
+        if (testCase.parameters?.enabled && testCase.parameters.dataSource) {
+            try {
+                parameterSets = loadParameterData(testCase.parameters.dataSource);
+                if (parameterSets.length === 0) {
+                    parameterSets = [{}];
+                }
+                Logger.info(`Loaded ${parameterSets.length} parameter sets for test case: ${testCase.name}`);
+            } catch (error: any) {
+                Logger.error(`Failed to load parameters: ${error.message}`);
+                parameterSets = [{}];
+            }
+        }
+        
+        // If parameters are enabled and no testData, create default testData from test case
+        let testDataToExecute = testCase.testData;
+        if (testCase.parameters?.enabled && testCase.testData.length === 0) {
+            testDataToExecute = [{
+                name: testCase.name,
+                method: testCase.method,
+                endpoint: testCase.endpoint,
+                headers: testCase.headers,
+                body: testCase.body,
+                bodyFile: testCase.bodyFile,
+                assertions: testCase.assertions,
+                store: testCase.store,
+                localStore: testCase.localStore,
+                preProcess: testCase.preProcess,
+                responseSchema: testCase.responseSchema,
+                responseSchemaFile: testCase.responseSchemaFile
+            }];
+        }
+        
+        for (const data of testDataToExecute) {
             // Skip disabled test data
             if (data.enabled === false) {
                 Logger.warning(`Skipping disabled test data: ${data.name}`);
                 continue;
             }
             
-            const start = Date.now();
-            let responseData: any = null;
-            const fullUrl = injectVariables(resolvedBaseUrl + data.endpoint);
-            let headers = data.headers;
-            const soap = isSoapRequest(headers);
+            // Execute test data for each parameter set
+            for (let paramIndex = 0; paramIndex < parameterSets.length; paramIndex++) {
+                const parameters = parameterSets[paramIndex];
+                const parameterSuffix = parameterSets.length > 1 ? ` [Param Set ${paramIndex + 1}]` : '';
+                
+                const start = Date.now();
+                let responseData: any = null;
+                
+                // Inject parameters into test data
+                const parameterizedData = injectParametersInObject(data, parameters);
+                const fullUrl = injectVariables(resolvedBaseUrl + parameterizedData.endpoint);
+                let headers = parameterizedData.headers;
+                const soap = isSoapRequest(headers);
 
-            if (data.preProcess) await runPreProcessors(data.preProcess);
+            if (parameterizedData.preProcess) await runPreProcessors(parameterizedData.preProcess);
 
-            Logger.section('📡', `TEST DATA: ${data.name}`, colors.cyan);
+            Logger.section('📡', `TEST DATA: ${parameterizedData.name}${parameterSuffix}`, colors.cyan);
+            
+            if (parameterSets.length > 1) {
+                console.log(`${colors.magenta}🔢 PARAMETERS${colors.reset}`);
+                Object.entries(parameters).forEach(([key, value]) => {
+                    console.log(`  ${key}: ${value}`);
+                });
+            }
             console.log(`${colors.blue}🌐 REQUEST DETAILS${colors.reset}`);
-            console.log(`  Method: ${data.method}`);
+            console.log(`  Method: ${parameterizedData.method}`);
             console.log(`  URL: ${fullUrl}`);
             console.log(`  Type: ${soap ? 'SOAP' : 'REST'}`);
             
             let body: any;
             try {
-                body = loadRequestBody(data.bodyFile, data.body, soap);
+                body = loadRequestBody(parameterizedData.bodyFile, parameterizedData.body, soap);
                 
                 if (body) {
                     console.log(`${colors.yellow}📄 Request Body:${colors.reset}`);
@@ -194,7 +244,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
             } catch (err: any) {
                 reporter.add({
                     testCase: testCase.name,
-                    dataSet: data.name,
+                    dataSet: `${parameterizedData.name}${parameterSuffix}`,
                     status: 'FAIL',
                     error: `Failed to load body: ${err.message}`,
                     responseTimeMs: 0,
@@ -205,13 +255,13 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
             }
 
             let schema: object | undefined;
-            if (!soap && data.responseSchemaFile) {
+            if (!soap && parameterizedData.responseSchemaFile) {
                 try {
-                    schema = loadSchema(data.responseSchemaFile);
+                    schema = loadSchema(parameterizedData.responseSchemaFile);
                 } catch (err: any) {
                     reporter.add({
                         testCase: testCase.name,
-                        dataSet: data.name,
+                        dataSet: `${parameterizedData.name}${parameterSuffix}`,
                         status: 'FAIL',
                         error: `Failed to load schema: ${err.message}`,
                         responseTimeMs: 0,
@@ -220,16 +270,16 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                     });
                     continue;
                 }
-            } else if (data.responseSchema) {
-                schema = data.responseSchema;
+            } else if (parameterizedData.responseSchema) {
+                schema = parameterizedData.responseSchema;
             }
 
             let passed = 0, failed = 0;
             let status: 'PASS' | 'FAIL' = 'PASS';
             const allErrors: string[] = [];
             const apiDetails: any = {
-                method: data.method,
-                endpoint: data.endpoint,
+                method: parameterizedData.method,
+                endpoint: parameterizedData.endpoint,
                 fullUrl: fullUrl,
                 requestHeaders: headers,
                 requestBody: body,
@@ -238,7 +288,8 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                 responseBody: null,
                 executionTimeMs: 0,
                 assertions: [],
-                variableStorage: null
+                variableStorage: null,
+                parameters: parameterSets.length > 1 ? parameters : undefined
             };
 
             try {
@@ -252,11 +303,11 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                     });
                 }
                 
-                Logger.request(data.method, fullUrl);
+                Logger.request(parameterizedData.method, fullUrl);
                 
                 const res = await axios({
                     url: fullUrl,
-                    method: data.method.toLowerCase(),
+                    method: parameterizedData.method.toLowerCase(),
                     headers,
                     data: body,
                 });
@@ -291,11 +342,11 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                 }
 
                 // Run assertions
-                if (data.assertions && data.assertions.length > 0) {
+                if (parameterizedData.assertions && parameterizedData.assertions.length > 0) {
                     Logger.section('🔍', 'RUNNING ASSERTIONS', colors.yellow);
                 }
                 
-                for (const assertion of data.assertions || []) {
+                for (const assertion of parameterizedData.assertions || []) {
                     const assertionDesc = `${assertion.type} assertion (${assertion.jsonPath || assertion.xpathExpression || 'N/A'})`;
                     Logger.info(`Running ${assertionDesc}`);
                     
@@ -330,15 +381,15 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                 }
 
                 // Variable storage
-                if (data.store && Object.keys(data.store).length > 0) {
+                if (parameterizedData.store && Object.keys(parameterizedData.store).length > 0) {
                     Logger.section('💾', 'STORING GLOBAL VARIABLES', colors.magenta);
                     
                     try {
-                        storeResponseVariables(res.data, data.store);
-                        Logger.info(`Global variables stored: ${Object.keys(data.store).join(', ')}`);
+                        storeResponseVariables(res.data, parameterizedData.store);
+                        Logger.info(`Global variables stored: ${Object.keys(parameterizedData.store).join(', ')}`);
                         
                         apiDetails.variableStorage = {
-                            variables: Object.keys(data.store),
+                            variables: Object.keys(parameterizedData.store),
                             status: 'PASS'
                         };
                     } catch (err: any) {
@@ -348,7 +399,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                         Logger.error(`Variable storage failed: ${err.message}`);
                         
                         apiDetails.variableStorage = {
-                            variables: Object.keys(data.store),
+                            variables: Object.keys(parameterizedData.store),
                             status: 'FAIL',
                             error: storeError
                         };
@@ -356,15 +407,15 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                 }
 
                 // Local variable storage
-                if (data.localStore && Object.keys(data.localStore).length > 0) {
+                if (parameterizedData.localStore && Object.keys(parameterizedData.localStore).length > 0) {
                     Logger.section('💾', 'STORING LOCAL VARIABLES', colors.magenta);
                     
                     try {
-                        storeResponseVariables(res.data, data.localStore, true);
-                        Logger.info(`Local variables stored: ${Object.keys(data.localStore).join(', ')}`);
+                        storeResponseVariables(res.data, parameterizedData.localStore, true);
+                        Logger.info(`Local variables stored: ${Object.keys(parameterizedData.localStore).join(', ')}`);
                         
                         apiDetails.localVariableStorage = {
-                            variables: Object.keys(data.localStore),
+                            variables: Object.keys(parameterizedData.localStore),
                             status: 'PASS'
                         };
                     } catch (err: any) {
@@ -374,7 +425,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                         Logger.error(`Local variable storage failed: ${err.message}`);
                         
                         apiDetails.localVariableStorage = {
-                            variables: Object.keys(data.localStore),
+                            variables: Object.keys(parameterizedData.localStore),
                             status: 'FAIL',
                             error: storeError
                         };
@@ -399,7 +450,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                     console.log(JSON.stringify(responseData, null, 2));
 
                     // Still run assertions on error response
-                    for (const assertion of data.assertions || []) {
+                    for (const assertion of parameterizedData.assertions || []) {
                         const assertionDesc = `${assertion.type} assertion (${assertion.jsonPath || assertion.xpathExpression || 'N/A'})`;
                         console.log(`➡️ Running ${assertionDesc} on error response`);
                         
@@ -433,15 +484,15 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                         }
                     }
 
-                    if (data.store) {
+                    if (parameterizedData.store) {
                         console.log(`➡️ Storing global variables from error response...`);
                         
                         try {
-                            storeResponseVariables(res.data, data.store);
+                            storeResponseVariables(res.data, parameterizedData.store);
                             console.log(`✅ Global variables stored from error response`);
                             
                             apiDetails.variableStorage = {
-                                variables: Object.keys(data.store),
+                                variables: Object.keys(parameterizedData.store),
                                 status: 'PASS'
                             };
                         } catch (err: any) {
@@ -451,22 +502,22 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                             console.log(`❌ Variable storage failed: ${err.message}`);
                             
                             apiDetails.variableStorage = {
-                                variables: Object.keys(data.store),
+                                variables: Object.keys(parameterizedData.store),
                                 status: 'FAIL',
                                 error: storeError
                             };
                         }
                     }
 
-                    if (data.localStore) {
+                    if (parameterizedData.localStore) {
                         console.log(`➡️ Storing local variables from error response...`);
                         
                         try {
-                            storeResponseVariables(res.data, data.localStore, true);
+                            storeResponseVariables(res.data, parameterizedData.localStore, true);
                             console.log(`✅ Local variables stored from error response`);
                             
                             apiDetails.localVariableStorage = {
-                                variables: Object.keys(data.localStore),
+                                variables: Object.keys(parameterizedData.localStore),
                                 status: 'PASS'
                             };
                         } catch (err: any) {
@@ -476,7 +527,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                             console.log(`❌ Local variable storage failed: ${err.message}`);
                             
                             apiDetails.localVariableStorage = {
-                                variables: Object.keys(data.localStore),
+                                variables: Object.keys(parameterizedData.localStore),
                                 status: 'FAIL',
                                 error: storeError
                             };
@@ -498,7 +549,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                 
                 reporter.add({
                     testCase: testCase.name,
-                    dataSet: data.name,
+                    dataSet: `${parameterizedData.name}${parameterSuffix}`,
                     status,
                     error: allErrors.length ? allErrors.join(' | ') : undefined,
                     assertionsPassed: passed,
@@ -511,6 +562,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                 if (status === 'FAIL') {
                     testCaseFailed = true;
                 }
+            }
             }
         }
         

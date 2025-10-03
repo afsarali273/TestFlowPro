@@ -490,12 +490,62 @@ export function TestCasesModal({ suite, isOpen, onClose, onRunTestCase }: TestCa
                         {testCase.type !== "UI" && testCase.testData && testCase.testData.length > 0 && (
                             <CardContent className="pt-0">
                               <div className="space-y-4">
+                                {/* Parameters Section */}
+                                {testCase.parameters?.enabled && (
+                                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <div className="w-6 h-6 rounded-lg bg-blue-100 flex items-center justify-center">
+                                        <Database className="h-3 w-3 text-blue-600" />
+                                      </div>
+                                      <h4 className="font-semibold text-sm text-blue-800">
+                                        Parameters Enabled
+                                      </h4>
+                                    </div>
+                                    <div className="space-y-2 text-sm">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-blue-700 font-medium">Data Source:</span>
+                                        <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                                          {testCase.parameters.dataSource.type.toUpperCase()}
+                                        </Badge>
+                                        {testCase.parameters.dataSource.filePath && (
+                                          <span className="text-blue-600 text-xs font-mono">
+                                            {testCase.parameters.dataSource.filePath}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {testCase.parameters.dataSource.data && (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-blue-700 font-medium">Parameter Sets:</span>
+                                          <span className="text-blue-600">{testCase.parameters.dataSource.data.length}</span>
+                                        </div>
+                                      )}
+                                      {testCase.parameters.parameterMapping && Object.keys(testCase.parameters.parameterMapping).length > 0 && (
+                                        <div>
+                                          <span className="text-blue-700 font-medium block mb-1">Parameter Mappings:</span>
+                                          <div className="flex flex-wrap gap-1">
+                                            {Object.entries(testCase.parameters.parameterMapping).map(([key, value]) => (
+                                              <Badge key={key} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                                {key} → {value}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                
                                 <div className="flex items-center gap-2 pb-2 border-b border-slate-200/50">
                                   <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center">
                                     <Database className="h-3 w-3 text-slate-600" />
                                   </div>
                                   <h4 className="font-semibold text-sm text-slate-700">
                                     Test Data ({testCase.testData.length})
+                                    {testCase.parameters?.enabled && testCase.parameters.dataSource.data && (
+                                      <span className="ml-2 text-xs text-blue-600">
+                                        × {testCase.parameters.dataSource.data.length} parameter sets = {testCase.testData.length * testCase.parameters.dataSource.data.length} executions
+                                      </span>
+                                    )}
                                   </h4>
                                 </div>
                                 {testCase.testData.map((testData: any, dataIndex: number) => (

@@ -1026,17 +1026,17 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
           </div>
         )}
 
-        <div className={`flex gap-8 animate-in slide-in-from-bottom duration-700 delay-200 ${
+        <div className={`flex gap-6 animate-in slide-in-from-bottom duration-700 delay-200 ${
           isDetailedView ? 'h-[calc(100vh-180px)]' : 'h-[calc(100vh-200px)]'
         }`}>
           {/* Enhanced Sidebar */}
-          <div className="w-96 bg-white/80 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl flex flex-col overflow-hidden">
-            <div className="p-6 border-b border-slate-200/50 bg-gradient-to-r from-slate-50/50 to-indigo-50/30">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-                  <Search className="h-4 w-4 text-white" />
+          <div className="w-80 bg-white/80 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-slate-200/50 bg-gradient-to-r from-slate-50/50 to-indigo-50/30">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                  <Search className="h-3 w-3 text-white" />
                 </div>
-                <h3 className="text-lg font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                <h3 className="text-base font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
                   Test Runs Explorer
                 </h3>
               </div>
@@ -1051,8 +1051,8 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
               </div>
             </div>
 
-            <ScrollArea className="flex-1 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
-              <div className="p-4 space-y-3">
+            <div className="flex-1 overflow-auto">
+              <div className="p-4 space-y-3 min-w-0">
                 {filteredRuns.map((run, index) => {
                   const successRate = calculateSuccessRate(run.totalPassed, run.totalTests)
                   const isSelected = selectedRun?.runId === run.runId
@@ -1060,10 +1060,10 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
                   return (
                     <div key={index} className="space-y-2 animate-in slide-in-from-left duration-500" style={{animationDelay: `${index * 100}ms`}}>
                       <div
-                        className={`group p-4 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
+                        className={`group p-3 rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.01] ${
                           isSelected 
-                            ? "bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 shadow-xl" 
-                            : "bg-white/60 hover:bg-white/80 border border-slate-200/50 hover:border-indigo-200 hover:shadow-xl"
+                            ? "bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 shadow-lg" 
+                            : "bg-white/60 hover:bg-white/80 border border-slate-200/50 hover:border-indigo-200 hover:shadow-lg"
                         }`}
                         onClick={() => {
                           setSelectedRun(run)
@@ -1073,68 +1073,66 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
                           }
                         }}
                       >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 ${
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 ${
                               isSelected 
                                 ? "bg-gradient-to-br from-indigo-500 to-purple-600" 
                                 : "bg-gradient-to-br from-slate-400 to-slate-500 group-hover:from-indigo-400 group-hover:to-purple-500"
                             }`}>
-                              <Activity className="h-5 w-5 text-white" />
+                              <Activity className="h-4 w-4 text-white" />
                             </div>
-                            <div>
-                              <h3 className={`font-semibold text-sm transition-colors duration-300 ${
+                            <div className="min-w-0 flex-1">
+                              <h3 className={`font-semibold text-sm transition-colors duration-300 truncate ${
                                 isSelected ? "text-indigo-900" : "text-slate-900 group-hover:text-indigo-800"
                               }`}>
                                 {run.runName}
                               </h3>
-                              <div className="text-xs text-slate-500 mt-0.5">
+                              <div className="text-xs text-slate-500">
                                 {new Date(run.lastModified).toLocaleDateString()}
                               </div>
                             </div>
                           </div>
-                          <div className={`w-3 h-3 rounded-full shadow-lg animate-pulse ${
+                          <div className={`w-2 h-2 rounded-full shadow-sm animate-pulse flex-shrink-0 ${
                             successRate === 100 ? "bg-emerald-500" :
                             successRate >= 80 ? "bg-yellow-500" : "bg-red-500"
                           }`} />
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-3 mb-3">
-                          <div className="text-center p-2 bg-white/50 rounded-lg">
-                            <div className="text-lg font-bold text-slate-800">{run.totalSuites}</div>
+                        <div className="grid grid-cols-3 gap-2 mb-2">
+                          <div className="text-center p-1.5 bg-white/50 rounded-md">
+                            <div className="text-sm font-bold text-slate-800">{run.totalSuites}</div>
                             <div className="text-xs text-slate-600">Suites</div>
                           </div>
-                          <div className="text-center p-2 bg-white/50 rounded-lg">
-                            <div className="text-lg font-bold text-slate-800">{run.totalTests}</div>
+                          <div className="text-center p-1.5 bg-white/50 rounded-md">
+                            <div className="text-sm font-bold text-slate-800">{run.totalTests}</div>
                             <div className="text-xs text-slate-600">Tests</div>
+                          </div>
+                          <div className="text-center p-1.5 bg-white/50 rounded-md">
+                            <div className={`text-sm font-bold ${
+                              successRate >= 90 ? "text-emerald-600" :
+                              successRate >= 70 ? "text-yellow-600" : "text-red-600"
+                            }`}>{successRate}%</div>
+                            <div className="text-xs text-slate-600">Pass</div>
                           </div>
                         </div>
                         
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium text-slate-700">Success Rate</span>
-                            <span className={`font-bold ${
-                              successRate >= 90 ? "text-emerald-600" :
-                              successRate >= 70 ? "text-yellow-600" : "text-red-600"
-                            }`}>{successRate}%</span>
-                          </div>
-                          <div className="relative">
-                            <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                                  successRate >= 90 ? "bg-gradient-to-r from-emerald-400 to-emerald-600" :
-                                  successRate >= 70 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : 
-                                  "bg-gradient-to-r from-red-400 to-red-600"
-                                }`}
-                                style={{ width: `${successRate}%` }}
-                              />
-                            </div>
+                        <div className="relative">
+                          <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                                successRate >= 90 ? "bg-gradient-to-r from-emerald-400 to-emerald-600" :
+                                successRate >= 70 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" : 
+                                "bg-gradient-to-r from-red-400 to-red-600"
+                              }`}
+                              style={{ width: `${successRate}%` }}
+                            />
                           </div>
                         </div>
                       </div>
                       
                       {isSelected && (
-                        <div className="ml-6 mt-3 space-y-2 animate-in slide-in-from-left duration-300">
+                        <div className="ml-4 mt-2 space-y-1 animate-in slide-in-from-left duration-300">
                           {run.suites.map((suite, suiteIndex) => {
                             const suiteSuccessRate = calculateSuccessRate(suite.summary.passed, suite.summary.totalDataSets)
                             const isSuiteSelected = selectedResult?.summary.suiteName === suite.summary.suiteName
@@ -1142,10 +1140,10 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
                             return (
                               <div
                                 key={suiteIndex}
-                                className={`group p-3 rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-105 ${
+                                className={`group p-2 rounded-lg cursor-pointer transition-all duration-300 transform hover:scale-[1.02] ${
                                   isSuiteSelected 
-                                    ? "bg-gradient-to-r from-indigo-100 to-purple-100 border border-indigo-300 shadow-lg" 
-                                    : "bg-white/40 hover:bg-white/70 border border-slate-200/50 hover:border-indigo-200 hover:shadow-md"
+                                    ? "bg-gradient-to-r from-indigo-100 to-purple-100 border border-indigo-300 shadow-md" 
+                                    : "bg-white/40 hover:bg-white/70 border border-slate-200/50 hover:border-indigo-200 hover:shadow-sm"
                                 }`}
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -1154,17 +1152,17 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    <div className={`w-2 h-2 rounded-full ${
+                                    <div className={`w-1.5 h-1.5 rounded-full ${
                                       suiteSuccessRate >= 90 ? "bg-emerald-500" :
                                       suiteSuccessRate >= 70 ? "bg-yellow-500" : "bg-red-500"
                                     }`} />
-                                    <span className={`text-sm font-medium truncate transition-colors duration-300 ${
+                                    <span className={`text-xs font-medium truncate transition-colors duration-300 ${
                                       isSuiteSelected ? "text-indigo-900" : "text-slate-700 group-hover:text-indigo-800"
                                     }`}>
                                       {suite.summary.suiteName}
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                  <div className="flex items-center gap-1 flex-shrink-0">
                                     <span className={`text-xs font-bold ${
                                       suiteSuccessRate >= 90 ? "text-emerald-600" :
                                       suiteSuccessRate >= 70 ? "text-yellow-600" : "text-red-600"
@@ -1172,7 +1170,7 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
                                       {suiteSuccessRate}%
                                     </span>
                                     <div className="text-xs text-slate-500">
-                                      {suite.summary.totalDataSets} tests
+                                      ({suite.summary.totalDataSets})
                                     </div>
                                   </div>
                                 </div>
@@ -1191,7 +1189,7 @@ export function TestResultsDashboard({ onClose }: TestResultsDashboardProps) {
                   </div>
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </div>
 
           {/* Enhanced Main Content */}

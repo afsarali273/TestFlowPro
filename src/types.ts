@@ -47,6 +47,18 @@ export interface TestData {
     enabled?: boolean;
 }
 
+export interface ParameterSource {
+    type: "csv" | "json" | "inline";
+    filePath?: string;
+    data?: any[];
+}
+
+export interface TestCaseParameters {
+    enabled: boolean;
+    dataSource: ParameterSource;
+    parameterMapping?: Record<string, string>;
+}
+
 export interface TestCase {
     id?: string;
     name: string;
@@ -54,9 +66,22 @@ export interface TestCase {
     "type": "SOAP" | "REST" | "UI";
     testData: TestData[];
     testSteps: TestStep[];
+    parameters?: TestCaseParameters;
     dependsOn?: string[]; // Array of test case names this test depends on
     priority?: number; // Lower number = higher priority (executes first)
     enabled?: boolean;
+    // Direct API properties (used when parameters enabled and no testData)
+    method?: string;
+    endpoint?: string;
+    headers?: Record<string, string>;
+    body?: any;
+    bodyFile?: string;
+    assertions?: Assertion[];
+    responseSchema?: any;
+    responseSchemaFile?: string;
+    store?: StoreMap;
+    localStore?: StoreMap;
+    preProcess?: any;
 }
 
 export interface Tag {

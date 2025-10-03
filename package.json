@@ -20,22 +20,18 @@
   },
   "dependencies": {
     "@faker-js/faker": "^9.8.0",
-    "@modelcontextprotocol/sdk": "^1.17.4",
     "@playwright/test": "^1.55.0",
     "ajv": "^8.17.1",
     "axios": "^1.10.0",
-    "copilot-api": "^0.5.14",
+    "csv-parse": "^5.6.0",
     "dotenv": "^16.5.0",
     "jsonpath-plus": "^10.3.0",
     "minimist": "^1.2.8",
     "mysql2": "^3.14.1",
     "odbc": "^2.4.9",
-    "ollama": "^0.5.9",
     "p-limit": "^6.2.0",
     "playwright": "^1.55.0",
     "uuid": "^11.1.0",
-    "ws": "^8.18.3",
-    "xml2js": "^0.6.2",
     "xmldom": "^0.6.0",
     "xpath": "^0.0.34"
   }
