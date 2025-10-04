@@ -27,13 +27,83 @@ export function TestCaseView({ suite, testCase, testCaseIndex, onBack }: TestCas
   const [showRunnerModal, setShowRunnerModal] = useState(false)
   const [runTarget, setRunTarget] = useState<string | null>(null)
 
-  const handleRunTestCase = () => {
+  const handleRunTestCase = async () => {
+    // First, ensure the test case with parameters is saved to the suite file
+    if (suite.filePath && testCase.parameters?.enabled) {
+      try {
+        // Update the test case in the suite with current parameter configuration
+        const updatedSuite = {
+          ...suite,
+          testCases: suite.testCases.map((tc, index) => 
+            index === testCaseIndex ? testCase : tc
+          )
+        }
+        
+        // Save the updated suite to file
+        const response = await fetch('/api/test-suites', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            testSuite: updatedSuite,
+            filePath: suite.filePath,
+            forceReplace: true,
+          }),
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to save test case parameters')
+        }
+        
+        console.log('Test case parameters saved successfully before execution')
+      } catch (error) {
+        console.error('Error saving test case parameters:', error)
+        alert('Failed to save test case parameters. The test may run without parameter data.')
+      }
+    }
+    
     const target = `${suite.id}:${suite.suiteName} > ${testCase.id || ''}:${testCase.name}`
     setRunTarget(target)
     setShowRunnerModal(true)
   }
 
-  const handleRunTestData = (testDataIndex: number, testData: TestData) => {
+  const handleRunTestData = async (testDataIndex: number, testData: TestData) => {
+    // First, ensure the test case with parameters is saved to the suite file
+    if (suite.filePath && testCase.parameters?.enabled) {
+      try {
+        // Update the test case in the suite with current parameter configuration
+        const updatedSuite = {
+          ...suite,
+          testCases: suite.testCases.map((tc, index) => 
+            index === testCaseIndex ? testCase : tc
+          )
+        }
+        
+        // Save the updated suite to file
+        const response = await fetch('/api/test-suites', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            testSuite: updatedSuite,
+            filePath: suite.filePath,
+            forceReplace: true,
+          }),
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to save test case parameters')
+        }
+        
+        console.log('Test case parameters saved successfully before execution')
+      } catch (error) {
+        console.error('Error saving test case parameters:', error)
+        alert('Failed to save test case parameters. The test may run without parameter data.')
+      }
+    }
+    
     const target = `${suite.id}:${suite.suiteName} > ${testCase.id || ''}:${testCase.name} > ${testDataIndex}:${testData.name}`
     setRunTarget(target)
     setShowRunnerModal(true)

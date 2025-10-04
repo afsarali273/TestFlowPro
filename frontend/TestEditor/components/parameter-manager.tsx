@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useToast } from "@/hooks/use-toast"
+import { InputWithGenerator } from "./input-with-generator"
 import {
   Database,
   FileText,
@@ -48,6 +49,15 @@ export function ParameterManager({ parameters, onParametersChange, testCaseName 
     parameters?.parameterMapping || {}
   )
   const [previewData, setPreviewData] = useState<any[]>([])
+
+  // Update preview data when dataSource or parameterMapping changes
+  useEffect(() => {
+    if (dataSource.data && dataSource.data.length > 0) {
+      setPreviewData(dataSource.data.slice(0, 5))
+    } else {
+      setPreviewData([])
+    }
+  }, [dataSource.data])
   const [isLoadingFile, setIsLoadingFile] = useState(false)
   const [fileError, setFileError] = useState<string | null>(null)
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({})
@@ -106,7 +116,6 @@ export function ParameterManager({ parameters, onParametersChange, testCaseName 
         filePath: file.name,
         data: parsedData
       })
-      setPreviewData(parsedData.slice(0, 5)) // Show first 5 rows for preview
 
       toast({
         title: "File Loaded Successfully",
@@ -128,20 +137,17 @@ export function ParameterManager({ parameters, onParametersChange, testCaseName 
   const addInlineParameter = () => {
     const newData = [...(dataSource.data || []), {}]
     setDataSource({ ...dataSource, data: newData })
-    setPreviewData(newData.slice(0, 5))
   }
 
   const updateInlineParameter = (index: number, key: string, value: string) => {
     const newData = [...(dataSource.data || [])]
     newData[index] = { ...newData[index], [key]: value }
     setDataSource({ ...dataSource, data: newData })
-    setPreviewData(newData.slice(0, 5))
   }
 
   const removeInlineParameter = (index: number) => {
     const newData = (dataSource.data || []).filter((_, i) => i !== index)
     setDataSource({ ...dataSource, data: newData })
-    setPreviewData(newData.slice(0, 5))
   }
 
   const removeParameterField = (rowIndex: number, paramKey: string) => {
@@ -150,7 +156,6 @@ export function ParameterManager({ parameters, onParametersChange, testCaseName 
     delete newRow[paramKey]
     newData[rowIndex] = newRow
     setDataSource({ ...dataSource, data: newData })
-    setPreviewData(newData.slice(0, 5))
   }
 
   const addParameterMapping = () => {
@@ -344,7 +349,7 @@ export function ParameterManager({ parameters, onParametersChange, testCaseName 
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
                                       <Input
-                                        ref={(el) => inputRefs.current[`${index}-${key}-name`] = el}
+                                        ref={(el) => { inputRefs.current[`${index}-${key}-name`] = el }}
                                         placeholder="Parameter name"
                                         value={key}
                                         onChange={(e) => {
@@ -356,7 +361,6 @@ export function ParameterManager({ parameters, onParametersChange, testCaseName 
                                           const newData = [...(dataSource.data || [])]
                                           newData[index] = newRow
                                           setDataSource({ ...dataSource, data: newData })
-                                          setPreviewData(newData.slice(0, 5))
                                           
                                           setTimeout(() => {
                                             const input = inputRefs.current[`${index}-${newValue || ''}-name`]
@@ -373,10 +377,11 @@ export function ParameterManager({ parameters, onParametersChange, testCaseName 
                                         }}
                                         className="h-8 text-sm border-slate-200 focus:border-blue-400 focus:ring-blue-400/20"
                                       />
-                                      <Input
+                                      <InputWithGenerator
                                         placeholder="Parameter value"
                                         value={value as string}
                                         onChange={(e) => updateInlineParameter(index, key, e.target.value)}
+                                        onGenerate={(generatedValue) => updateInlineParameter(index, key, generatedValue)}
                                         onKeyDown={(e) => {
                                           if (e.key === 'Enter') {
                                             e.preventDefault()
@@ -408,9 +413,17 @@ export function ParameterManager({ parameters, onParametersChange, testCaseName 
                           <Database className="h-8 w-8 text-blue-600" />
                         </div>
                         <h3 className="text-lg font-semibold text-slate-900 mb-2">No Parameter Sets Yet</h3>
-                        <p className="text-sm text-slate-600 mb-6 max-w-md mx-auto">
+                        <p className="text-sm text-slate-600 mb-4 max-w-md mx-auto">
                           Create inline parameter sets to define test data directly in the interface. Each set represents one test execution.
                         </p>
+                        <div className="mb-6 p-3 bg-blue-50 rounded-lg border border-blue-200 text-left max-w-md mx-auto">
+                          <p className="text-xs font-medium text-blue-800 mb-2">💡 Data Type Tips:</p>
+                          <div className="text-xs text-blue-700 space-y-1">
+                            <div>• Numbers: Use <code className="bg-blue-100 px-1 rounded">25</code> (auto-detected)</div>
+                            <div>• Booleans: Use <code className="bg-blue-100 px-1 rounded">true</code> or <code className="bg-blue-100 px-1 rounded">false</code></div>
+                            <div>• Strings: Use <code className="bg-blue-100 px-1 rounded">John Doe</code> (auto-quoted)</div>
+                          </div>
+                        </div>
                         <Button 
                           onClick={addInlineParameter}
                           className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
@@ -445,7 +458,7 @@ export function ParameterManager({ parameters, onParametersChange, testCaseName 
                     {Object.entries(parameterMapping).map(([key, value]) => (
                       <div key={key} className="flex items-center gap-2">
                         <Input
-                          ref={(el) => inputRefs.current[`mapping-${key}-name`] = el}
+                          ref={(el) => { inputRefs.current[`mapping-${key}-name`] = el }}
                           placeholder="Parameter name"
                           value={key}
                           onChange={(e) => {
@@ -464,23 +477,14 @@ export function ParameterManager({ parameters, onParametersChange, testCaseName 
                           className="flex-1"
                         />
                         <span className="text-gray-400">→</span>
-                        <Input
-                          ref={(el) => inputRefs.current[`mapping-${key}-value`] = el}
+                        <InputWithGenerator
                           placeholder="Template variable (e.g., {{param.username}})"
                           value={value}
                           onChange={(e) => {
                             const newValue = e.target.value
-                            const cursorPosition = e.target.selectionStart
                             updateParameterMapping(key, key, newValue)
-                            
-                            setTimeout(() => {
-                              const input = inputRefs.current[`mapping-${key}-value`]
-                              if (input) {
-                                input.focus()
-                                input.setSelectionRange(cursorPosition || 0, cursorPosition || 0)
-                              }
-                            }, 0)
                           }}
+                          onGenerate={(generatedValue) => updateParameterMapping(key, key, generatedValue)}
                           className="flex-1"
                         />
                         <Button
@@ -538,7 +542,18 @@ export function ParameterManager({ parameters, onParametersChange, testCaseName 
                           <p className="font-medium">Usage in Test Data:</p>
                           <div className="bg-white p-2 rounded border text-xs font-mono">
                             <div>"endpoint": "/users/{'{{param.username}}'}"</div>
-                            <div>"body": {'{ "email": "{{param.email}}" }'}</div>
+                            <div>"body": {`{ "email": "{{param.email}}" }`}</div>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-medium">Data Type Handling:</p>
+                          <div className="bg-white p-2 rounded border text-xs font-mono space-y-1">
+                            <div className="text-slate-500">// For strings (with quotes):</div>
+                            <div>"name": "{'{{username}}'}"</div>
+                            <div className="text-slate-500">// For numbers (without quotes):</div>
+                            <div>"age": {`{{age}}`}</div>
+                            <div className="text-slate-500">// For booleans (without quotes):</div>
+                            <div>"active": {`{{isActive}}`}</div>
                           </div>
                         </div>
                       </div>

@@ -30,16 +30,73 @@ export function injectParameters(template: string, parameters: ParameterSet): st
     let result = template;
     
     for (const [key, value] of Object.entries(parameters)) {
-        const regex = new RegExp(`{{param\\.${key}}}`, 'g');
-        result = result.replace(regex, String(value));
+        // Handle both {{param.key}} and {{key}} formats
+        const paramRegex = new RegExp(`"{{param\\.${key}}}"|{{param\\.${key}}}`, 'g');
+        const directRegex = new RegExp(`"{{${key}}}"|{{${key}}}`, 'g');
+        
+        // Convert value to appropriate type
+        const convertedValue = convertToAppropriateType(value);
+        
+        result = result.replace(paramRegex, convertedValue);
+        result = result.replace(directRegex, convertedValue);
     }
     
     return result;
 }
 
+function convertToAppropriateType(value: any): string {
+    if (value === null || value === undefined) {
+        return 'null';
+    }
+    
+    if (typeof value === 'boolean') {
+        return String(value);
+    }
+    
+    if (typeof value === 'number') {
+        return String(value);
+    }
+    
+    // Check if string represents a number
+    const stringValue = String(value).trim();
+    
+    // Check for boolean values
+    if (stringValue.toLowerCase() === 'true') {
+        return 'true';
+    }
+    if (stringValue.toLowerCase() === 'false') {
+        return 'false';
+    }
+    
+    // Check for null
+    if (stringValue.toLowerCase() === 'null') {
+        return 'null';
+    }
+    
+    // Check if it's a valid number
+    if (/^-?\d+(\.\d+)?$/.test(stringValue)) {
+        return stringValue; // Return as number without quotes
+    }
+    
+    // Return as quoted string
+    return `"${stringValue}"`;
+}
+
 export function injectParametersInObject(obj: any, parameters: ParameterSet): any {
     if (typeof obj === 'string') {
-        return injectParameters(obj, parameters);
+        const injected = injectParameters(obj, parameters);
+        
+        // If the string looks like JSON, try to parse it to handle type conversion
+        if (injected.trim().startsWith('{') || injected.trim().startsWith('[')) {
+            try {
+                return JSON.parse(injected);
+            } catch {
+                // If parsing fails, return as string
+                return injected;
+            }
+        }
+        
+        return injected;
     }
     
     if (Array.isArray(obj)) {
@@ -47,11 +104,20 @@ export function injectParametersInObject(obj: any, parameters: ParameterSet): an
     }
     
     if (obj && typeof obj === 'object') {
-        const result: any = {};
-        for (const [key, value] of Object.entries(obj)) {
-            result[key] = injectParametersInObject(value, parameters);
+        // First convert object to JSON string, inject parameters, then parse back
+        const jsonString = JSON.stringify(obj);
+        const injectedString = injectParameters(jsonString, parameters);
+        
+        try {
+            return JSON.parse(injectedString);
+        } catch {
+            // If parsing fails, fall back to field-by-field injection
+            const result: any = {};
+            for (const [key, value] of Object.entries(obj)) {
+                result[key] = injectParametersInObject(value, parameters);
+            }
+            return result;
         }
-        return result;
     }
     
     return obj;
