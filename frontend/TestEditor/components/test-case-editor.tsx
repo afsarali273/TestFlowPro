@@ -816,28 +816,10 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                             <Button 
                               size="sm" 
                               variant="outline" 
-                              onClick={async () => {
+                              onClick={() => {
                                 if (suiteId) {
-                                  // Save the test case first to ensure parameters are persisted
-                                  try {
-                                    const validatedTestCase = validateTestCase(editedTestCase)
-                                    const finalTestCase = {
-                                      ...validatedTestCase,
-                                      index: editedTestCase.index,
-                                    }
-                                    
-                                    // Trigger save callback to update the suite
-                                    onSave(finalTestCase)
-                                    
-                                    // Small delay to ensure save is processed
-                                    setTimeout(() => {
-                                      setRunTarget(`${suiteId}:${suiteName || 'Suite'} > ${editedTestCase.id}:${editedTestCase.name} > ${index}:${testData.name}`)
-                                      setShowRunnerModal(true)
-                                    }, 500)
-                                  } catch (error) {
-                                    console.error('Error saving test case before run:', error)
-                                    alert('Failed to save test case. Please save manually before running.')
-                                  }
+                                  setRunTarget(`${suiteId}:${suiteName || 'Suite'} > ${editedTestCase.id}:${editedTestCase.name} > ${index}:${testData.name}`)
+                                  setShowRunnerModal(true)
                                 }
                               }}
                               disabled={!suiteId || testData.enabled === false}

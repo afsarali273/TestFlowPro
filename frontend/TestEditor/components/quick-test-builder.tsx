@@ -33,6 +33,7 @@ export function QuickTestBuilder({ isOpen, onClose, onSave, baseUrl = "" }: Quic
 
   useEffect(() => {
     if (isOpen) {
+      // Always read fresh from localStorage when modal opens
       const storedBaseUrl = localStorage.getItem('suiteBaseUrl')
       setCurrentBaseUrl(storedBaseUrl || baseUrl || "")
       
@@ -45,7 +46,7 @@ export function QuickTestBuilder({ isOpen, onClose, onSave, baseUrl = "" }: Quic
       setResponse(null)
       setActiveTab("request")
     }
-  }, [isOpen, baseUrl])
+  }, [isOpen])
 
   const handleAddHeader = () => {
     const newHeaders = { ...headers }

@@ -86,6 +86,14 @@ export function PlaywrightImportModal({
         suiteName: suiteName || generatedSuite.suiteName,
         applicationName: applicationName || generatedSuite.applicationName
       }
+      
+      // Update localStorage with new suite's baseUrl
+      if (finalSuite.baseUrl) {
+        localStorage.setItem('suiteBaseUrl', finalSuite.baseUrl)
+      } else {
+        localStorage.removeItem('suiteBaseUrl')
+      }
+      
       onSave(finalSuite)
     } else {
       if (!selectedExistingSuite) {

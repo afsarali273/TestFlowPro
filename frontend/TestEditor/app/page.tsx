@@ -286,6 +286,14 @@ export default function APITestFramework() {
       reader.onload = (e) => {
         try {
           const importedSuite = JSON.parse(e.target?.result as string)
+          
+          // Update localStorage with new suite's baseUrl
+          if (importedSuite.baseUrl) {
+            localStorage.setItem('suiteBaseUrl', importedSuite.baseUrl)
+          } else {
+            localStorage.removeItem('suiteBaseUrl')
+          }
+          
           // Generate deterministic ID for imported suite
           const timestamp = Date.now()
           importedSuite.id = `imported_${importedSuite.suiteName.replace(/[^a-zA-Z0-9]/g, "_")}_${timestamp}`
@@ -331,6 +339,9 @@ export default function APITestFramework() {
   /* --------------------------- handlers ----------------------------- */
   // Update the handleCreateSuite function to use a more deterministic ID
   const handleCreateSuite = () => {
+    // Clear existing baseUrl from localStorage when creating new suite
+    localStorage.removeItem('suiteBaseUrl')
+    
     const timestamp = Date.now()
     const newId = `new_suite_${timestamp}`
     setSelectedSuite({

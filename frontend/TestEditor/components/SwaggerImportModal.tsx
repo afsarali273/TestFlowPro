@@ -222,6 +222,12 @@ export function SwaggerImportModal({
           description: `Added ${testSuite.testCases.length} test cases to existing suite`
         })
       } else {
+        // Update localStorage with new suite's baseUrl
+        if (testSuite.baseUrl) {
+          localStorage.setItem('suiteBaseUrl', testSuite.baseUrl)
+        } else {
+          localStorage.removeItem('suiteBaseUrl')
+        }
         onSave(testSuite)
       }
       

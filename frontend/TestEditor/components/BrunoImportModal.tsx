@@ -128,6 +128,14 @@ export default function BrunoImportModal({
         status: 'Not Started',
         ...(savePath && { filePath: savePath })
       };
+      
+      // Update localStorage with new suite's baseUrl
+      if (completeTestSuite.baseUrl) {
+        localStorage.setItem('suiteBaseUrl', completeTestSuite.baseUrl);
+      } else {
+        localStorage.removeItem('suiteBaseUrl');
+      }
+      
       onSave(completeTestSuite);
       onClose();
       resetForm();

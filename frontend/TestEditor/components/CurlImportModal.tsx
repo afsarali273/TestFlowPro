@@ -152,6 +152,14 @@ export const CurlImportModal: React.FC<CurlImportModalProps> = ({
         status: 'Not Started',
         ...(savePath && { filePath: savePath })
       };
+      
+      // Update localStorage with new suite's baseUrl
+      if (completeTestSuite.baseUrl) {
+        localStorage.setItem('suiteBaseUrl', completeTestSuite.baseUrl);
+      } else {
+        localStorage.removeItem('suiteBaseUrl');
+      }
+      
       onSave(completeTestSuite);
       onClose();
     } else if (importMode === 'existing' && onAddToExisting && selectedSuiteId) {

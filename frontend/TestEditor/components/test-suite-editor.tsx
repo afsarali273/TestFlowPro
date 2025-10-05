@@ -66,8 +66,15 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
   const [pendingViewTestCase, setPendingViewTestCase] = useState<{ testCase: any; index: number } | null>(null)
   const [showQuickTestBuilder, setShowQuickTestBuilder] = useState(false)
 
-  // Check for test data edit context on mount
+  // Check for test data edit context on mount and update localStorage with current suite's baseUrl
   React.useEffect(() => {
+    // Update localStorage with current suite's baseUrl when opening for editing
+    if (editedSuite.baseUrl) {
+      localStorage.setItem('suiteBaseUrl', editedSuite.baseUrl)
+    } else {
+      localStorage.removeItem('suiteBaseUrl')
+    }
+    
     const editContext = sessionStorage.getItem('editTestData')
     if (editContext) {
       const { testCaseIndex, testDataIndex } = JSON.parse(editContext)
@@ -82,13 +89,18 @@ export function TestSuiteEditor({ suite, onSave, onCancel, onViewTestCase }: Tes
         sessionStorage.setItem('editTestDataIndex', testDataIndex.toString())
       }
     }
-  }, [editedSuite])
+  }, [editedSuite.baseUrl])
 
   const handleSuiteChange = (field: keyof TestSuite, value: any) => {
     setEditedSuite((prev) => ({
       ...prev,
       [field]: value,
     }))
+    
+    // Update localStorage when baseUrl changes
+    if (field === 'baseUrl') {
+      localStorage.setItem('suiteBaseUrl', value || '')
+    }
   }
 
   const triggerAutoSave = () => {
