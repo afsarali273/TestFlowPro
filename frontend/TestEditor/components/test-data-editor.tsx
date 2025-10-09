@@ -62,7 +62,7 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
 
   const [activeTab, setActiveTab] = useState("general")
 
-  const tabSequence = ["general", "headers", "preprocess", "body", "assertions", "store", "schema", "json"]
+  const tabSequence = ["general", "headers", "cookies", "preprocess", "body", "assertions", "store", "schema", "json"]
 
   const getNextTab = (currentTab: string) => {
     const currentIndex = tabSequence.indexOf(currentTab)
@@ -154,6 +154,63 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
     setEditedTestData((prev: any) => ({
       ...prev,
       headers: newHeaders,
+    }))
+  }
+
+  const handleAddCookie = () => {
+    const newCookies = { ...editedTestData.cookies }
+    let newKey = ""
+    let counter = 1
+
+    // Find next available empty key
+    while (newCookies[newKey] !== undefined) {
+      newKey = `cookie_${counter}`
+      counter++
+    }
+
+    newCookies[newKey] = ""
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      cookies: newCookies,
+    }))
+  }
+
+  const handleUpdateCookieKey = (oldKey: string, newKey: string) => {
+    if (oldKey === newKey) return
+
+    setEditedTestData((prev: any) => {
+      const newCookies = { ...prev.cookies }
+      const value = newCookies[oldKey]
+      delete newCookies[oldKey]
+      newCookies[newKey] = value
+      return { ...prev, cookies: newCookies }
+    })
+  }
+
+  const handleRemoveCookie = (key: string) => {
+    setEditedTestData((prev: any) => {
+      const newCookies = { ...prev.cookies }
+      delete newCookies[key]
+      return { ...prev, cookies: newCookies }
+    })
+  }
+
+  const handleCloneCookie = (key: string, value: string) => {
+    const newKey = `${key}_copy`
+    let finalKey = newKey
+    let counter = 1
+
+    while (editedTestData.cookies && editedTestData.cookies[finalKey]) {
+      finalKey = `${newKey}_${counter}`
+      counter++
+    }
+
+    setEditedTestData((prev: any) => ({
+      ...prev,
+      cookies: {
+        ...prev.cookies,
+        [finalKey]: value,
+      },
     }))
   }
 
@@ -565,7 +622,7 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
             {/* Modern Tab Navigation */}
             <div className="bg-white/60 backdrop-blur-xl rounded-xl p-2 shadow-xl border border-white/20">
-              <TabsList className="grid w-full grid-cols-8 bg-transparent gap-1">
+              <TabsList className="grid w-full grid-cols-9 bg-transparent gap-1">
                 <TabsTrigger 
                   value="general"
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium text-xs"
@@ -577,6 +634,12 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium text-xs"
                 >
                   Headers
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="cookies"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-white/60 transition-all duration-200 rounded-lg font-medium text-xs"
+                >
+                  Cookies
                 </TabsTrigger>
                 <TabsTrigger 
                   value="preprocess"
@@ -828,6 +891,147 @@ export function TestDataEditor({ testData, onSave, onCancel, testCaseType = "RES
                         <div className="text-center py-8 text-gray-500 bg-gray-50/50 rounded-lg border-2 border-dashed border-gray-200">
                           <p className="text-sm">No headers defined yet</p>
                           <p className="text-xs mt-1">Use the row above to add headers quickly</p>
+                        </div>
+                    )}
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex justify-end">
+                      <Button
+                          onClick={handleNextTab}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      >
+                        Next: Pre-Process
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="cookies">
+              <Card className="bg-white/80 backdrop-blur-sm shadow-lg border-0">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Cookies</CardTitle>
+                      <CardDescription>Configure request cookies</CardDescription>
+                    </div>
+                    <Button
+                        onClick={handleAddCookie}
+                        className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Cookie
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {Object.entries(editedTestData.cookies || {}).map(([key, value], index) => (
+                        <div
+                            key={`cookie-${index}-${key}`}
+                            className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50/50"
+                        >
+                          <div className="flex-1 relative">
+                            <Input
+                                value={key}
+                                onChange={(e) => {
+                                  const newValue = e.target.value
+                                  setEditedTestData((prev: any) => {
+                                    const newCookies = { ...prev.cookies }
+                                    const cookieValue = newCookies[key]
+                                    delete newCookies[key]
+                                    newCookies[newValue] = cookieValue
+                                    return { ...prev, cookies: newCookies }
+                                  })
+                                }}
+                                placeholder="Cookie name"
+                                className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                          </div>
+                          <Input
+                              value={value as string}
+                              onChange={(e) => handleNestedChange("cookies", key, e.target.value)}
+                              placeholder="Cookie value"
+                              className="flex-1 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          />
+                          <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCloneCookie(key, value as string)}
+                              className="h-10 px-3 border-blue-300 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
+                              title="Clone cookie"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                          <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRemoveCookie(key)}
+                              className="h-10 px-3 border-red-300 hover:border-red-400 hover:bg-red-50 hover:text-red-700"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                    ))}
+
+                    <div className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50/30 hover:border-gray-400 hover:bg-gray-50/50 transition-colors">
+                      <div className="flex-1 relative">
+                        <Input
+                            placeholder="Enter cookie name..."
+                            className="h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault()
+                                const key = e.currentTarget.value.trim()
+                                if (key) {
+                                  handleNestedChange("cookies", key, "")
+                                  e.currentTarget.value = ""
+                                  // Focus next input (value field)
+                                  const nextInput = e.currentTarget.parentElement?.parentElement?.querySelector(
+                                      "input:nth-child(2)",
+                                  ) as HTMLInputElement
+                                  if (nextInput) nextInput.focus()
+                                }
+                              }
+                            }}
+                        />
+                      </div>
+                      <Input
+                          placeholder="Enter cookie value..."
+                          className="flex-1 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault()
+                              const value = e.currentTarget.value.trim()
+                              const keyInput = e.currentTarget.parentElement?.querySelector(
+                                  "input:first-child",
+                              ) as HTMLInputElement
+                              const key = keyInput?.value.trim()
+
+                              if (key && value) {
+                                handleNestedChange("cookies", key, value)
+                                keyInput.value = ""
+                                e.currentTarget.value = ""
+                                keyInput.focus()
+                              }
+                            }
+                          }}
+                      />
+                      <div className="h-10 px-3 flex items-center text-gray-400">
+                        <Plus className="h-3 w-3" />
+                      </div>
+                      <div className="h-10 px-3 flex items-center text-gray-400">
+                        <span className="text-xs">Enter to add</span>
+                      </div>
+                    </div>
+
+                    {(!editedTestData.cookies || Object.keys(editedTestData.cookies).length === 0) && (
+                        <div className="text-center py-8 text-gray-500 bg-gray-50/50 rounded-lg border-2 border-dashed border-gray-200">
+                          <p className="text-sm">No cookies defined yet</p>
+                          <p className="text-xs mt-1">Use the row above to add cookies quickly</p>
                         </div>
                     )}
                   </div>
@@ -1692,24 +1896,33 @@ Example:
 
                   {/* Examples Section */}
                   <div className="p-4 bg-gradient-to-r from-orange-50 to-blue-50 rounded-lg border border-gray-200">
-                    <h4 className="font-medium mb-3 text-gray-800">Variable Scope Examples:</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <h4 className="font-medium mb-3 text-gray-800">Variable Storage Examples:</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div className="space-y-2">
-                        <p className="font-medium text-orange-700">Global Variables (store):</p>
-                        <code className="text-xs bg-orange-100 px-2 py-1 rounded block">
-                          Available across all test cases
-                        </code>
+                        <p className="font-medium text-orange-700">Response Body:</p>
                         <code className="text-xs bg-orange-100 px-2 py-1 rounded block">
                           {testCaseType === "SOAP" ? "userId: //*[local-name()='UserId']/text()" : "userId: $.id"}
                         </code>
+                        <code className="text-xs bg-orange-100 px-2 py-1 rounded block">
+                          {testCaseType === "SOAP" ? "email: //*[local-name()='Email']/text()" : "email: $.user.email"}
+                        </code>
                       </div>
                       <div className="space-y-2">
-                        <p className="font-medium text-blue-700">Local Variables (localStore):</p>
+                        <p className="font-medium text-green-700">Response Cookies:</p>
+                        <code className="text-xs bg-green-100 px-2 py-1 rounded block">
+                          sessionId: $cookies.JSESSIONID
+                        </code>
+                        <code className="text-xs bg-green-100 px-2 py-1 rounded block">
+                          allCookies: $cookies
+                        </code>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="font-medium text-blue-700">Variable Scope:</p>
                         <code className="text-xs bg-blue-100 px-2 py-1 rounded block">
-                          Only within current test case
+                          Global: Available across all test cases
                         </code>
                         <code className="text-xs bg-blue-100 px-2 py-1 rounded block">
-                          {testCaseType === "SOAP" ? "tempId: //*[local-name()='TempId']/text()" : "tempId: $.tempId"}
+                          Local: Only within current test case
                         </code>
                       </div>
                     </div>

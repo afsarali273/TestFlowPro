@@ -34,6 +34,7 @@ export interface TestData {
     method: string
     endpoint: string
     headers?: Record<string, string>
+    cookies?: Record<string, string>
     preProcess: any
     body?: any
     bodyFile?: string
@@ -56,19 +57,33 @@ export interface LocatorOptions {
     level?: number
     hasText?: string | RegExp
     hasNotText?: string | RegExp
+    visible?: boolean
+    disabled?: boolean
+    enabled?: boolean
 }
 
 // Filter types for advanced locator filtering
-export type FilterType = "hasText" | "has" | "hasNot"
+export type FilterType = "hasText" | "hasNotText" | "has" | "hasNot" | "visible" | "hidden"
 
 // Filter definition matching Playwright's .filter() structure
 export interface FilterDefinition {
     type: FilterType
-    value?: string // For hasText type
+    value?: string | RegExp // For hasText/hasNotText types
     locator?: LocatorDefinition // For has/hasNot types
 }
 
-// Locator definition
+// Chain operation types
+export type ChainOperation = "filter" | "locator" | "nth" | "first" | "last"
+
+// Chain step definition for complex locator chaining
+export interface ChainStep {
+    operation: ChainOperation
+    locator?: LocatorDefinition // For chaining another locator
+    filter?: FilterDefinition // For filter operations
+    index?: number // For nth operations
+}
+
+// Enhanced locator definition supporting complex chaining
 export interface LocatorDefinition {
     strategy:
         | "role"
@@ -80,9 +95,13 @@ export interface LocatorDefinition {
         | "testId"
         | "css"
         | "xpath"
+        | "locator" // For raw locator strings
     value: string
     options?: LocatorOptions
-    filter?: FilterDefinition
+    filter?: FilterDefinition // Single filter (backward compatibility)
+    filters?: FilterDefinition[] // Multiple filters for complex scenarios
+    chain?: ChainStep[] // Chain operations for complex locator building
+    index?: "first" | "last" | number
 }
 
 // Custom step function interface
@@ -203,6 +222,7 @@ export interface TestCase {
     method?: string
     endpoint?: string
     headers?: Record<string, string>
+    cookies?: Record<string, string>
     body?: any
     bodyFile?: string
     assertions?: Assertion[]
@@ -271,6 +291,7 @@ export function validateTestData(testData: any): TestData {
         method: testData.method || "GET",
         endpoint: testData.endpoint || "/",
         headers: testData.headers || {},
+        cookies: testData.cookies || {},
         preProcess: testData.preProcess || null,
         body: testData.body,
         bodyFile: testData.bodyFile,
@@ -296,6 +317,7 @@ export function validateTestStep(testStep: any): TestStep {
                 value: testStep.locator.value || "",
                 options: testStep.locator.options,
                 filter: testStep.locator.filter,
+                index: testStep.locator.index,
             }
             : undefined,
         value: testStep.value,

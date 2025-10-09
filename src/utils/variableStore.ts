@@ -48,13 +48,25 @@ type StoreEntry = SimpleStoreMap | ArrayObjectMatchStore[];
 /**
  * Stores variables from API response using either key-path map or arrayObjectMatch list
  */
-export const storeResponseVariables = (response: any, storeConfig: StoreEntry, useLocal: boolean = false) => {
+export const storeResponseVariables = (response: any, storeConfig: StoreEntry, useLocal: boolean = false, responseHeaders?: any) => {
     const storeFunction = useLocal ? setLocalVariable : setVariable;
     
     // Handle key-value simple object
     if (!Array.isArray(storeConfig)) {
         for (const key in storeConfig) {
-            const val = JSONPath({ path: storeConfig[key], json: response })[0];
+            const path = storeConfig[key];
+            let val;
+            
+            // Handle special cookie paths
+            if (path.startsWith('$cookies.')) {
+                const cookieName = path.substring(9); // Remove '$cookies.'
+                val = extractCookieValue(responseHeaders, cookieName);
+            } else if (path === '$cookies') {
+                val = extractAllCookies(responseHeaders);
+            } else {
+                val = JSONPath({ path, json: response })[0];
+            }
+            
             if (val !== undefined) {
                 storeFunction(key, val);
             }
@@ -80,3 +92,41 @@ export const storeResponseVariables = (response: any, storeConfig: StoreEntry, u
         }
     }
 };
+
+/**
+ * Extract specific cookie value from response headers
+ */
+function extractCookieValue(headers: any, cookieName: string): string | undefined {
+    if (!headers || !headers['set-cookie']) return undefined;
+    
+    const setCookies = Array.isArray(headers['set-cookie']) ? headers['set-cookie'] : [headers['set-cookie']];
+    
+    for (const cookie of setCookies) {
+        const match = cookie.match(new RegExp(`${cookieName}=([^;]+)`));
+        if (match) {
+            return match[1];
+        }
+    }
+    
+    return undefined;
+}
+
+/**
+ * Extract all cookies from response headers as an object
+ */
+function extractAllCookies(headers: any): Record<string, string> {
+    const cookies: Record<string, string> = {};
+    
+    if (!headers || !headers['set-cookie']) return cookies;
+    
+    const setCookies = Array.isArray(headers['set-cookie']) ? headers['set-cookie'] : [headers['set-cookie']];
+    
+    for (const cookie of setCookies) {
+        const match = cookie.match(/([^=]+)=([^;]+)/);
+        if (match) {
+            cookies[match[1]] = match[2];
+        }
+    }
+    
+    return cookies;
+}

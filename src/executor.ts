@@ -186,6 +186,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                 method: testCase.method,
                 endpoint: testCase.endpoint,
                 headers: testCase.headers,
+                cookies: testCase.cookies,
                 body: testCase.body,
                 bodyFile: testCase.bodyFile,
                 assertions: testCase.assertions,
@@ -216,6 +217,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                 const parameterizedData = injectParametersInObject(data, parameters);
                 const fullUrl = injectVariables(resolvedBaseUrl + parameterizedData.endpoint);
                 let headers = parameterizedData.headers;
+                let cookies = parameterizedData.cookies;
                 const soap = isSoapRequest(headers);
 
             if (parameterizedData.preProcess) await runPreProcessors(parameterizedData.preProcess);
@@ -294,7 +296,9 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
 
             try {
                 headers = injectVariableInHeaders(headers || {});
+                cookies = injectVariableInHeaders(cookies || {});
                 apiDetails.requestHeaders = headers;
+                apiDetails.requestCookies = cookies;
                 
                 if (Object.keys(headers).length > 0) {
                     console.log(`${colors.magenta}📋 Headers:${colors.reset}`);
@@ -303,7 +307,22 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                     });
                 }
                 
+                if (Object.keys(cookies).length > 0) {
+                    console.log(`${colors.magenta}🍪 Cookies:${colors.reset}`);
+                    Object.entries(cookies).forEach(([key, value]) => {
+                        console.log(`  ${key}: ${value}`);
+                    });
+                }
+                
                 Logger.request(parameterizedData.method, fullUrl);
+                
+                // Convert cookies to Cookie header if cookies exist
+                if (cookies && Object.keys(cookies).length > 0) {
+                    const cookieString = Object.entries(cookies)
+                        .map(([key, value]) => `${key}=${value}`)
+                        .join('; ');
+                    headers = { ...headers, 'Cookie': cookieString };
+                }
                 
                 const res = await axios({
                     url: fullUrl,
@@ -385,7 +404,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                     Logger.section('💾', 'STORING GLOBAL VARIABLES', colors.magenta);
                     
                     try {
-                        storeResponseVariables(res.data, parameterizedData.store);
+                        storeResponseVariables(res.data, parameterizedData.store, false, res.headers);
                         Logger.info(`Global variables stored: ${Object.keys(parameterizedData.store).join(', ')}`);
                         
                         apiDetails.variableStorage = {
@@ -411,7 +430,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                     Logger.section('💾', 'STORING LOCAL VARIABLES', colors.magenta);
                     
                     try {
-                        storeResponseVariables(res.data, parameterizedData.localStore, true);
+                        storeResponseVariables(res.data, parameterizedData.localStore, true, res.headers);
                         Logger.info(`Local variables stored: ${Object.keys(parameterizedData.localStore).join(', ')}`);
                         
                         apiDetails.localVariableStorage = {
@@ -488,7 +507,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                         console.log(`➡️ Storing global variables from error response...`);
                         
                         try {
-                            storeResponseVariables(res.data, parameterizedData.store);
+                            storeResponseVariables(res.data, parameterizedData.store, false, res.headers);
                             console.log(`✅ Global variables stored from error response`);
                             
                             apiDetails.variableStorage = {
@@ -513,7 +532,7 @@ export async function runAPITests(suite: TestSuite, reporter: Reporter){
                         console.log(`➡️ Storing local variables from error response...`);
                         
                         try {
-                            storeResponseVariables(res.data, parameterizedData.localStore, true);
+                            storeResponseVariables(res.data, parameterizedData.localStore, true, res.headers);
                             console.log(`✅ Local variables stored from error response`);
                             
                             apiDetails.localVariableStorage = {

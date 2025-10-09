@@ -351,6 +351,11 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
         cleanedLocator.filter = step.locator.filter
       }
 
+      // Include index if present
+      if (step.locator.index !== undefined) {
+        cleanedLocator.index = step.locator.index
+      }
+
       cleaned.locator = cleanedLocator
     }
 
@@ -1021,7 +1026,7 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                             {["click", "dblClick", "rightClick", "type", "fill", "press", "clear", "select", "check", "uncheck", "setChecked", "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop", "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", "assertCount", "assertValue", "assertAttribute", "assertChecked", "assertUnchecked", "assertContainsText", "uploadFile", "downloadFile", "getText", "getAttribute", "getValue", "getCount"].includes(inlineEditingStep?.keyword || "") && (
                               <div className="space-y-4">
                                 <Label>Element Locator</Label>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-3 gap-4">
                                   <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                       <Label>Strategy</Label>
@@ -1074,6 +1079,33 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                                               : "Enter locator value"
                                       }
                                     />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Index</Label>
+                                    <Select
+                                      value={inlineEditingStep?.locator?.index?.toString() || "none"}
+                                      onValueChange={(value) => {
+                                        if (!inlineEditingStep) return
+                                        const newStep: TestStep = { ...inlineEditingStep }
+                                        if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
+                                        newStep.locator.index = value === "none" ? undefined : value === "first" || value === "last" ? value : Number(value)
+                                        handleInlineStepChange("locator", newStep.locator)
+                                      }}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="None" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="none">None</SelectItem>
+                                        <SelectItem value="first">First</SelectItem>
+                                        <SelectItem value="last">Last</SelectItem>
+                                        <SelectItem value="0">Index 0</SelectItem>
+                                        <SelectItem value="1">Index 1</SelectItem>
+                                        <SelectItem value="2">Index 2</SelectItem>
+                                        <SelectItem value="3">Index 3</SelectItem>
+                                        <SelectItem value="4">Index 4</SelectItem>
+                                      </SelectContent>
+                                    </Select>
                                   </div>
                                 </div>
                                 
@@ -1640,7 +1672,7 @@ await page.waitForFunction(() => {
                           {["click", "dblClick", "rightClick", "type", "fill", "press", "clear", "select", "check", "uncheck", "setChecked", "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop", "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", "assertCount", "assertValue", "assertAttribute", "assertChecked", "assertUnchecked", "assertContainsText", "uploadFile", "downloadFile", "getText", "getAttribute", "getValue", "getCount"].includes(inlineEditingStep.keyword) && (
                             <div className="space-y-4">
                               <Label>Element Locator</Label>
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="grid grid-cols-3 gap-4">
                                 <div className="space-y-2">
                                   <div className="flex items-center gap-2">
                                     <Label>Strategy</Label>
@@ -1693,6 +1725,33 @@ await page.waitForFunction(() => {
                                             : "Enter locator value"
                                     }
                                   />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Index</Label>
+                                  <Select
+                                    value={inlineEditingStep.locator?.index?.toString() || "none"}
+                                    onValueChange={(value) => {
+                                      if (!inlineEditingStep) return
+                                      const newStep: TestStep = { ...inlineEditingStep }
+                                      if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
+                                      newStep.locator.index = value === "none" ? undefined : value === "first" || value === "last" ? value : Number(value)
+                                      handleInlineStepChange("locator", newStep.locator)
+                                    }}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="None" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">None</SelectItem>
+                                      <SelectItem value="first">First</SelectItem>
+                                      <SelectItem value="last">Last</SelectItem>
+                                      <SelectItem value="0">Index 0</SelectItem>
+                                      <SelectItem value="1">Index 1</SelectItem>
+                                      <SelectItem value="2">Index 2</SelectItem>
+                                      <SelectItem value="3">Index 3</SelectItem>
+                                      <SelectItem value="4">Index 4</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                               </div>
                               

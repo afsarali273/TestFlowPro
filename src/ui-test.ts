@@ -1,5 +1,5 @@
 import { chromium, Browser, Page, Locator, expect } from "@playwright/test";
-import { TestStep, TestCase, LocatorDefinition, FilterDefinition } from "./types";
+import { TestStep, TestCase, LocatorDefinition, FilterDefinition, ChainStep } from "./types";
 import { Reporter } from "./reporter";
 import { setVariable, setLocalVariable, injectVariables } from "./utils/variableStore";
 import { customStepHandler } from "./custom-steps/custom-step-handler";
@@ -676,20 +676,50 @@ export class UIRunner {
                     break;
                 case "css":
                     base = this.page.locator(loc.value);
-                    // Handle .first() for CSS selectors that had :first-child removed
-                    if (loc.value && !loc.value.includes(':') && !loc.value.includes('[')) {
-                        base = base.first();
-                    }
                     break;
                 case "xpath":
                     base = this.page.locator(`xpath=${loc.value}`);
+                    break;
+                case "locator":
+                    // Handle raw locator strings like 'css=button' or 'xpath=//button'
+                    if (loc.value.startsWith('css=')) {
+                        base = this.page.locator(loc.value.substring(4));
+                    } else if (loc.value.startsWith('xpath=')) {
+                        base = this.page.locator(`xpath=${loc.value.substring(6)}`);
+                    } else {
+                        base = this.page.locator(loc.value);
+                    }
                     break;
                 default:
                     throw new Error(`Unknown locator strategy: ${loc.strategy}`);
             }
 
+            // Apply single filter (backward compatibility)
             if (loc.filter) {
                 base = this.applyFilter(base, loc.filter, createLocator);
+            }
+
+            // Apply multiple filters
+            if (loc.filters && loc.filters.length > 0) {
+                for (const filter of loc.filters) {
+                    base = this.applyFilter(base, filter, createLocator);
+                }
+            }
+
+            // Apply chain operations
+            if (loc.chain && loc.chain.length > 0) {
+                base = this.applyChain(base, loc.chain, createLocator);
+            }
+
+            // Apply index modifier if present
+            if (loc.index !== undefined) {
+                if (loc.index === "first") {
+                    base = base.first();
+                } else if (loc.index === "last") {
+                    base = base.last();
+                } else if (typeof loc.index === "number") {
+                    base = base.nth(loc.index);
+                }
             }
 
             return base;
@@ -703,15 +733,53 @@ export class UIRunner {
             case "hasText":
                 if (!filter.value) throw new Error("hasText filter requires value");
                 return baseLocator.filter({ hasText: filter.value });
+            case "hasNotText":
+                if (!filter.value) throw new Error("hasNotText filter requires value");
+                return baseLocator.filter({ hasNotText: filter.value });
             case "has":
                 if (!filter.locator) throw new Error("has filter requires locator");
                 return baseLocator.filter({ has: createLocator(filter.locator) });
             case "hasNot":
                 if (!filter.locator) throw new Error("hasNot filter requires locator");
                 return baseLocator.filter({ hasNot: createLocator(filter.locator) });
+            case "visible":
+                return baseLocator.filter({ visible: true });
+            case "hidden":
+                return baseLocator.filter({ visible: false });
             default:
                 throw new Error(`Unknown filter type: ${filter.type}`);
         }
+    }
+
+    private applyChain(baseLocator: Locator, chain: ChainStep[], createLocator: (loc: LocatorDefinition) => Locator): Locator {
+        let result = baseLocator;
+        
+        for (const step of chain) {
+            switch (step.operation) {
+                case "filter":
+                    if (!step.filter) throw new Error("Chain filter operation requires filter definition");
+                    result = this.applyFilter(result, step.filter, createLocator);
+                    break;
+                case "locator":
+                    if (!step.locator) throw new Error("Chain locator operation requires locator definition");
+                    result = result.locator(createLocator(step.locator));
+                    break;
+                case "nth":
+                    if (step.index === undefined) throw new Error("Chain nth operation requires index");
+                    result = result.nth(step.index);
+                    break;
+                case "first":
+                    result = result.first();
+                    break;
+                case "last":
+                    result = result.last();
+                    break;
+                default:
+                    throw new Error(`Unknown chain operation: ${step.operation}`);
+            }
+        }
+        
+        return result;
     }
 
     async close() {

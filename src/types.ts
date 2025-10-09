@@ -36,6 +36,7 @@ export interface TestData {
     method: string;
     endpoint: string;
     headers?: Record<string, string>;
+    cookies?: Record<string, string>;
     preProcess: any;
     body?: any;
     bodyFile?: string;
@@ -74,6 +75,7 @@ export interface TestCase {
     method?: string;
     endpoint?: string;
     headers?: Record<string, string>;
+    cookies?: Record<string, string>;
     body?: any;
     bodyFile?: string;
     assertions?: Assertion[];
@@ -102,13 +104,21 @@ export interface LocatorOptions {
 }
 
 // Filter types for advanced locator filtering
-export type FilterType = "hasText" | "has" | "hasNot";
+export type FilterType = "hasText" | "hasNotText" | "has" | "hasNot" | "visible" | "hidden";
 
 // Filter definition matching Playwright's .filter() structure
 export interface FilterDefinition {
     type: FilterType;
     value?: string; // For hasText type
     locator?: LocatorDefinition; // For has/hasNot types
+}
+
+// Chain step operations for complex locator chaining
+export interface ChainStep {
+    operation: "filter" | "locator" | "nth" | "first" | "last";
+    filter?: FilterDefinition;
+    locator?: LocatorDefinition;
+    index?: number;
 }
 
 // Locator definition
@@ -122,10 +132,14 @@ export interface LocatorDefinition {
         | "title"
         | "testId"
         | "css"
-        | "xpath";
+        | "xpath"
+        | "locator";
     value: string;
     options?: LocatorOptions;
     filter?: FilterDefinition;
+    filters?: FilterDefinition[];
+    chain?: ChainStep[];
+    index?: "first" | "last" | number;
 }
 
 // Supported UI actions
