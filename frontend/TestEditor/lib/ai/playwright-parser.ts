@@ -83,7 +83,7 @@ export class PlaywrightParser {
           statement = statement.replace(new RegExp(`\\b${varName}\\b`, 'g'), 'page.getByRole(\'listitem\')')
         }
         
-        if (statement.startsWith('await ')) {
+        if (statement.startsWith('await ') || statement.includes('goto(') || statement.includes('expect(')) {
           statements.push(statement)
         }
         currentStatement = ''
@@ -111,9 +111,9 @@ export class PlaywrightParser {
   private static parseStep(line: string, stepId: number): any | null {
     const id = `step-${stepId}`
     
-    // goto command
-    if (line.includes('page.goto(')) {
-      const urlMatch = line.match(/page\.goto\(['"`]([^'"`]+)['"`]\)/)
+    // goto command - handle both direct calls and await statements
+    if (line.includes('goto(')) {
+      const urlMatch = line.match(/goto\(['"`]([^'"`]+)['"`]\)/)
       if (urlMatch) return { id, keyword: 'goto', value: urlMatch[1] }
     }
     
@@ -200,7 +200,12 @@ export class PlaywrightParser {
   
   private static extractLocator(line: string): any | null {
     // Handle complex chaining with filters
-    if (line.includes('.filter(') || line.includes('.getBy')) {
+    if (line.includes('.filter(')) {
+      return this.parseFilteredLocator(line)
+    }
+    
+    // Handle chained locators without filters (e.g., page.locator('div').nth(1))
+    if (line.match(/\.(nth|first|last)\(/)) {
       return this.parseFilteredLocator(line)
     }
     
@@ -291,44 +296,88 @@ export class PlaywrightParser {
   }
   
   private static parseFilteredLocator(line: string): any | null {
-
+    // Handle complex chaining: page.getByRole('navigation').getByRole('link').filter({ hasText: /^$/ })
     
-    // Extract base locator (first getBy* or locator call)
+    // Extract base locator
     const baseMatch = line.match(/(page\.)?(getBy\w+|locator)\([^)]+\)/)
     if (!baseMatch) return null
     
-    const baseLocator = this.parseLocatorMethod(baseMatch[2], baseMatch[0].match(/\(([^)]+)\)/)?.[1] || '')
+    const baseLocatorStr = baseMatch[0]
+    const baseLocator = this.parseLocatorMethod(baseMatch[2], baseLocatorStr.match(/\(([^)]+)\)/)?.[1] || '')
     if (!baseLocator) return null
     
-    // Extract all filters
-    const filterMatches = [...line.matchAll(/\.filter\(\{([^}]+)\}\)/g)]
-    const filters = filterMatches.map(match => this.parseFilterContent(match[1])).filter(Boolean)
+    // Find everything after the base locator
+    const afterBase = line.substring(line.indexOf(baseLocatorStr) + baseLocatorStr.length)
     
-    // Extract chained locators (getBy* calls after filters)
-    const afterFilters = line.split('.filter(').pop()?.split(').').slice(1).join(').') || ''
-    const chainMatches = [...afterFilters.matchAll(/\.(getBy\w+)\(([^)]+)\)/g)]
-    const chainSteps = chainMatches.map(match => ({
-      operation: 'locator',
-      locator: this.parseLocatorMethod(match[1], match[2])
-    })).filter(step => step.locator)
-    
-    // Extract index
+    // Parse the chain by splitting on method calls and filters
+    const parts = afterBase.split(/(?=\.(getBy\w+|filter|nth|first|last))/)
+    const chains = []
+    let finalFilters = []
     let index: string | number | undefined
-    if (line.includes('.first()')) index = 'first'
-    else if (line.includes('.last()')) index = 'last'
-    else {
-      const nthMatch = line.match(/\.nth\((\d+)\)/)
-      if (nthMatch) index = parseInt(nthMatch[1])
+    
+    for (const part of parts) {
+      if (!part) continue
+      
+      // Handle chained getBy* methods
+      const chainMatch = part.match(/\.(getBy\w+)\(([^)]+)\)/)
+      if (chainMatch) {
+        const chainLocator = this.parseLocatorMethod(chainMatch[1], chainMatch[2])
+        if (chainLocator) {
+          chains.push({
+            operation: "locator",
+            locator: chainLocator
+          })
+        }
+        continue
+      }
+      
+      // Handle filters - apply to the last element in chain or base if no chain
+      const filterMatch = part.match(/\.filter\(\{([^}]+)\}/)
+      if (filterMatch) {
+        const filter = this.parseFilterContent(filterMatch[1])
+        if (filter) {
+          if (chains.length > 0) {
+            // Apply filter to the last chained element's locator
+            const lastChain = chains[chains.length - 1]
+            if (lastChain.locator && !lastChain.locator.filters) {
+              lastChain.locator.filters = []
+            }
+            if (lastChain.locator) {
+              lastChain.locator.filters!.push(filter)
+            }
+          } else {
+            // Apply filter to base locator
+            finalFilters.push(filter)
+          }
+        }
+        continue
+      }
+      
+      // Handle index
+      if (part.includes('.first()')) index = 'first'
+      else if (part.includes('.last()')) index = 'last'
+      else {
+        const nthMatch = part.match(/\.nth\((\d+)\)/)
+        if (nthMatch) index = parseInt(nthMatch[1])
+      }
     }
     
-    // Build final locator
-    if (filters.length === 1) baseLocator.filter = filters[0]
-    else if (filters.length > 1) baseLocator.filters = filters
+    // Build the final locator structure
+    const result = { ...baseLocator }
     
-    if (chainSteps.length > 0) baseLocator.chain = chainSteps
-    if (index !== undefined) baseLocator.index = index
+    if (finalFilters.length > 0) {
+      result.filters = finalFilters
+    }
     
-    return baseLocator
+    if (chains.length > 0) {
+      result.chain = chains
+    }
+    
+    if (index !== undefined) {
+      result.index = index
+    }
+    
+    return result
   }
   
 
@@ -366,7 +415,10 @@ export class PlaywrightParser {
   }
   
   private static parseFilterContent(content: string): any | null {
-    // hasText filter
+    // hasText filter with regex support - handle empty regex patterns
+    const hasTextRegexMatch = content.match(/hasText:\s*\/\^([^$]*)\$\//)
+    if (hasTextRegexMatch) return { type: 'hasText', value: hasTextRegexMatch[1], regex: true }
+    
     const hasTextMatch = content.match(/hasText:\s*['"`]([^'"`]+)['"`]/)
     if (hasTextMatch) return { type: 'hasText', value: hasTextMatch[1] }
     

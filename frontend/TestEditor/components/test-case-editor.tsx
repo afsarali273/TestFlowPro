@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Trash2, Save, X, ArrowLeft, Copy, HelpCircle, Play, ArrowRight, Zap } from "lucide-react"
+import { EnhancedLocatorBuilder } from "@/components/enhanced-locator-builder"
 import { TestDataEditor } from "@/components/test-data-editor"
 import { SuiteRunnerModal } from "@/components/suite-runner-modal"
 import { ParameterManager } from "@/components/parameter-manager"
@@ -349,6 +350,16 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
       // Include filter if present
       if (step.locator.filter) {
         cleanedLocator.filter = step.locator.filter
+      }
+
+      // Include filters if present
+      if (step.locator.filters) {
+        cleanedLocator.filters = step.locator.filters
+      }
+
+      // Include chain if present
+      if (step.locator.chain) {
+        cleanedLocator.chain = step.locator.chain
       }
 
       // Include index if present
@@ -1024,235 +1035,11 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                             )}
 
                             {["click", "dblClick", "rightClick", "type", "fill", "press", "clear", "select", "check", "uncheck", "setChecked", "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop", "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", "assertCount", "assertValue", "assertAttribute", "assertChecked", "assertUnchecked", "assertContainsText", "uploadFile", "downloadFile", "getText", "getAttribute", "getValue", "getCount"].includes(inlineEditingStep?.keyword || "") && (
-                              <div className="space-y-4">
-                                <Label>Element Locator</Label>
-                                <div className="grid grid-cols-3 gap-4">
-                                  <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                      <Label>Strategy</Label>
-                                      <div className="group relative">
-                                        <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
-                                        <div className="absolute left-0 top-6 w-80 p-4 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                          <div className="font-semibold mb-2 text-blue-300">🎯 Locator Strategies</div>
-                                          <div className="space-y-2">
-                                            <div><span className="text-green-300">role:</span> <code className="text-yellow-200">"button"</code> - Semantic elements</div>
-                                            <div><span className="text-green-300">testId:</span> <code className="text-yellow-200">"submit-btn"</code> - data-testid attribute</div>
-                                            <div><span className="text-green-300">text:</span> <code className="text-yellow-200">"Sign Up"</code> - Exact text content</div>
-                                            <div><span className="text-green-300">css:</span> <code className="text-yellow-200">".btn-primary"</code> - CSS selectors</div>
-                                            <div><span className="text-green-300">xpath:</span> <code className="text-yellow-200">"//button[text()='OK']"</code> - XPath expressions</div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <Select
-                                      value={inlineEditingStep?.locator?.strategy || "role"}
-                                      onValueChange={(value) => handleInlineLocatorChange("strategy", value)}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="role">Role (button, link, textbox, etc.)</SelectItem>
-                                        <SelectItem value="label">Label Text</SelectItem>
-                                        <SelectItem value="text">Text Content</SelectItem>
-                                        <SelectItem value="placeholder">Placeholder Text</SelectItem>
-                                        <SelectItem value="altText">Alt Text</SelectItem>
-                                        <SelectItem value="title">Title Attribute</SelectItem>
-                                        <SelectItem value="testId">Test ID</SelectItem>
-                                        <SelectItem value="css">CSS Selector</SelectItem>
-                                        <SelectItem value="xpath">XPath</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label>Locator Value</Label>
-                                    <Input
-                                      value={inlineEditingStep?.locator?.value || ""}
-                                      onChange={(e) => handleInlineLocatorChange("value", e.target.value)}
-                                      placeholder={
-                                        inlineEditingStep?.locator?.strategy === "role"
-                                          ? "button, link, textbox, heading, etc."
-                                          : inlineEditingStep?.locator?.strategy === "css"
-                                            ? ".class, #id, element"
-                                            : inlineEditingStep?.locator?.strategy === "xpath"
-                                              ? "//div[@class='example']"
-                                              : "Enter locator value"
-                                      }
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label>Index</Label>
-                                    <Select
-                                      value={inlineEditingStep?.locator?.index?.toString() || "none"}
-                                      onValueChange={(value) => {
-                                        if (!inlineEditingStep) return
-                                        const newStep: TestStep = { ...inlineEditingStep }
-                                        if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
-                                        newStep.locator.index = value === "none" ? undefined : value === "first" || value === "last" ? value : Number(value)
-                                        handleInlineStepChange("locator", newStep.locator)
-                                      }}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="None" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="none">None</SelectItem>
-                                        <SelectItem value="first">First</SelectItem>
-                                        <SelectItem value="last">Last</SelectItem>
-                                        <SelectItem value="0">Index 0</SelectItem>
-                                        <SelectItem value="1">Index 1</SelectItem>
-                                        <SelectItem value="2">Index 2</SelectItem>
-                                        <SelectItem value="3">Index 3</SelectItem>
-                                        <SelectItem value="4">Index 4</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                </div>
-                                
-                                {/* Locator Options */}
-                                <div className="space-y-3 border-t pt-3">
-                                  <div className="flex items-center gap-2">
-                                    <Label className="text-sm font-medium text-gray-600">Locator Options (Optional)</Label>
-                                    <div className="group relative">
-                                      <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
-                                      <div className="absolute left-0 top-4 w-96 p-4 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                        <div className="font-semibold mb-2 text-blue-300">🔍 Locator Filters</div>
-                                        <div className="space-y-2">
-                                          <div><span className="text-green-300">name:</span> <code className="text-yellow-200">"Subscribe"</code> - Accessible name</div>
-                                          <div><span className="text-green-300">hasText:</span> <code className="text-yellow-200">"Welcome"</code> - Contains text</div>
-                                          <div><span className="text-green-300">exact:</span> <code className="text-yellow-200">true</code> - Exact text match</div>
-                                          <div><span className="text-green-300">checked:</span> <code className="text-yellow-200">true</code> - Checkbox/radio state</div>
-                                          <div className="text-gray-300 mt-2">💡 Combine with any locator strategy for precise targeting</div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                      <div className="flex items-center gap-1">
-                                        <Label className="text-xs">Name</Label>
-                                        <div className="group relative">
-                                          <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
-                                          <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                            <div className="font-semibold mb-2 text-blue-300">🏷️ Accessible Name</div>
-                                            <div className="space-y-1">
-                                              <div><code className="text-yellow-200">.getByRole('button', {'{ name: \'Subscribe\' }'}</code></div>
-                                              <div><code className="text-yellow-200">.getByRole('button', {'{ name: /submit/i }'}</code></div>
-                                              <div className="text-gray-300 mt-2">💡 Matches accessible name or aria-label</div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <Input
-                                        className="h-8 text-sm"
-                                        value={typeof inlineEditingStep?.locator?.options?.name === 'object' ? JSON.stringify(inlineEditingStep.locator.options.name) : (inlineEditingStep?.locator?.options?.name?.toString() || "")}
-                                        onChange={(e) => {
-                                          if (!inlineEditingStep) return
-                                          const newStep: TestStep = { ...inlineEditingStep }
-                                          if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
-                                          if (!newStep.locator.options) newStep.locator.options = {}
-                                          newStep.locator.options.name = e.target.value || undefined
-                                          handleInlineStepChange("locator", newStep.locator)
-                                        }}
-                                        placeholder="Subscribe, /Welcome.*/"
-                                      />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <div className="flex items-center gap-1">
-                                        <Label className="text-xs">Exact Match</Label>
-                                        <div className="group relative">
-                                          <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
-                                          <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                            <div className="font-semibold mb-2 text-blue-300">🎯 Exact Text Matching</div>
-                                            <div className="space-y-1">
-                                              <div><span className="text-green-300">Exact:</span> <code className="text-yellow-200">.getByText('Sign up', {'{ exact: true }'}</code></div>
-                                              <div><span className="text-green-300">Partial:</span> <code className="text-yellow-200">.getByText('Sign up')</code> (default)</div>
-                                              <div className="text-gray-300 mt-2">💡 Controls whether text matching is exact or partial</div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center space-x-2 h-8">
-                                        <input
-                                          type="checkbox"
-                                          id="exact-match-edit"
-                                          className="h-4 w-4"
-                                          checked={!!inlineEditingStep?.locator?.options?.exact}
-                                          onChange={(e) => {
-                                            if (!inlineEditingStep) return
-                                            const newStep: TestStep = { ...inlineEditingStep }
-                                            if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
-                                            if (!newStep.locator.options) newStep.locator.options = {}
-                                            newStep.locator.options.exact = e.target.checked ? true : undefined
-                                            handleInlineStepChange("locator", newStep.locator)
-                                          }}
-                                        />
-                                        <Label htmlFor="exact-match-edit" className="text-xs">Enable exact matching</Label>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                      <div className="flex items-center gap-1">
-                                        <Label className="text-xs">Has Text</Label>
-                                        <div className="group relative">
-                                          <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
-                                          <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                            <div className="font-semibold mb-2 text-blue-300">✅ Contains Text Filter</div>
-                                            <div className="space-y-1">
-                                              <div><code className="text-yellow-200">.getByRole('button').filter({'{ hasText: \'Save\' }'}</code></div>
-                                              <div><code className="text-yellow-200">.locator('div').filter({'{ hasText: /product/i }'}</code></div>
-                                              <div className="text-gray-300 mt-2">💡 Filters elements that contain specific text</div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <Input
-                                        className="h-8 text-sm"
-                                        value={typeof inlineEditingStep?.locator?.options?.hasText === 'object' ? JSON.stringify(inlineEditingStep.locator.options.hasText) : (inlineEditingStep?.locator?.options?.hasText?.toString() || "")}
-                                        onChange={(e) => {
-                                          if (!inlineEditingStep) return
-                                          const newStep: TestStep = { ...inlineEditingStep }
-                                          if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
-                                          if (!newStep.locator.options) newStep.locator.options = {}
-                                          newStep.locator.options.hasText = e.target.value || undefined
-                                          handleInlineStepChange("locator", newStep.locator)
-                                        }}
-                                        placeholder="Text content or /regex/"
-                                      />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <div className="flex items-center gap-1">
-                                        <Label className="text-xs">Has Not Text</Label>
-                                        <div className="group relative">
-                                          <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
-                                          <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                            <div className="font-semibold mb-2 text-blue-300">❌ Excludes Text Filter</div>
-                                            <div className="space-y-1">
-                                              <div><code className="text-yellow-200">.getByRole('button').filter({'{ hasNotText: \'Disabled\' }'}</code></div>
-                                              <div><code className="text-yellow-200">.locator('div').filter({'{ hasNotText: /error/i }'}</code></div>
-                                              <div className="text-gray-300 mt-2">💡 Filters out elements that contain specific text</div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <Input
-                                        className="h-8 text-sm"
-                                        value={typeof inlineEditingStep?.locator?.options?.hasNotText === 'object' ? JSON.stringify(inlineEditingStep.locator.options.hasNotText) : (inlineEditingStep?.locator?.options?.hasNotText?.toString() || "")}
-                                        onChange={(e) => {
-                                          if (!inlineEditingStep) return
-                                          const newStep: TestStep = { ...inlineEditingStep }
-                                          if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
-                                          if (!newStep.locator.options) newStep.locator.options = {}
-                                          newStep.locator.options.hasNotText = e.target.value || undefined
-                                          handleInlineStepChange("locator", newStep.locator)
-                                        }}
-                                        placeholder="Text to exclude"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
+                              <EnhancedLocatorBuilder
+                                locator={inlineEditingStep?.locator}
+                                onChange={(locator) => handleInlineStepChange("locator", locator)}
+                                className="border-t pt-4"
+                              />
                             )}
 
                             {/* Variable Storage for data extraction keywords */}
@@ -1509,13 +1296,23 @@ await page.waitForFunction(() => {
                                     </>
                                   )
                                 }
-                                {testStep.skipOnFailure && (
-                                  <div className="mt-1">
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  {testStep.skipOnFailure && (
                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
                                       ⏭️ Skip on Failure
                                     </span>
-                                  </div>
-                                )}
+                                  )}
+                                  {testStep.locator?.filters && testStep.locator.filters.length > 0 && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                                      🔍 {testStep.locator.filters.length} Filter{testStep.locator.filters.length > 1 ? 's' : ''}
+                                    </span>
+                                  )}
+                                  {testStep.locator?.chain && testStep.locator.chain.length > 0 && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                                      🔗 {testStep.locator.chain.length} Chain{testStep.locator.chain.length > 1 ? 's' : ''}
+                                    </span>
+                                  )}
+                                </div>
                               </CardDescription>
                             </div>
                             <div className="flex items-center gap-2">
@@ -1670,235 +1467,11 @@ await page.waitForFunction(() => {
                           )}
 
                           {["click", "dblClick", "rightClick", "type", "fill", "press", "clear", "select", "check", "uncheck", "setChecked", "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop", "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", "assertCount", "assertValue", "assertAttribute", "assertChecked", "assertUnchecked", "assertContainsText", "uploadFile", "downloadFile", "getText", "getAttribute", "getValue", "getCount"].includes(inlineEditingStep.keyword) && (
-                            <div className="space-y-4">
-                              <Label>Element Locator</Label>
-                              <div className="grid grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                  <div className="flex items-center gap-2">
-                                    <Label>Strategy</Label>
-                                    <div className="group relative">
-                                      <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
-                                      <div className="absolute left-0 top-6 w-80 p-4 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                        <div className="font-semibold mb-2 text-blue-300">🎯 Locator Strategies</div>
-                                        <div className="space-y-2">
-                                          <div><span className="text-green-300">role:</span> <code className="text-yellow-200">"button"</code> - Semantic elements</div>
-                                          <div><span className="text-green-300">testId:</span> <code className="text-yellow-200">"submit-btn"</code> - data-testid attribute</div>
-                                          <div><span className="text-green-300">text:</span> <code className="text-yellow-200">"Sign Up"</code> - Exact text content</div>
-                                          <div><span className="text-green-300">css:</span> <code className="text-yellow-200">".btn-primary"</code> - CSS selectors</div>
-                                          <div><span className="text-green-300">xpath:</span> <code className="text-yellow-200">"//button[text()='OK']"</code> - XPath expressions</div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <Select
-                                    value={inlineEditingStep.locator?.strategy || "role"}
-                                    onValueChange={(value) => handleInlineLocatorChange("strategy", value)}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="role">Role (button, link, textbox, etc.)</SelectItem>
-                                      <SelectItem value="label">Label Text</SelectItem>
-                                      <SelectItem value="text">Text Content</SelectItem>
-                                      <SelectItem value="placeholder">Placeholder Text</SelectItem>
-                                      <SelectItem value="altText">Alt Text</SelectItem>
-                                      <SelectItem value="title">Title Attribute</SelectItem>
-                                      <SelectItem value="testId">Test ID</SelectItem>
-                                      <SelectItem value="css">CSS Selector</SelectItem>
-                                      <SelectItem value="xpath">XPath</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Locator Value</Label>
-                                  <Input
-                                    value={inlineEditingStep.locator?.value || ""}
-                                    onChange={(e) => handleInlineLocatorChange("value", e.target.value)}
-                                    placeholder={
-                                      inlineEditingStep.locator?.strategy === "role"
-                                        ? "button, link, textbox, heading, etc."
-                                        : inlineEditingStep.locator?.strategy === "css"
-                                          ? ".class, #id, element"
-                                          : inlineEditingStep.locator?.strategy === "xpath"
-                                            ? "//div[@class='example']"
-                                            : "Enter locator value"
-                                    }
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Index</Label>
-                                  <Select
-                                    value={inlineEditingStep.locator?.index?.toString() || "none"}
-                                    onValueChange={(value) => {
-                                      if (!inlineEditingStep) return
-                                      const newStep: TestStep = { ...inlineEditingStep }
-                                      if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
-                                      newStep.locator.index = value === "none" ? undefined : value === "first" || value === "last" ? value : Number(value)
-                                      handleInlineStepChange("locator", newStep.locator)
-                                    }}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="None" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="none">None</SelectItem>
-                                      <SelectItem value="first">First</SelectItem>
-                                      <SelectItem value="last">Last</SelectItem>
-                                      <SelectItem value="0">Index 0</SelectItem>
-                                      <SelectItem value="1">Index 1</SelectItem>
-                                      <SelectItem value="2">Index 2</SelectItem>
-                                      <SelectItem value="3">Index 3</SelectItem>
-                                      <SelectItem value="4">Index 4</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                              
-                              {/* Locator Options */}
-                              <div className="space-y-3 border-t pt-3">
-                                <div className="flex items-center gap-2">
-                                  <Label className="text-sm font-medium text-gray-600">Locator Options (Optional)</Label>
-                                  <div className="group relative">
-                                    <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
-                                    <div className="absolute left-0 top-4 w-96 p-4 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                      <div className="font-semibold mb-2 text-blue-300">🔍 Locator Filters</div>
-                                      <div className="space-y-2">
-                                        <div><span className="text-green-300">name:</span> <code className="text-yellow-200">"Subscribe"</code> - Accessible name</div>
-                                        <div><span className="text-green-300">hasText:</span> <code className="text-yellow-200">"Welcome"</code> - Contains text</div>
-                                        <div><span className="text-green-300">exact:</span> <code className="text-yellow-200">true</code> - Exact text match</div>
-                                        <div><span className="text-green-300">checked:</span> <code className="text-yellow-200">true</code> - Checkbox/radio state</div>
-                                        <div className="text-gray-300 mt-2">💡 Combine with any locator strategy for precise targeting</div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div className="space-y-1">
-                                    <div className="flex items-center gap-1">
-                                      <Label className="text-xs">Name</Label>
-                                      <div className="group relative">
-                                        <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
-                                        <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                          <div className="font-semibold mb-2 text-blue-300">🏷️ Accessible Name</div>
-                                          <div className="space-y-1">
-                                            <div><code className="text-yellow-200">.getByRole('button', {'{ name: \'Subscribe\' }'}</code></div>
-                                            <div><code className="text-yellow-200">.getByRole('button', {'{ name: /submit/i }'}</code></div>
-                                            <div className="text-gray-300 mt-2">💡 Matches accessible name or aria-label</div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <Input
-                                      className="h-8 text-sm"
-                                      value={typeof inlineEditingStep.locator?.options?.name === 'object' ? JSON.stringify(inlineEditingStep.locator.options.name) : (inlineEditingStep.locator?.options?.name?.toString() || "")}
-                                      onChange={(e) => {
-                                        if (!inlineEditingStep) return
-                                        const newStep: TestStep = { ...inlineEditingStep }
-                                        if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
-                                        if (!newStep.locator.options) newStep.locator.options = {}
-                                        newStep.locator.options.name = e.target.value || undefined
-                                        handleInlineStepChange("locator", newStep.locator)
-                                      }}
-                                      placeholder="Subscribe, /Welcome.*/"
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <div className="flex items-center gap-1">
-                                      <Label className="text-xs">Exact Match</Label>
-                                      <div className="group relative">
-                                        <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
-                                        <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                          <div className="font-semibold mb-2 text-blue-300">🎯 Exact Text Matching</div>
-                                          <div className="space-y-1">
-                                            <div><span className="text-green-300">Exact:</span> <code className="text-yellow-200">.getByText('Sign up', {'{ exact: true }'}</code></div>
-                                            <div><span className="text-green-300">Partial:</span> <code className="text-yellow-200">.getByText('Sign up')</code> (default)</div>
-                                            <div className="text-gray-300 mt-2">💡 Controls whether text matching is exact or partial</div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center space-x-2 h-8">
-                                      <input
-                                        type="checkbox"
-                                        id="exact-match-add"
-                                        className="h-4 w-4"
-                                        checked={!!inlineEditingStep.locator?.options?.exact}
-                                        onChange={(e) => {
-                                          if (!inlineEditingStep) return
-                                          const newStep: TestStep = { ...inlineEditingStep }
-                                          if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
-                                          if (!newStep.locator.options) newStep.locator.options = {}
-                                          newStep.locator.options.exact = e.target.checked ? true : undefined
-                                          handleInlineStepChange("locator", newStep.locator)
-                                        }}
-                                      />
-                                      <Label htmlFor="exact-match-add" className="text-xs">Enable exact matching</Label>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div className="space-y-1">
-                                    <div className="flex items-center gap-1">
-                                      <Label className="text-xs">Has Text</Label>
-                                      <div className="group relative">
-                                        <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
-                                        <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                          <div className="font-semibold mb-2 text-blue-300">✅ Contains Text Filter</div>
-                                          <div className="space-y-1">
-                                            <div><code className="text-yellow-200">.getByRole('button').filter({'{ hasText: \'Save\' }'}</code></div>
-                                            <div><code className="text-yellow-200">.locator('div').filter({'{ hasText: /product/i }'}</code></div>
-                                            <div className="text-gray-300 mt-2">💡 Filters elements that contain specific text</div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <Input
-                                      className="h-8 text-sm"
-                                      value={typeof inlineEditingStep.locator?.options?.hasText === 'object' ? JSON.stringify(inlineEditingStep.locator.options.hasText) : (inlineEditingStep.locator?.options?.hasText?.toString() || "")}
-                                      onChange={(e) => {
-                                        if (!inlineEditingStep) return
-                                        const newStep: TestStep = { ...inlineEditingStep }
-                                        if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
-                                        if (!newStep.locator.options) newStep.locator.options = {}
-                                        newStep.locator.options.hasText = e.target.value || undefined
-                                        handleInlineStepChange("locator", newStep.locator)
-                                      }}
-                                      placeholder="Text content or /regex/"
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <div className="flex items-center gap-1">
-                                      <Label className="text-xs">Has Not Text</Label>
-                                      <div className="group relative">
-                                        <HelpCircle className="h-3 w-3 text-gray-400 cursor-help" />
-                                        <div className="absolute left-0 top-4 w-80 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none">
-                                          <div className="font-semibold mb-2 text-blue-300">❌ Excludes Text Filter</div>
-                                          <div className="space-y-1">
-                                            <div><code className="text-yellow-200">.getByRole('button').filter({'{ hasNotText: \'Disabled\' }'}</code></div>
-                                            <div><code className="text-yellow-200">.locator('div').filter({'{ hasNotText: /error/i }'}</code></div>
-                                            <div className="text-gray-300 mt-2">💡 Filters out elements that contain specific text</div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <Input
-                                      className="h-8 text-sm"
-                                      value={typeof inlineEditingStep.locator?.options?.hasNotText === 'object' ? JSON.stringify(inlineEditingStep.locator.options.hasNotText) : (inlineEditingStep.locator?.options?.hasNotText?.toString() || "")}
-                                      onChange={(e) => {
-                                        if (!inlineEditingStep) return
-                                        const newStep: TestStep = { ...inlineEditingStep }
-                                        if (!newStep.locator) newStep.locator = { strategy: "role", value: "" }
-                                        if (!newStep.locator.options) newStep.locator.options = {}
-                                        newStep.locator.options.hasNotText = e.target.value || undefined
-                                        handleInlineStepChange("locator", newStep.locator)
-                                      }}
-                                      placeholder="Text to exclude"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                            <EnhancedLocatorBuilder
+                              locator={inlineEditingStep.locator}
+                              onChange={(locator) => handleInlineStepChange("locator", locator)}
+                              className="border-t pt-4"
+                            />
                           )}
 
                           {/* Variable Storage for data extraction keywords */}

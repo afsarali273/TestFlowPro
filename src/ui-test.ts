@@ -731,10 +731,10 @@ export class UIRunner {
     private applyFilter(baseLocator: Locator, filter: FilterDefinition, createLocator: (loc: LocatorDefinition) => Locator): Locator {
         switch (filter.type) {
             case "hasText":
-                if (!filter.value) throw new Error("hasText filter requires value");
+                if (filter.value === undefined) throw new Error("hasText filter requires value");
                 return baseLocator.filter({ hasText: filter.value });
             case "hasNotText":
-                if (!filter.value) throw new Error("hasNotText filter requires value");
+                if (filter.value === undefined) throw new Error("hasNotText filter requires value");
                 return baseLocator.filter({ hasNotText: filter.value });
             case "has":
                 if (!filter.locator) throw new Error("has filter requires locator");
@@ -751,35 +751,68 @@ export class UIRunner {
         }
     }
 
-    private applyChain(baseLocator: Locator, chain: ChainStep[], createLocator: (loc: LocatorDefinition) => Locator): Locator {
+    private applyChain(baseLocator: Locator, chain: any[], createLocator: (loc: LocatorDefinition) => Locator): Locator {
         let result = baseLocator;
         
         for (const step of chain) {
-            switch (step.operation) {
-                case "filter":
-                    if (!step.filter) throw new Error("Chain filter operation requires filter definition");
-                    result = this.applyFilter(result, step.filter, createLocator);
-                    break;
-                case "locator":
-                    if (!step.locator) throw new Error("Chain locator operation requires locator definition");
-                    result = result.locator(createLocator(step.locator));
-                    break;
-                case "nth":
-                    if (step.index === undefined) throw new Error("Chain nth operation requires index");
-                    result = result.nth(step.index);
-                    break;
-                case "first":
-                    result = result.first();
-                    break;
-                case "last":
-                    result = result.last();
-                    break;
-                default:
-                    throw new Error(`Unknown chain operation: ${step.operation}`);
+            // Handle both ChainStep format and direct LocatorDefinition format
+            if (step.operation) {
+                // ChainStep format
+                switch (step.operation) {
+                    case "filter":
+                        if (!step.filter) throw new Error("Chain filter operation requires filter definition");
+                        result = this.applyFilter(result, step.filter, createLocator);
+                        break;
+                    case "locator":
+                        if (!step.locator) throw new Error("Chain locator operation requires locator definition");
+                        result = this.chainLocator(result, step.locator);
+                        break;
+                    case "nth":
+                        if (step.index === undefined) throw new Error("Chain nth operation requires index");
+                        result = result.nth(step.index);
+                        break;
+                    case "first":
+                        result = result.first();
+                        break;
+                    case "last":
+                        result = result.last();
+                        break;
+                    default:
+                        throw new Error(`Unknown chain operation: ${step.operation}`);
+                }
+            } else if (step.strategy) {
+                // Direct LocatorDefinition format
+                result = this.chainLocator(result, step);
+                
+                // Apply filters if present on the chained element
+                if (step.filters && step.filters.length > 0) {
+                    for (const filter of step.filters) {
+                        result = this.applyFilter(result, filter, createLocator);
+                    }
+                }
+            } else {
+                throw new Error(`Invalid chain step format`);
             }
         }
         
         return result;
+    }
+    
+    private chainLocator(baseLocator: Locator, locatorDef: LocatorDefinition): Locator {
+        switch (locatorDef.strategy) {
+            case "role":
+                return baseLocator.getByRole(locatorDef.value as any, locatorDef.options);
+            case "text":
+                return baseLocator.getByText(locatorDef.value, locatorDef.options);
+            case "testId":
+                return baseLocator.getByTestId(locatorDef.value);
+            case "label":
+                return baseLocator.getByLabel(locatorDef.value, locatorDef.options);
+            case "css":
+                return baseLocator.locator(locatorDef.value);
+            default:
+                return baseLocator.locator(locatorDef.value);
+        }
     }
 
     async close() {

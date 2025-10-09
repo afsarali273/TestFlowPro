@@ -317,6 +317,8 @@ export function validateTestStep(testStep: any): TestStep {
                 value: testStep.locator.value || "",
                 options: testStep.locator.options,
                 filter: testStep.locator.filter,
+                filters: testStep.locator.filters,
+                chain: testStep.locator.chain,
                 index: testStep.locator.index,
             }
             : undefined,
