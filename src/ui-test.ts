@@ -3,6 +3,10 @@ import { TestStep, TestCase, LocatorDefinition, FilterDefinition, ChainStep } fr
 import { Reporter } from "./reporter";
 import { setVariable, setLocalVariable, injectVariables } from "./utils/variableStore";
 import { customStepHandler } from "./custom-steps/custom-step-handler";
+import axios from 'axios';
+import { assertJson, assertXPath } from "./utils/assertUtils";
+import { storeResponseVariables } from "./utils/variableStore";
+import { injectVariableInHeaders } from "./executor";
 
 export class UIRunner {
     private browser!: Browser;
@@ -569,6 +573,12 @@ export class UIRunner {
                 if (!step.customFunction) throw new Error("customStep requires customFunction");
                 await this.executeCustomStep(step);
                 break;
+            case "apiCall":
+                await this.executeApiCall(step, false);
+                break;
+            case "soapCall":
+                await this.executeApiCall(step, true);
+                break;
             default:
                 throw new Error(`Unknown keyword: ${step.keyword}`);
         }
@@ -812,6 +822,101 @@ export class UIRunner {
                 return baseLocator.locator(locatorDef.value);
             default:
                 return baseLocator.locator(locatorDef.value);
+        }
+    }
+
+    private async executeApiCall(step: TestStep, isSoap: boolean = false) {
+        if (!step.method) throw new Error("API call requires method");
+        if (!step.endpoint) throw new Error("API call requires endpoint");
+        
+        console.log(`🌐 Making ${isSoap ? 'SOAP' : 'REST'} API call: ${step.method} ${step.endpoint}`);
+        
+        const start = Date.now();
+        let headers = step.headers ? injectVariableInHeaders(step.headers) : {};
+        let body = step.body;
+        
+        // Inject variables in body if it's a string
+        if (typeof body === 'string') {
+            body = injectVariables(body);
+        } else if (body && typeof body === 'object') {
+            body = JSON.parse(injectVariables(JSON.stringify(body)));
+        }
+        
+        // Set default headers for SOAP
+        if (isSoap && !headers['Content-Type']) {
+            headers['Content-Type'] = 'text/xml; charset=utf-8';
+        }
+        
+        try {
+            const response = await axios({
+                url: injectVariables(step.endpoint),
+                method: step.method.toLowerCase(),
+                headers,
+                data: body,
+            });
+            
+            const responseTime = Date.now() - start;
+            console.log(`✅ API call completed: ${response.status} (${responseTime}ms)`);
+            
+            // Run assertions if provided
+            if (step.assertions && step.assertions.length > 0) {
+                console.log(`🔍 Running ${step.assertions.length} API assertions`);
+                for (const assertion of step.assertions) {
+                    try {
+                        if (isSoap) {
+                            assertXPath(response.data, assertion);
+                        } else {
+                            assertJson(response.data, response.status, [assertion]);
+                        }
+                        console.log(`✅ Assertion passed: ${assertion.type}`);
+                    } catch (err: any) {
+                        throw new Error(`API assertion failed: ${err.message}`);
+                    }
+                }
+            }
+            
+            // Store response variables
+            if (step.store && Object.keys(step.store).length > 0) {
+                console.log(`💾 Storing global variables from API response`);
+                storeResponseVariables(response.data, step.store, false, response.headers);
+            }
+            
+            if (step.localStore && Object.keys(step.localStore).length > 0) {
+                console.log(`💾 Storing local variables from API response`);
+                storeResponseVariables(response.data, step.localStore, true, response.headers);
+            }
+            
+        } catch (error: any) {
+            if (axios.isAxiosError(error) && error.response) {
+                const responseTime = Date.now() - start;
+                console.log(`⚠️ API call failed: ${error.response.status} (${responseTime}ms)`);
+                
+                // Still run assertions on error response
+                if (step.assertions && step.assertions.length > 0) {
+                    for (const assertion of step.assertions) {
+                        try {
+                            if (isSoap) {
+                                assertXPath(error.response.data, assertion);
+                            } else {
+                                assertJson(error.response.data, error.response.status, [assertion]);
+                            }
+                            console.log(`✅ Error response assertion passed: ${assertion.type}`);
+                        } catch (err: any) {
+                            throw new Error(`API assertion failed: ${err.message}`);
+                        }
+                    }
+                }
+                
+                // Store variables from error response
+                if (step.store) {
+                    storeResponseVariables(error.response.data, step.store, false, error.response.headers);
+                }
+                if (step.localStore) {
+                    storeResponseVariables(error.response.data, step.localStore, true, error.response.headers);
+                }
+            } else {
+                throw new Error(`API call failed: ${error.message}`);
+            }
         }
     }
 

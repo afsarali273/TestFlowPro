@@ -380,6 +380,14 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
       cleaned.customCode = step.customCode
     }
 
+    // Include API fields for apiCall and soapCall keywords
+    if ((step.keyword === "apiCall" || step.keyword === "soapCall")) {
+      if (step.method) cleaned.method = step.method
+      if (step.endpoint) cleaned.endpoint = step.endpoint
+      if (step.headers) cleaned.headers = step.headers
+      if (step.body) cleaned.body = step.body
+    }
+
     if (step.target) {
       cleaned.target = step.target
     }
@@ -994,6 +1002,8 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                                       { value: "assertHaveCount", label: "[Assertions] Assert Have Count" },
                                       { value: "waitForElement", label: "[Wait] Wait For Element" },
                                       { value: "waitForText", label: "[Wait] Wait For Text" },
+                                      { value: "apiCall", label: "[API] REST API Call" },
+                                      { value: "soapCall", label: "[API] SOAP API Call" },
                                       { value: "customStep", label: "[Custom] Custom Function" },
                                       { value: "customCode", label: "[Custom] Raw Playwright Code" }
                                     ].filter(item => 
@@ -1195,6 +1205,86 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                                   <div className="text-xs text-gray-500">
                                     Maps function result to variables: {'{ "variableName": "resultProperty" }'}
                                   </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {(inlineEditingStep?.keyword === "apiCall" || inlineEditingStep?.keyword === "soapCall") && (
+                              <div className="space-y-4 border-t pt-4">
+                                <Label className="text-sm font-semibold">{inlineEditingStep.keyword === "soapCall" ? "SOAP" : "REST"} API Configuration</Label>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label>HTTP Method</Label>
+                                    <Select
+                                      value={inlineEditingStep?.method || "GET"}
+                                      onValueChange={(value) => handleInlineStepChange("method", value)}
+                                    >
+                                      <SelectTrigger className="h-9">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="GET">GET</SelectItem>
+                                        <SelectItem value="POST">POST</SelectItem>
+                                        <SelectItem value="PUT">PUT</SelectItem>
+                                        <SelectItem value="DELETE">DELETE</SelectItem>
+                                        <SelectItem value="PATCH">PATCH</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Endpoint</Label>
+                                    <Input
+                                      value={inlineEditingStep?.endpoint || ""}
+                                      onChange={(e) => handleInlineStepChange("endpoint", e.target.value)}
+                                      placeholder="/api/users or https://api.example.com/users"
+                                      className="h-9"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label>Headers (JSON)</Label>
+                                  <Textarea
+                                    value={inlineEditingStep?.headers ? JSON.stringify(inlineEditingStep.headers, null, 2) : '{"Content-Type": "application/json"}'}
+                                    onChange={(e) => {
+                                      try {
+                                        const headers = JSON.parse(e.target.value)
+                                        handleInlineStepChange("headers", headers)
+                                      } catch {
+                                        // Invalid JSON, don't update
+                                      }
+                                    }}
+                                    className="font-mono text-sm min-h-[80px]"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label>Request Body (JSON)</Label>
+                                  <Textarea
+                                    value={inlineEditingStep?.body ? (typeof inlineEditingStep.body === 'string' ? inlineEditingStep.body : JSON.stringify(inlineEditingStep.body, null, 2)) : ""}
+                                    onChange={(e) => {
+                                      try {
+                                        const body = JSON.parse(e.target.value)
+                                        handleInlineStepChange("body", body)
+                                      } catch {
+                                        // Keep as string if not valid JSON
+                                        handleInlineStepChange("body", e.target.value)
+                                      }
+                                    }}
+                                    placeholder={inlineEditingStep.keyword === "soapCall" ? 
+                                      `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <!-- SOAP request body -->
+  </soap:Body>
+</soap:Envelope>` : 
+                                      `{
+  "name": "{{userName}}",
+  "email": "user@example.com"
+}`}
+                                    className="font-mono text-sm min-h-[120px]"
+                                  />
                                 </div>
                               </div>
                             )}
@@ -1426,6 +1516,8 @@ await page.waitForFunction(() => {
                                     { value: "assertHaveCount", label: "[Assertions] Assert Have Count" },
                                     { value: "waitForElement", label: "[Wait] Wait For Element" },
                                     { value: "waitForText", label: "[Wait] Wait For Text" },
+                                    { value: "apiCall", label: "[API] REST API Call" },
+                                    { value: "soapCall", label: "[API] SOAP API Call" },
                                     { value: "customStep", label: "[Custom] Custom Function" },
                                     { value: "customCode", label: "[Custom] Raw Playwright Code" }
                                   ].filter(item => 
@@ -1626,6 +1718,110 @@ await page.waitForFunction(() => {
                                 />
                                 <div className="text-xs text-gray-500">
                                   Maps function result to variables: {'{ "variableName": "resultProperty" }'}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {(inlineEditingStep?.keyword === "apiCall" || inlineEditingStep?.keyword === "soapCall") && (
+                            <div className="space-y-4 border-t pt-4">
+                              <Label className="text-sm font-semibold">{inlineEditingStep.keyword === "soapCall" ? "SOAP" : "REST"} API Configuration</Label>
+                              
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label>HTTP Method</Label>
+                                  <Select
+                                    value={inlineEditingStep?.method || "GET"}
+                                    onValueChange={(value) => handleInlineStepChange("method", value)}
+                                  >
+                                    <SelectTrigger className="h-9">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="GET">GET</SelectItem>
+                                      <SelectItem value="POST">POST</SelectItem>
+                                      <SelectItem value="PUT">PUT</SelectItem>
+                                      <SelectItem value="DELETE">DELETE</SelectItem>
+                                      <SelectItem value="PATCH">PATCH</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Endpoint</Label>
+                                  <Input
+                                    value={inlineEditingStep?.endpoint || ""}
+                                    onChange={(e) => handleInlineStepChange("endpoint", e.target.value)}
+                                    placeholder="/api/users or https://api.example.com/users"
+                                    className="h-9"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Headers (JSON)</Label>
+                                <Textarea
+                                  value={inlineEditingStep?.headers ? JSON.stringify(inlineEditingStep.headers, null, 2) : '{"Content-Type": "application/json"}'}
+                                  onChange={(e) => {
+                                    try {
+                                      const headers = JSON.parse(e.target.value)
+                                      handleInlineStepChange("headers", headers)
+                                    } catch {
+                                      // Invalid JSON, don't update
+                                    }
+                                  }}
+                                  className="font-mono text-sm min-h-[80px]"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Request Body (JSON)</Label>
+                                <Textarea
+                                  value={inlineEditingStep?.body ? (typeof inlineEditingStep.body === 'string' ? inlineEditingStep.body : JSON.stringify(inlineEditingStep.body, null, 2)) : ""}
+                                  onChange={(e) => {
+                                    try {
+                                      const body = JSON.parse(e.target.value)
+                                      handleInlineStepChange("body", body)
+                                    } catch {
+                                      // Keep as string if not valid JSON
+                                      handleInlineStepChange("body", e.target.value)
+                                    }
+                                  }}
+                                  placeholder={inlineEditingStep.keyword === "soapCall" ? 
+                                    `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <!-- SOAP request body -->
+  </soap:Body>
+</soap:Envelope>` : 
+                                    `{
+  "name": "{{userName}}",
+  "email": "user@example.com"
+}`}
+                                  className="font-mono text-sm min-h-[120px]"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Response Variables (JSON)</Label>
+                                <Textarea
+                                  value={inlineEditingStep?.store ? JSON.stringify(inlineEditingStep.store, null, 2) : ""}
+                                  onChange={(e) => {
+                                    try {
+                                      const store = e.target.value ? JSON.parse(e.target.value) : {}
+                                      handleInlineStepChange("store", Object.keys(store).length > 0 ? store : undefined)
+                                    } catch {
+                                      // Invalid JSON, don't update
+                                    }
+                                  }}
+                                  placeholder={`{
+  "userId": "$.id",
+  "authToken": "$.token",
+  "userName": "$.user.name"
+}`}
+                                  className="font-mono text-sm min-h-[80px]"
+                                />
+                                <div className="text-xs text-gray-500">
+                                  💡 Use JSONPath syntax ($.field) to extract values from API response
                                 </div>
                               </div>
                             </div>

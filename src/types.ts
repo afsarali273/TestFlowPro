@@ -211,6 +211,8 @@ export type TestStepKeyword =
     | "waitForText"
     | "customStep"
     | "customCode"
+    | "apiCall"
+    | "soapCall"
   | "waitForEvent"
   | "clickAndWaitForPopup"
   | "switchToTab";
@@ -237,6 +239,12 @@ export interface TestStep {
     localStore?: StoreMap; // Store variables from UI elements (local to test case)
     skipOnFailure?: boolean; // Skip this step if any previous step failed
     enabled?: boolean; // Enable/disable step execution
+    // API call properties
+    method?: string; // HTTP method for apiCall
+    endpoint?: string; // API endpoint
+    headers?: Record<string, string>; // Request headers
+    body?: any; // Request body
+    responseSchema?: any; // Expected response schema
 }
 
 

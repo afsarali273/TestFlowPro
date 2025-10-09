@@ -179,6 +179,8 @@ export type TestStepKeyword =
     | "waitForText"
     | "customStep"
     | "customCode"
+    | "apiCall"
+    | "soapCall"
 
 export interface TestStep {
     id: string
@@ -193,6 +195,12 @@ export interface TestStep {
     store?: StoreMap // store variables from UI elements globally
     localStore?: StoreMap // store variables from UI elements locally within test case
     skipOnFailure?: boolean // skip this step if any previous step failed
+    // API call properties
+    method?: string // HTTP method for apiCall
+    endpoint?: string // API endpoint
+    headers?: Record<string, string> // Request headers
+    body?: any // Request body
+    responseSchema?: any // Expected response schema
 }
 
 export interface ParameterSource {
