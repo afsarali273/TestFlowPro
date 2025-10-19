@@ -579,6 +579,33 @@ export class UIRunner {
             case "soapCall":
                 await this.executeApiCall(step, true);
                 break;
+            case "tableClick":
+            case "tableGetText":
+            case "tableAssertText":
+            case "tableAssertCount":
+            case "tableGetRowCount":
+            case "tableGetColumnCount":
+            case "tableFindRow":
+            case "tableSelectRow":
+            case "tableSortColumn":
+            case "tableFilterRows":
+                await this.executeTableOperation(step);
+                break;
+            case "assertEqual":
+            case "assertNotEqual":
+            case "assertContains":
+            case "assertNotContains":
+            case "assertEqualIgnoreCase":
+            case "assertStartsWith":
+            case "assertEndsWith":
+            case "assertGreaterThan":
+            case "assertLessThan":
+            case "assertEmpty":
+            case "assertNotEmpty":
+            case "assertNull":
+            case "assertNotNull":
+                await this.executeAssertion(step);
+                break;
             default:
                 throw new Error(`Unknown keyword: ${step.keyword}`);
         }
@@ -825,6 +852,165 @@ export class UIRunner {
         }
     }
 
+    private async executeTableOperation(step: TestStep) {
+        if (!step.locator) throw new Error(`${step.keyword} requires table locator`);
+        
+        const tableLocator = await this.resolveLocator(step);
+        const operation = step.tableOperation || {};
+        
+        console.log(`📊 Executing table operation: ${step.keyword}`);
+        
+        switch (step.keyword) {
+            case "tableClick":
+                const clickCell = await this.getTableCell(tableLocator, operation.row, operation.column);
+                await clickCell.click();
+                console.log(`✅ Clicked table cell [${operation.row}, ${operation.column}]`);
+                break;
+                
+            case "tableGetText":
+                const textCell = await this.getTableCell(tableLocator, operation.row, operation.column);
+                const cellText = await textCell.textContent();
+                
+                if (step.store) {
+                    for (const [varName, path] of Object.entries(step.store)) {
+                        if (path === "$cellText") {
+                            setVariable(varName, cellText);
+                            console.log(`📝 Stored table cell text '${varName}' = '${cellText}'`);
+                        }
+                    }
+                }
+                break;
+                
+            case "tableAssertText":
+                const assertCell = await this.getTableCell(tableLocator, operation.row, operation.column);
+                const expectedText = injectVariables(operation.cellValue || step.value || "");
+                await expect(assertCell).toHaveText(expectedText);
+                console.log(`✅ Table cell text assertion passed: '${expectedText}'`);
+                break;
+                
+            case "tableGetRowCount":
+                const rowCount = await tableLocator.locator('tbody tr, tr').count();
+                
+                if (step.store) {
+                    for (const [varName, path] of Object.entries(step.store)) {
+                        if (path === "$rowCount") {
+                            setVariable(varName, rowCount.toString());
+                            console.log(`📝 Stored row count '${varName}' = '${rowCount}'`);
+                        }
+                    }
+                }
+                break;
+                
+            case "tableGetColumnCount":
+                const colCount = await tableLocator.locator('thead th, tr:first-child td, tr:first-child th').count();
+                
+                if (step.store) {
+                    for (const [varName, path] of Object.entries(step.store)) {
+                        if (path === "$columnCount") {
+                            setVariable(varName, colCount.toString());
+                            console.log(`📝 Stored column count '${varName}' = '${colCount}'`);
+                        }
+                    }
+                }
+                break;
+                
+            case "tableFindRow":
+                const searchValue = injectVariables(operation.cellValue || step.value || "");
+                const searchColumn = operation.column || 0;
+                const foundRowIndex = await this.findTableRow(tableLocator, searchColumn, searchValue);
+                
+                if (step.store) {
+                    for (const [varName, path] of Object.entries(step.store)) {
+                        if (path === "$rowIndex") {
+                            setVariable(varName, foundRowIndex.toString());
+                            console.log(`📝 Found row at index '${varName}' = '${foundRowIndex}'`);
+                        }
+                    }
+                }
+                break;
+                
+            case "tableSelectRow":
+                const selectRowIndex = typeof operation.row === 'number' ? operation.row : parseInt(operation.row || "0");
+                const checkbox = tableLocator.locator(`tbody tr:nth-child(${selectRowIndex + 1}) input[type="checkbox"], tbody tr:nth-child(${selectRowIndex + 1}) [role="checkbox"]`);
+                await checkbox.check();
+                console.log(`✅ Selected table row ${selectRowIndex}`);
+                break;
+                
+            case "tableSortColumn":
+                const sortColumn = operation.column || 0;
+                const headerCell = typeof sortColumn === 'number' 
+                    ? tableLocator.locator(`thead th:nth-child(${sortColumn + 1}), tr:first-child th:nth-child(${sortColumn + 1})`)
+                    : tableLocator.locator(`thead th:has-text("${sortColumn}"), tr:first-child th:has-text("${sortColumn}")`);
+                await headerCell.click();
+                console.log(`✅ Clicked to sort column ${sortColumn}`);
+                break;
+                
+            case "tableFilterRows":
+                const filterValue = injectVariables(operation.cellValue || step.value || "");
+                const filterInput = tableLocator.locator('input[placeholder*="filter"], input[placeholder*="search"], .filter input, .search input').first();
+                await filterInput.fill(filterValue);
+                console.log(`✅ Applied table filter: '${filterValue}'`);
+                break;
+                
+            case "tableAssertCount":
+                const expectedCount = parseInt(operation.cellValue || step.value || "0");
+                const actualRowCount = await tableLocator.locator('tbody tr, tr').count();
+                expect(actualRowCount).toBe(expectedCount);
+                console.log(`✅ Table row count assertion passed: ${actualRowCount} = ${expectedCount}`);
+                break;
+                
+            default:
+                throw new Error(`Unknown table operation: ${step.keyword}`);
+        }
+    }
+    
+    private async getTableCell(tableLocator: Locator, row?: number | string, column?: number | string): Promise<Locator> {
+        const rowIndex = typeof row === 'number' ? row : parseInt(row || "0");
+        const colIndex = typeof column === 'number' ? column : parseInt(column || "0");
+        
+        // Handle header row (row -1 or "header")
+        if (row === -1 || row === "header") {
+            if (typeof column === 'string' && isNaN(parseInt(column))) {
+                return tableLocator.locator(`thead th:has-text("${column}"), tr:first-child th:has-text("${column}")`);
+            } else {
+                return tableLocator.locator(`thead th:nth-child(${colIndex + 1}), tr:first-child th:nth-child(${colIndex + 1})`);
+            }
+        }
+        
+        // Handle column by name
+        if (typeof column === 'string' && isNaN(parseInt(column))) {
+            const headerIndex = await this.getColumnIndexByName(tableLocator, column);
+            return tableLocator.locator(`tbody tr:nth-child(${rowIndex + 1}) td:nth-child(${headerIndex + 1}), tr:nth-child(${rowIndex + 1}) td:nth-child(${headerIndex + 1})`);
+        }
+        
+        // Handle by row and column index
+        return tableLocator.locator(`tbody tr:nth-child(${rowIndex + 1}) td:nth-child(${colIndex + 1}), tr:nth-child(${rowIndex + 1}) td:nth-child(${colIndex + 1})`);
+    }
+    
+    private async getColumnIndexByName(tableLocator: Locator, columnName: string): Promise<number> {
+        const headers = await tableLocator.locator('thead th, tr:first-child th').allTextContents();
+        const index = headers.findIndex(header => header.trim().toLowerCase() === columnName.toLowerCase());
+        if (index === -1) {
+            throw new Error(`Column '${columnName}' not found in table headers`);
+        }
+        return index;
+    }
+    
+    private async findTableRow(tableLocator: Locator, searchColumn: number | string, searchValue: string): Promise<number> {
+        const rows = await tableLocator.locator('tbody tr, tr').count();
+        
+        for (let i = 0; i < rows; i++) {
+            const cell = await this.getTableCell(tableLocator, i, searchColumn);
+            const cellText = await cell.textContent();
+            
+            if (cellText && cellText.trim().includes(searchValue)) {
+                return i;
+            }
+        }
+        
+        throw new Error(`Row with value '${searchValue}' not found in column ${searchColumn}`);
+    }
+
     private async executeApiCall(step: TestStep, isSoap: boolean = false) {
         if (!step.method) throw new Error("API call requires method");
         if (!step.endpoint) throw new Error("API call requires endpoint");
@@ -918,6 +1104,112 @@ export class UIRunner {
                 throw new Error(`API call failed: ${error.message}`);
             }
         }
+    }
+
+    private async executeAssertion(step: TestStep) {
+        if (!step.assertionActual) throw new Error(`${step.keyword} requires assertionActual value`);
+        if (!step.assertionExpected) throw new Error(`${step.keyword} requires assertionExpected value`);
+        
+        const actualValue = injectVariables(step.assertionActual);
+        const expectedValue = injectVariables(step.assertionExpected);
+        
+        console.log(`🔍 Executing assertion: ${step.keyword}`);
+        console.log(`📊 Actual: '${actualValue}', Expected: '${expectedValue}'`);
+        
+        switch (step.keyword) {
+            case "assertEqual":
+                if (actualValue !== expectedValue) {
+                    throw new Error(`Assertion failed: '${actualValue}' does not equal '${expectedValue}'`);
+                }
+                break;
+                
+            case "assertNotEqual":
+                if (actualValue === expectedValue) {
+                    throw new Error(`Assertion failed: '${actualValue}' equals '${expectedValue}' but should not`);
+                }
+                break;
+                
+            case "assertContains":
+                if (!actualValue.includes(expectedValue)) {
+                    throw new Error(`Assertion failed: '${actualValue}' does not contain '${expectedValue}'`);
+                }
+                break;
+                
+            case "assertNotContains":
+                if (actualValue.includes(expectedValue)) {
+                    throw new Error(`Assertion failed: '${actualValue}' contains '${expectedValue}' but should not`);
+                }
+                break;
+                
+            case "assertEqualIgnoreCase":
+                if (actualValue.toLowerCase() !== expectedValue.toLowerCase()) {
+                    throw new Error(`Assertion failed: '${actualValue}' does not equal '${expectedValue}' (case insensitive)`);
+                }
+                break;
+                
+            case "assertStartsWith":
+                if (!actualValue.startsWith(expectedValue)) {
+                    throw new Error(`Assertion failed: '${actualValue}' does not start with '${expectedValue}'`);
+                }
+                break;
+                
+            case "assertEndsWith":
+                if (!actualValue.endsWith(expectedValue)) {
+                    throw new Error(`Assertion failed: '${actualValue}' does not end with '${expectedValue}'`);
+                }
+                break;
+                
+            case "assertGreaterThan":
+                const actualNum = parseFloat(actualValue);
+                const expectedNum = parseFloat(expectedValue);
+                if (isNaN(actualNum) || isNaN(expectedNum)) {
+                    throw new Error(`Assertion failed: Cannot compare non-numeric values`);
+                }
+                if (actualNum <= expectedNum) {
+                    throw new Error(`Assertion failed: ${actualNum} is not greater than ${expectedNum}`);
+                }
+                break;
+                
+            case "assertLessThan":
+                const actualNumLess = parseFloat(actualValue);
+                const expectedNumLess = parseFloat(expectedValue);
+                if (isNaN(actualNumLess) || isNaN(expectedNumLess)) {
+                    throw new Error(`Assertion failed: Cannot compare non-numeric values`);
+                }
+                if (actualNumLess >= expectedNumLess) {
+                    throw new Error(`Assertion failed: ${actualNumLess} is not less than ${expectedNumLess}`);
+                }
+                break;
+                
+            case "assertEmpty":
+                if (actualValue.trim() !== "") {
+                    throw new Error(`Assertion failed: '${actualValue}' is not empty`);
+                }
+                break;
+                
+            case "assertNotEmpty":
+                if (actualValue.trim() === "") {
+                    throw new Error(`Assertion failed: Value is empty but should not be`);
+                }
+                break;
+                
+            case "assertNull":
+                if (actualValue !== "null" && actualValue !== "" && actualValue !== "undefined") {
+                    throw new Error(`Assertion failed: '${actualValue}' is not null`);
+                }
+                break;
+                
+            case "assertNotNull":
+                if (actualValue === "null" || actualValue === "" || actualValue === "undefined") {
+                    throw new Error(`Assertion failed: Value is null but should not be`);
+                }
+                break;
+                
+            default:
+                throw new Error(`Unknown assertion keyword: ${step.keyword}`);
+        }
+        
+        console.log(`✅ Assertion passed: ${step.keyword}`);
     }
 
     async close() {

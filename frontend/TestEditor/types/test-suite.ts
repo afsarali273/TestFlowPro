@@ -181,6 +181,29 @@ export type TestStepKeyword =
     | "customCode"
     | "apiCall"
     | "soapCall"
+    | "tableClick"
+    | "tableGetText"
+    | "tableAssertText"
+    | "tableAssertCount"
+    | "tableGetRowCount"
+    | "tableGetColumnCount"
+    | "tableFindRow"
+    | "tableSelectRow"
+    | "tableSortColumn"
+    | "tableFilterRows"
+    | "assertEqual"
+    | "assertNotEqual"
+    | "assertContains"
+    | "assertNotContains"
+    | "assertEqualIgnoreCase"
+    | "assertStartsWith"
+    | "assertEndsWith"
+    | "assertGreaterThan"
+    | "assertLessThan"
+    | "assertEmpty"
+    | "assertNotEmpty"
+    | "assertNull"
+    | "assertNotNull"
 
 export interface TestStep {
     id: string
@@ -201,6 +224,16 @@ export interface TestStep {
     headers?: Record<string, string> // Request headers
     body?: any // Request body
     responseSchema?: any // Expected response schema
+    // Table operation properties
+    tableOperation?: {
+        row?: number | string // Row index or identifier
+        column?: number | string // Column index or header name
+        cellValue?: string // Expected or search value
+        action?: string // Action to perform
+    }
+    // Assertion properties
+    assertionActual?: string // Variable name or value to assert
+    assertionExpected?: string // Expected value for assertion
 }
 
 export interface ParameterSource {

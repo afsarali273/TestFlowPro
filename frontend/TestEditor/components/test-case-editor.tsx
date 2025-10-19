@@ -13,7 +13,7 @@ import { EnhancedLocatorBuilder } from "@/components/enhanced-locator-builder"
 import { TestDataEditor } from "@/components/test-data-editor"
 import { SuiteRunnerModal } from "@/components/suite-runner-modal"
 import { ParameterManager } from "@/components/parameter-manager"
-import { type TestCase, type TestData, type TestStep, type TestCaseParameters, validateTestCase } from "@/types/test-suite"
+import { type TestCase, type TestData, type TestStep, type TestCaseParameters, type LocatorDefinition, validateTestCase } from "@/types/test-suite"
 
 import dynamic from "next/dynamic"
 
@@ -255,6 +255,24 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
     triggerAutoSave()
   }
 
+  // Get available variables from previous steps
+  const getAvailableVariables = () => {
+    const variables: string[] = []
+    const currentStepIndex = inlineEditingStepIndex || 0
+
+    // Get variables from previous steps
+    editedTestCase.testSteps?.slice(0, currentStepIndex).forEach(step => {
+      if (step.store) {
+        variables.push(...Object.keys(step.store))
+      }
+      if (step.localStore) {
+        variables.push(...Object.keys(step.localStore))
+      }
+    })
+
+    return [...new Set(variables)] // Remove duplicates
+  }
+
   const handleSave = () => {
     const validatedTestCase = validateTestCase(editedTestCase)
     const finalTestCase = {
@@ -266,6 +284,8 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
     }
     onSave(finalTestCase)
   }
+
+
 
   const handleMonacoChange = (value: string | undefined) => {
     if (!value) return
@@ -388,6 +408,17 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
       if (step.body) cleaned.body = step.body
     }
 
+    // Include table operation fields
+    if (step.keyword.startsWith("table") && step.tableOperation) {
+      cleaned.tableOperation = step.tableOperation
+    }
+
+    // Include assertion fields for generic assertions
+    if (step.keyword.startsWith("assert") && !step.keyword.startsWith("assertText") && !step.keyword.startsWith("assertVisible")) {
+      if (step.assertionActual) cleaned.assertionActual = step.assertionActual
+      if (step.assertionExpected) cleaned.assertionExpected = step.assertionExpected
+    }
+
     if (step.target) {
       cleaned.target = step.target
     }
@@ -409,35 +440,6 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
     }
 
     return cleaned
-  }
-
-  const handleInlineSaveTestStep = () => {
-    if (!inlineEditingStep) return
-
-    const cleanedStep = cleanStepForSerialization(inlineEditingStep)
-
-    if (isAddingNewStep) {
-      setEditedTestCase((prev) => ({
-        ...prev,
-        testSteps: [...(prev.testSteps || []), cleanedStep],
-      }))
-    } else if (inlineEditingStepIndex !== null && inlineEditingStepIndex >= 0) {
-      setEditedTestCase((prev) => ({
-        ...prev,
-        testSteps: prev.testSteps?.map((ts, i) => (i === inlineEditingStepIndex ? cleanedStep : ts)) || [],
-      }))
-    }
-
-    setInlineEditingStep(null)
-    setInlineEditingStepIndex(null)
-    setIsAddingNewStep(false)
-    triggerAutoSave()
-  }
-
-  const handleInlineCancelTestStep = () => {
-    setInlineEditingStep(null)
-    setInlineEditingStepIndex(null)
-    setIsAddingNewStep(false)
   }
 
   const handleInlineStepChange = (field: keyof TestStep, value: any) => {
@@ -482,6 +484,35 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
       
       return { ...prev, [field]: value }
     })
+  }
+
+  const handleInlineSaveTestStep = () => {
+    if (!inlineEditingStep) return
+
+    const cleanedStep = cleanStepForSerialization(inlineEditingStep)
+
+    if (isAddingNewStep) {
+      setEditedTestCase((prev) => ({
+        ...prev,
+        testSteps: [...(prev.testSteps || []), cleanedStep],
+      }))
+    } else if (inlineEditingStepIndex !== null && inlineEditingStepIndex >= 0) {
+      setEditedTestCase((prev) => ({
+        ...prev,
+        testSteps: prev.testSteps?.map((ts, i) => (i === inlineEditingStepIndex ? cleanedStep : ts)) || [],
+      }))
+    }
+
+    setInlineEditingStep(null)
+    setInlineEditingStepIndex(null)
+    setIsAddingNewStep(false)
+    triggerAutoSave()
+  }
+
+  const handleInlineCancelTestStep = () => {
+    setInlineEditingStep(null)
+    setInlineEditingStepIndex(null)
+    setIsAddingNewStep(false)
   }
 
   const handleInlineLocatorChange = (field: "strategy" | "value", value: string) => {
@@ -1004,6 +1035,32 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                                       { value: "waitForText", label: "[Wait] Wait For Text" },
                                       { value: "apiCall", label: "[API] REST API Call" },
                                       { value: "soapCall", label: "[API] SOAP API Call" },
+                                      { value: "tableClick", label: "[Table] Click Table Cell" },
+                                      { value: "tableGetText", label: "[Table] Get Table Cell Text" },
+                                      { value: "tableAssertText", label: "[Table] Assert Table Cell Text" },
+                                      { value: "tableAssertCount", label: "[Table] Assert Table Row Count" },
+                                      { value: "tableGetRowCount", label: "[Table] Get Table Row Count" },
+                                      { value: "tableGetColumnCount", label: "[Table] Get Table Column Count" },
+                                      { value: "tableFindRow", label: "[Table] Find Table Row" },
+                                      { value: "tableSelectRow", label: "[Table] Select Table Row" },
+                                      { value: "tableSortColumn", label: "[Table] Sort Table Column" },
+                                      { value: "tableFilterRows", label: "[Table] Filter Table Rows" },
+                                      { value: "waitForEvent", label: "[Wait] Wait For Event" },
+                                      { value: "clickAndWaitForPopup", label: "[Actions] Click And Wait For Popup" },
+                                      { value: "switchToTab", label: "[Browser] Switch To Tab" },
+                                      { value: "assertEqual", label: "[Generic] Assert Equal" },
+                                      { value: "assertNotEqual", label: "[Generic] Assert Not Equal" },
+                                      { value: "assertContains", label: "[Generic] Assert Contains" },
+                                      { value: "assertNotContains", label: "[Generic] Assert Not Contains" },
+                                      { value: "assertEqualIgnoreCase", label: "[Generic] Assert Equal Ignore Case" },
+                                      { value: "assertStartsWith", label: "[Generic] Assert Starts With" },
+                                      { value: "assertEndsWith", label: "[Generic] Assert Ends With" },
+                                      { value: "assertGreaterThan", label: "[Generic] Assert Greater Than" },
+                                      { value: "assertLessThan", label: "[Generic] Assert Less Than" },
+                                      { value: "assertEmpty", label: "[Generic] Assert Empty" },
+                                      { value: "assertNotEmpty", label: "[Generic] Assert Not Empty" },
+                                      { value: "assertNull", label: "[Generic] Assert Null" },
+                                      { value: "assertNotNull", label: "[Generic] Assert Not Null" },
                                       { value: "customStep", label: "[Custom] Custom Function" },
                                       { value: "customCode", label: "[Custom] Raw Playwright Code" }
                                     ].filter(item => 
@@ -1046,14 +1103,111 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
 
                             {["click", "dblClick", "rightClick", "type", "fill", "press", "clear", "select", "check", "uncheck", "setChecked", "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop", "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", "assertCount", "assertValue", "assertAttribute", "assertChecked", "assertUnchecked", "assertContainsText", "uploadFile", "downloadFile", "getText", "getAttribute", "getValue", "getCount"].includes(inlineEditingStep?.keyword || "") && (
                               <EnhancedLocatorBuilder
-                                locator={inlineEditingStep?.locator}
-                                onChange={(locator) => handleInlineStepChange("locator", locator)}
+                                locator={inlineEditingStep?.locator as any}
+                                onChange={(locator) => handleInlineStepChange("locator", locator as any)}
                                 className="border-t pt-4"
                               />
                             )}
 
+                            {/* Table Operation Configuration */}
+                            {(["tableClick", "tableGetText", "tableAssertText", "tableAssertCount", "tableGetRowCount", "tableGetColumnCount", "tableFindRow", "tableSelectRow", "tableSortColumn", "tableFilterRows"].includes(inlineEditingStep?.keyword || "")) && (
+                              <div className="space-y-4 border-t pt-4 bg-orange-50 p-4 rounded-lg">
+                                <Label className="text-sm font-semibold text-orange-700">Table Operation Configuration</Label>
+                                
+                                <EnhancedLocatorBuilder
+                                  locator={inlineEditingStep?.locator as any}
+                                  onChange={(locator) => handleInlineStepChange("locator", locator as any)}
+                                  className="mb-4"
+                                />
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label>Row (number or "header")</Label>
+                                    <Input
+                                      value={inlineEditingStep?.tableOperation?.row || ""}
+                                      onChange={(e) => {
+                                        const tableOp = inlineEditingStep?.tableOperation || {}
+                                        handleInlineStepChange("tableOperation", { ...tableOp, row: e.target.value })
+                                      }}
+                                      placeholder="0, 1, 2... or header"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Column (number or name)</Label>
+                                    <Input
+                                      value={inlineEditingStep?.tableOperation?.column || ""}
+                                      onChange={(e) => {
+                                        const tableOp = inlineEditingStep?.tableOperation || {}
+                                        handleInlineStepChange("tableOperation", { ...tableOp, column: e.target.value })
+                                      }}
+                                      placeholder="0, 1, 2... or Name"
+                                    />
+                                  </div>
+                                </div>
+                                
+                                {(["tableAssertText", "tableFindRow", "tableFilterRows"].includes(inlineEditingStep?.keyword || "")) && (
+                                  <div className="space-y-2">
+                                    <Label>Cell Value</Label>
+                                    <Input
+                                      value={inlineEditingStep?.tableOperation?.cellValue || ""}
+                                      onChange={(e) => {
+                                        const tableOp = inlineEditingStep?.tableOperation || {}
+                                        handleInlineStepChange("tableOperation", { ...tableOp, cellValue: e.target.value })
+                                      }}
+                                      placeholder="Expected or search value"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Generic Assertion Configuration */}
+                            {(["assertEqual", "assertNotEqual", "assertContains", "assertNotContains", "assertEqualIgnoreCase", "assertStartsWith", "assertEndsWith", "assertGreaterThan", "assertLessThan", "assertEmpty", "assertNotEmpty", "assertNull", "assertNotNull"].includes(inlineEditingStep?.keyword || "")) && (
+                              <div className="space-y-4 border-t pt-4 bg-purple-50 p-4 rounded-lg">
+                                <Label className="text-sm font-semibold text-purple-700">Generic Assertion Configuration</Label>
+                                <div className="text-xs text-purple-600 mb-2">
+                                  Compare stored variable values using {'{'}{'{'} variableName {'}'}{'}'}  syntax
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label>Actual Value</Label>
+                                    <Input
+                                      value={inlineEditingStep?.assertionActual || ""}
+                                      onChange={(e) => handleInlineStepChange("assertionActual", e.target.value)}
+                                      placeholder="{{storedVariable}} or direct value"
+                                      list="available-variables-actual-add"
+                                    />
+                                    <datalist id="available-variables-actual-add">
+                                      {getAvailableVariables().map(varName => (
+                                        <option key={varName} value={`{{${varName}}}`} />
+                                      ))}
+                                    </datalist>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Expected Value</Label>
+                                    <Input
+                                      value={inlineEditingStep?.assertionExpected || ""}
+                                      onChange={(e) => handleInlineStepChange("assertionExpected", e.target.value)}
+                                      placeholder="{{expectedVariable}} or direct value"
+                                      list="available-variables-expected-add"
+                                    />
+                                    <datalist id="available-variables-expected-add">
+                                      {getAvailableVariables().map(varName => (
+                                        <option key={varName} value={`{{${varName}}}`} />
+                                      ))}
+                                    </datalist>
+                                  </div>
+                                </div>
+                                
+                                <div className="text-xs text-gray-600 bg-white p-2 rounded border">
+                                  💡 <strong>Workflow:</strong> Use getText/getAttribute to store values → Use generic assertions to validate stored values
+                                </div>
+                              </div>
+                            )}
+
                             {/* Variable Storage for data extraction keywords */}
-                            {(["getText", "getAttribute", "getTitle", "getUrl", "getValue", "getCount"].includes(inlineEditingStep?.keyword || "")) && (
+                            {(["getText", "getAttribute", "getTitle", "getUrl", "getValue", "getCount", "tableGetText", "tableGetRowCount", "tableGetColumnCount", "tableFindRow"].includes(inlineEditingStep?.keyword || "")) && (
                               <div className="space-y-4 border-t pt-4 bg-green-50 p-4 rounded-lg">
                                 <Label className="text-sm font-semibold text-green-700">Variable Storage</Label>
                                 <div className="text-xs text-green-600 mb-2">
@@ -1077,6 +1231,10 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                                             case "getUrl": path = "$url"; break;
                                             case "getValue": path = "$value"; break;
                                             case "getCount": path = "$count"; break;
+                                            case "tableGetText": path = "$cellText"; break;
+                                            case "tableGetRowCount": path = "$rowCount"; break;
+                                            case "tableGetColumnCount": path = "$columnCount"; break;
+                                            case "tableFindRow": path = "$rowIndex"; break;
                                             default: path = "$text"; break;
                                           }
                                           handleInlineStepChange("store", { [varName]: path })
@@ -1140,7 +1298,7 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                                 </div>
                                 
                                 <div className="text-xs text-gray-600 bg-white p-2 rounded border">
-                                  💡 Use variables later with {"{{variableName}}"} syntax. Local variables take precedence over global variables.
+                                  💡 Use variables later with {'{'}{'{'} variableName {'}'}{'}'}  syntax. Local variables take precedence over global variables.
                                 </div>
                               </div>
                             )}
@@ -1203,7 +1361,7 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
                                     placeholder='{"userId": "userId", "loginSuccess": "success"}'
                                   />
                                   <div className="text-xs text-gray-500">
-                                    Maps function result to variables: {'{ "variableName": "resultProperty" }'}
+                                    Maps function result to variables: {"{ \"variableName\": \"resultProperty\" }"}
                                   </div>
                                 </div>
                               </div>
@@ -1285,6 +1443,30 @@ export function TestCaseEditor({ testCase, suiteId, suiteName, onSave, onCancel 
 }`}
                                     className="font-mono text-sm min-h-[120px]"
                                   />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label>Response Variables (JSON)</Label>
+                                  <Textarea
+                                    value={inlineEditingStep?.store ? JSON.stringify(inlineEditingStep.store, null, 2) : ""}
+                                    onChange={(e) => {
+                                      try {
+                                        const store = e.target.value ? JSON.parse(e.target.value) : {}
+                                        handleInlineStepChange("store", Object.keys(store).length > 0 ? store : undefined)
+                                      } catch {
+                                        // Invalid JSON, don't update
+                                      }
+                                    }}
+                                    placeholder={`{
+  "userId": "$.id",
+  "authToken": "$.token",
+  "userName": "$.user.name"
+}`}
+                                    className="font-mono text-sm min-h-[80px]"
+                                  />
+                                  <div className="text-xs text-gray-500">
+                                    💡 Use JSONPath syntax ($.field) to extract values from API response
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -1518,6 +1700,32 @@ await page.waitForFunction(() => {
                                     { value: "waitForText", label: "[Wait] Wait For Text" },
                                     { value: "apiCall", label: "[API] REST API Call" },
                                     { value: "soapCall", label: "[API] SOAP API Call" },
+                                    { value: "tableClick", label: "[Table] Click Table Cell" },
+                                    { value: "tableGetText", label: "[Table] Get Table Cell Text" },
+                                    { value: "tableAssertText", label: "[Table] Assert Table Cell Text" },
+                                    { value: "tableAssertCount", label: "[Table] Assert Table Row Count" },
+                                    { value: "tableGetRowCount", label: "[Table] Get Table Row Count" },
+                                    { value: "tableGetColumnCount", label: "[Table] Get Table Column Count" },
+                                    { value: "tableFindRow", label: "[Table] Find Table Row" },
+                                    { value: "tableSelectRow", label: "[Table] Select Table Row" },
+                                    { value: "tableSortColumn", label: "[Table] Sort Table Column" },
+                                    { value: "tableFilterRows", label: "[Table] Filter Table Rows" },
+                                    { value: "waitForEvent", label: "[Wait] Wait For Event" },
+                                    { value: "clickAndWaitForPopup", label: "[Actions] Click And Wait For Popup" },
+                                    { value: "switchToTab", label: "[Browser] Switch To Tab" },
+                                    { value: "assertEqual", label: "[Generic] Assert Equal" },
+                                    { value: "assertNotEqual", label: "[Generic] Assert Not Equal" },
+                                    { value: "assertContains", label: "[Generic] Assert Contains" },
+                                    { value: "assertNotContains", label: "[Generic] Assert Not Contains" },
+                                    { value: "assertEqualIgnoreCase", label: "[Generic] Assert Equal Ignore Case" },
+                                    { value: "assertStartsWith", label: "[Generic] Assert Starts With" },
+                                    { value: "assertEndsWith", label: "[Generic] Assert Ends With" },
+                                    { value: "assertGreaterThan", label: "[Generic] Assert Greater Than" },
+                                    { value: "assertLessThan", label: "[Generic] Assert Less Than" },
+                                    { value: "assertEmpty", label: "[Generic] Assert Empty" },
+                                    { value: "assertNotEmpty", label: "[Generic] Assert Not Empty" },
+                                    { value: "assertNull", label: "[Generic] Assert Null" },
+                                    { value: "assertNotNull", label: "[Generic] Assert Not Null" },
                                     { value: "customStep", label: "[Custom] Custom Function" },
                                     { value: "customCode", label: "[Custom] Raw Playwright Code" }
                                   ].filter(item => 
@@ -1560,14 +1768,111 @@ await page.waitForFunction(() => {
 
                           {["click", "dblClick", "rightClick", "type", "fill", "press", "clear", "select", "check", "uncheck", "setChecked", "hover", "focus", "scrollIntoViewIfNeeded", "dragAndDrop", "assertText", "assertVisible", "assertHidden", "assertEnabled", "assertDisabled", "assertCount", "assertValue", "assertAttribute", "assertChecked", "assertUnchecked", "assertContainsText", "uploadFile", "downloadFile", "getText", "getAttribute", "getValue", "getCount"].includes(inlineEditingStep.keyword) && (
                             <EnhancedLocatorBuilder
-                              locator={inlineEditingStep.locator}
-                              onChange={(locator) => handleInlineStepChange("locator", locator)}
+                              locator={inlineEditingStep.locator as any}
+                              onChange={(locator) => handleInlineStepChange("locator", locator as any)}
                               className="border-t pt-4"
                             />
                           )}
 
+                          {/* Table Operation Configuration */}
+                          {(["tableClick", "tableGetText", "tableAssertText", "tableAssertCount", "tableGetRowCount", "tableGetColumnCount", "tableFindRow", "tableSelectRow", "tableSortColumn", "tableFilterRows"].includes(inlineEditingStep?.keyword || "")) && (
+                            <div className="space-y-4 border-t pt-4 bg-orange-50 p-4 rounded-lg">
+                              <Label className="text-sm font-semibold text-orange-700">Table Operation Configuration</Label>
+                              
+                              <EnhancedLocatorBuilder
+                                locator={inlineEditingStep?.locator as any}
+                                onChange={(locator) => handleInlineStepChange("locator", locator as any)}
+                                className="mb-4"
+                              />
+                              
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label>Row (number or "header")</Label>
+                                  <Input
+                                    value={inlineEditingStep?.tableOperation?.row || ""}
+                                    onChange={(e) => {
+                                      const tableOp = inlineEditingStep?.tableOperation || {}
+                                      handleInlineStepChange("tableOperation", { ...tableOp, row: e.target.value })
+                                    }}
+                                    placeholder="0, 1, 2... or header"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Column (number or name)</Label>
+                                  <Input
+                                    value={inlineEditingStep?.tableOperation?.column || ""}
+                                    onChange={(e) => {
+                                      const tableOp = inlineEditingStep?.tableOperation || {}
+                                      handleInlineStepChange("tableOperation", { ...tableOp, column: e.target.value })
+                                    }}
+                                    placeholder="0, 1, 2... or Name"
+                                  />
+                                </div>
+                              </div>
+                              
+                              {(["tableAssertText", "tableFindRow", "tableFilterRows"].includes(inlineEditingStep?.keyword || "")) && (
+                                <div className="space-y-2">
+                                  <Label>Cell Value</Label>
+                                  <Input
+                                    value={inlineEditingStep?.tableOperation?.cellValue || ""}
+                                    onChange={(e) => {
+                                      const tableOp = inlineEditingStep?.tableOperation || {}
+                                      handleInlineStepChange("tableOperation", { ...tableOp, cellValue: e.target.value })
+                                    }}
+                                    placeholder="Expected or search value"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Generic Assertion Configuration */}
+                          {(["assertEqual", "assertNotEqual", "assertContains", "assertNotContains", "assertEqualIgnoreCase", "assertStartsWith", "assertEndsWith", "assertGreaterThan", "assertLessThan", "assertEmpty", "assertNotEmpty", "assertNull", "assertNotNull"].includes(inlineEditingStep?.keyword || "")) && (
+                            <div className="space-y-4 border-t pt-4 bg-purple-50 p-4 rounded-lg">
+                              <Label className="text-sm font-semibold text-purple-700">Generic Assertion Configuration</Label>
+                              <div className="text-xs text-purple-600 mb-2">
+                                Compare stored variable values using {'{'}{'{'} variableName {'}'}{'}'}  syntax
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label>Actual Value</Label>
+                                  <Input
+                                    value={inlineEditingStep?.assertionActual || ""}
+                                    onChange={(e) => handleInlineStepChange("assertionActual", e.target.value)}
+                                    placeholder="{{storedVariable}} or direct value"
+                                    list="available-variables-actual-add"
+                                  />
+                                  <datalist id="available-variables-actual-add">
+                                    {getAvailableVariables().map(varName => (
+                                      <option key={varName} value={`{{${varName}}}`} />
+                                    ))}
+                                  </datalist>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Expected Value</Label>
+                                  <Input
+                                    value={inlineEditingStep?.assertionExpected || ""}
+                                    onChange={(e) => handleInlineStepChange("assertionExpected", e.target.value)}
+                                    placeholder="{{expectedVariable}} or direct value"
+                                    list="available-variables-expected-add"
+                                  />
+                                  <datalist id="available-variables-expected-add">
+                                    {getAvailableVariables().map(varName => (
+                                      <option key={varName} value={`{{${varName}}}`} />
+                                    ))}
+                                  </datalist>
+                                </div>
+                              </div>
+                              
+                              <div className="text-xs text-gray-600 bg-white p-2 rounded border">
+                                💡 <strong>Workflow:</strong> Use getText/getAttribute to store values → Use generic assertions to validate stored values
+                              </div>
+                            </div>
+                          )}
+
                           {/* Variable Storage for data extraction keywords */}
-                          {(["getText", "getAttribute", "getTitle", "getUrl", "getValue", "getCount"].includes(inlineEditingStep?.keyword || "")) && (
+                          {(["getText", "getAttribute", "getTitle", "getUrl", "getValue", "getCount", "tableGetText", "tableGetRowCount", "tableGetColumnCount", "tableFindRow"].includes(inlineEditingStep?.keyword || "")) && (
                             <div className="space-y-4 border-t pt-4 bg-green-50 p-4 rounded-lg">
                               <Label className="text-sm font-semibold text-green-700">Variable Storage</Label>
                               <div className="text-xs text-green-600 mb-2">
@@ -1591,6 +1896,10 @@ await page.waitForFunction(() => {
                                           case "getUrl": path = "$url"; break;
                                           case "getValue": path = "$value"; break;
                                           case "getCount": path = "$count"; break;
+                                          case "tableGetText": path = "$cellText"; break;
+                                          case "tableGetRowCount": path = "$rowCount"; break;
+                                          case "tableGetColumnCount": path = "$columnCount"; break;
+                                          case "tableFindRow": path = "$rowIndex"; break;
                                           default: path = "$text"; break;
                                         }
                                         handleInlineStepChange("store", { [varName]: path })
@@ -1654,7 +1963,7 @@ await page.waitForFunction(() => {
                               </div>
                               
                               <div className="text-xs text-gray-600 bg-white p-2 rounded border">
-                                💡 Use variables later with {"{{variableName}}"} syntax. Local variables take precedence over global variables.
+                                💡 Use variables later with {'{'}{'{'} variableName {'}'}{'}'}  syntax. Local variables take precedence over global variables.
                               </div>
                             </div>
                           )}
@@ -1717,7 +2026,7 @@ await page.waitForFunction(() => {
                                   placeholder='{"userId": "userId", "loginSuccess": "success"}'
                                 />
                                 <div className="text-xs text-gray-500">
-                                  Maps function result to variables: {'{ "variableName": "resultProperty" }'}
+                                  Maps function result to variables: {"{ \"variableName\": \"resultProperty\" }"}
                                 </div>
                               </div>
                             </div>
@@ -2084,3 +2393,4 @@ await page.waitForFunction(() => {
     </div>
   )
 }
+
