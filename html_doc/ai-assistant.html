@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant - TestFlow Pro</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <a href="index.html" class="logo">🔍 TestFlow Pro</a>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="architecture.html">Architecture</a></li>
+                    <li><a href="installation.html">Installation</a></li>
+                    <li><a href="usage.html">Usage</a></li>
+                    <li><a href="features.html">Features</a></li>
+                    <li><a href="ai-assistant.html" class="active">AI Assistant</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero" style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 4rem 0; border-bottom: 3px solid #8b5cf6;">
+        <div class="container" style="text-align: center;">
+            <h1 style="font-size: 3rem; margin-bottom: 1rem; color: #ffffff;">🤖 AI-Powered Test Generation</h1>
+            <p style="font-size: 1.25rem; color: #e2e8f0;">Generate comprehensive test suites using natural language and AI assistance</p>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <div class="docs-layout">
+                <aside class="sidebar">
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#setup">Setup</a></li>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#natural-language">Natural Language</a></li>
+                        <li><a href="#curl">cURL Import</a></li>
+                        <li><a href="#swagger">Swagger Import</a></li>
+                        <li><a href="#ui-generation">UI Generation</a></li>
+                        <li><a href="#examples">Examples</a></li>
+                    </ul>
+                </aside>
+
+                <div class="content">
+                    <section id="overview">
+                        <h2>🎯 Overview</h2>
+                        <p>The AI Chat Assistant is an intelligent test generation tool that helps you create comprehensive test suites using natural language, cURL commands, Swagger specifications, and UI descriptions.</p>
+                        
+                        <div class="screenshot" style="margin: 2rem 0;">
+                            <img src="assets/images/ai-chat-modal.png" alt="AI Chat Assistant">
+                            <div style="padding: 1rem; background: var(--dark-light); text-align: center;">
+                                <strong>AI Chat Assistant Interface</strong>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1)); border-color: var(--secondary);">
+                            <h3>✨ Key Benefits</h3>
+                            <ul style="margin-left: 1.5rem; margin-top: 1rem;">
+                                <li>Generate tests 10x faster than manual authoring</li>
+                                <li>No programming knowledge required</li>
+                                <li>Comprehensive test coverage automatically</li>
+                                <li>Support for both cloud and local AI</li>
+                                <li>Convert existing cURL/Swagger to tests instantly</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section id="setup">
+                        <h2>⚙️ Setup & Configuration</h2>
+                        
+                        <h3>Accessing the AI Assistant</h3>
+                        <p>The AI assistant is available via a floating chat icon at the bottom-right corner of the dashboard.</p>
+                        
+                        <div class="steps">
+                            <div class="step">
+                                <span class="step-number">1</span>
+                                <h3>Open Dashboard</h3>
+                                <div class="code-block">
+                                    <pre>cd frontend/TestEditor
+npm run dev</pre>
+                                </div>
+                                <p style="margin-top: 0.5rem;">Access at: http://localhost:3000</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">2</span>
+                                <h3>Click AI Chat Icon</h3>
+                                <p>Look for the animated purple-blue gradient icon with sparkle effects at the bottom-right corner</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">3</span>
+                                <h3>Choose AI Provider</h3>
+                                <p>Select between GitHub Copilot (cloud) or Ollama (local)</p>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 3rem;">Option 1: GitHub Copilot (Recommended)</h3>
+                        <div class="feature-card">
+                            <h4>OAuth Authentication</h4>
+                            <div class="steps">
+                                <div class="step">
+                                    <span class="step-number">1</span>
+                                    <h3>Click "OAuth Login"</h3>
+                                    <p>Device code will be displayed (e.g., ABCD-1234)</p>
+                                </div>
+                                
+                                <div class="step">
+                                    <span class="step-number">2</span>
+                                    <h3>Authorize on GitHub</h3>
+                                    <p>Browser opens automatically, enter the code and authorize</p>
+                                </div>
+                                
+                                <div class="step">
+                                    <span class="step-number">3</span>
+                                    <h3>Start Generating</h3>
+                                    <p>Green status indicator shows when authenticated</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card" style="margin-top: 1rem;">
+                            <h4>Manual Token Method</h4>
+                            <div class="code-block">
+                                <pre># 1. Generate Personal Access Token on GitHub
+# Go to: Settings → Developer settings → Personal access tokens
+# Scopes needed: copilot, user:email
+
+# 2. Click "Manual Token" in AI Assistant
+# 3. Paste token and save</pre>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 3rem;">Option 2: Ollama (Local AI)</h3>
+                        <div class="feature-card">
+                            <h4>Installation</h4>
+                            <div class="code-block">
+                                <pre># Install Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull a model
+ollama pull codellama
+
+# Start Ollama server
+ollama serve</pre>
+                            </div>
+                            <p style="margin-top: 1rem; color: var(--text-muted);">Benefits: Complete privacy, no API costs, offline capability</p>
+                        </div>
+                    </section>
+
+                    <section id="features">
+                        <h2>🎨 AI Assistant Features</h2>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <div class="feature-icon">💬</div>
+                                <h3>AI Chat</h3>
+                                <p>Natural language test generation with conversational AI</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">🔗</div>
+                                <h3>cURL Import</h3>
+                                <p>Test and convert cURL commands to test suites</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">📋</div>
+                                <h3>Swagger/OpenAPI</h3>
+                                <p>Import API specs and generate comprehensive tests</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">🎭</div>
+                                <h3>UI Steps</h3>
+                                <p>Generate Playwright tests from descriptions</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">🎬</div>
+                                <h3>Playwright Codegen</h3>
+                                <p>Record browser interactions visually</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">📊</div>
+                                <h3>Live Preview</h3>
+                                <p>See generated JSON before saving</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="natural-language">
+                        <h2>💬 Natural Language Test Generation</h2>
+                        <p>Describe your test scenarios in plain English and let AI generate complete test suites.</p>
+                        
+                        <h3>Example Prompts</h3>
+                        <div class="feature-card">
+                            <h4>API Testing</h4>
+                            <div class="code-block">
+                                <pre>"Create comprehensive API tests for a user management system with:
+- POST /users - Create user with validation
+- GET /users/:id - Get user by ID
+- PUT /users/:id - Update user
+- DELETE /users/:id - Delete user
+
+Include authentication, positive/negative scenarios, and assertions."</pre>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h4>UI Testing</h4>
+                            <div class="code-block">
+                                <pre>"Generate UI tests for e-commerce checkout:
+1. Add product to cart
+2. View cart and verify items
+3. Proceed to checkout
+4. Enter shipping information
+5. Select payment method
+6. Review order
+7. Place order
+8. Verify confirmation page"</pre>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h4>Authentication Flow</h4>
+                            <div class="code-block">
+                                <pre>"Create tests for JWT authentication:
+- Login with valid credentials
+- Store auth token
+- Use token in subsequent requests
+- Test token expiration
+- Test invalid credentials
+- Test missing credentials"</pre>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Generated Output</h3>
+                        <div class="code-block">
+                            <pre>{
+  "id": "user-management-tests",
+  "suiteName": "User Management API Tests",
+  "type": "API",
+  "baseUrl": "https://api.example.com",
+  "testCases": [
+    {
+      "name": "Create User",
+      "type": "REST",
+      "testData": [
+        {
+          "name": "Create Valid User",
+          "method": "POST",
+          "endpoint": "/users",
+          "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {{authToken}}"
+          },
+          "body": {
+            "name": "John Doe",
+            "email": "john@example.com"
+          },
+          "assertions": [
+            { "type": "statusCode", "expected": 201 },
+            { "type": "exists", "jsonPath": "$.id" },
+            { "type": "equals", "jsonPath": "$.name", "expected": "John Doe" }
+          ],
+          "store": {
+            "userId": "$.id"
+          }
+        }
+      ]
+    }
+  ]
+}</pre>
+                        </div>
+                    </section>
+
+                    <section id="curl">
+                        <h2>🔗 cURL Import & Conversion</h2>
+                        <p>Paste cURL commands, test them live, and convert to test suites instantly.</p>
+                        
+                        <h3>Step-by-Step Process</h3>
+                        <div class="steps">
+                            <div class="step">
+                                <span class="step-number">1</span>
+                                <h3>Paste cURL Command</h3>
+                                <div class="code-block">
+                                    <pre>curl -X POST https://api.example.com/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"secret"}'</pre>
+                                </div>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">2</span>
+                                <h3>Test cURL (Optional)</h3>
+                                <p>Click "Test cURL" to execute and see actual response</p>
+                                <ul style="margin-left: 1.5rem; margin-top: 0.5rem; color: var(--text-muted);">
+                                    <li>View status code</li>
+                                    <li>See response time</li>
+                                    <li>Inspect response body</li>
+                                    <li>Check headers</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">3</span>
+                                <h3>Apply JSONPath Filter (Optional)</h3>
+                                <div class="code-block">
+                                    <pre>$.token
+$.data[0].id
+$..email</pre>
+                                </div>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">4</span>
+                                <h3>Generate Test Suite</h3>
+                                <p>AI converts cURL to complete test with assertions and variable storage</p>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Features</h3>
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h4>✅ Smart Parsing</h4>
+                                <p>Extracts method, headers, body, and URL automatically</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>✅ Live Testing</h4>
+                                <p>Execute cURL before conversion to verify it works</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>✅ Auto Assertions</h4>
+                                <p>Generates appropriate assertions based on response</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>✅ Variable Storage</h4>
+                                <p>Identifies and stores important response values</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="swagger">
+                        <h2>📋 Swagger/OpenAPI Import</h2>
+                        <p>Import API specifications and generate comprehensive test coverage automatically.</p>
+                        
+                        <h3>Import Methods</h3>
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h4>📄 Upload File</h4>
+                                <p>Upload .json, .yaml, or .yml files</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>🔗 From URL</h4>
+                                <p>Provide Swagger spec URL</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>📋 Paste Content</h4>
+                                <p>Paste JSON or YAML directly</p>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Example Swagger Spec</h3>
+                        <div class="code-block">
+                            <pre>openapi: 3.0.0
+info:
+  title: User API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      summary: Get all users
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: Created</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Generated Test Coverage</h3>
+                        <div class="feature-card">
+                            <ul style="margin-left: 1.5rem;">
+                                <li>✅ Test cases for each endpoint</li>
+                                <li>✅ Positive test scenarios (200, 201, 204)</li>
+                                <li>✅ Negative test scenarios (400, 401, 404, 500)</li>
+                                <li>✅ Request/response schema validation</li>
+                                <li>✅ Parameter validation tests</li>
+                                <li>✅ Authentication tests</li>
+                                <li>✅ Edge cases and boundary tests</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section id="ui-generation">
+                        <h2>🎭 UI Test Generation</h2>
+                        
+                        <h3>Method 1: Describe UI Flow</h3>
+                        <div class="feature-card">
+                            <h4>Example Description</h4>
+                            <div class="code-block">
+                                <pre>"Create UI tests for login flow:
+1. Navigate to https://example.com/login
+2. Enter 'testuser' in username field
+3. Enter 'password123' in password field
+4. Click the blue 'Login' button
+5. Wait for dashboard to load
+6. Verify user profile shows 'testuser'
+7. Assert welcome message contains 'Welcome back'
+8. Click logout button
+9. Verify redirect to login page"</pre>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Method 2: Playwright Codegen</h3>
+                        <div class="steps">
+                            <div class="step">
+                                <span class="step-number">1</span>
+                                <h3>Enter URL</h3>
+                                <div class="code-block">
+                                    <pre>https://example.com</pre>
+                                </div>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">2</span>
+                                <h3>Start Recording</h3>
+                                <p>Click "Start Playwright Codegen" - browser opens with Inspector</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">3</span>
+                                <h3>Perform Actions</h3>
+                                <ul style="margin-left: 1.5rem; color: var(--text-muted);">
+                                    <li>Click elements</li>
+                                    <li>Type text</li>
+                                    <li>Navigate pages</li>
+                                    <li>Fill forms</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">4</span>
+                                <h3>Copy & Convert</h3>
+                                <p>Copy generated code and convert to TestFlow format</p>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Generated UI Test</h3>
+                        <div class="code-block">
+                            <pre>{
+  "testCases": [
+    {
+      "name": "Login Flow",
+      "type": "UI",
+      "testSteps": [
+        {
+          "keyword": "goto",
+          "value": "https://example.com/login"
+        },
+        {
+          "keyword": "type",
+          "locator": { "strategy": "css", "value": "#username" },
+          "value": "testuser"
+        },
+        {
+          "keyword": "type",
+          "locator": { "strategy": "css", "value": "#password" },
+          "value": "password123"
+        },
+        {
+          "keyword": "click",
+          "locator": { "strategy": "text", "value": "Login" }
+        },
+        {
+          "keyword": "assertVisible",
+          "locator": { "strategy": "text", "value": "Welcome back" }
+        }
+      ]
+    }
+  ]
+}</pre>
+                        </div>
+                    </section>
+
+                    <section id="examples">
+                        <h2>📚 Complete Examples</h2>
+                        
+                        <h3>Example 1: E-commerce API Tests</h3>
+                        <div class="feature-card">
+                            <h4>Prompt</h4>
+                            <div class="code-block">
+                                <pre>"Create comprehensive tests for e-commerce API:
+- Product search with filters
+- Add to cart with quantity
+- Update cart items
+- Apply discount code
+- Checkout with payment
+- Order confirmation
+Include error scenarios and edge cases"</pre>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Example 2: Authentication & Authorization</h3>
+                        <div class="feature-card">
+                            <h4>Prompt</h4>
+                            <div class="code-block">
+                                <pre>"Generate tests for OAuth2 authentication:
+- Login with credentials
+- Receive access and refresh tokens
+- Use access token for API calls
+- Refresh token when expired
+- Test unauthorized access
+- Test role-based permissions"</pre>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Example 3: Data-Driven Testing</h3>
+                        <div class="feature-card">
+                            <h4>Prompt</h4>
+                            <div class="code-block">
+                                <pre>"Create data-driven tests for user registration:
+Test with multiple datasets:
+- Valid user (success)
+- Invalid email format (400)
+- Duplicate email (409)
+- Missing required fields (400)
+- Password too short (400)
+Generate CSV file with test data"</pre>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="tips">
+                        <h2>💡 Best Practices</h2>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h3>Be Specific</h3>
+                                <p>Include endpoint URLs, HTTP methods, expected status codes, and validation rules</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>Provide Examples</h3>
+                                <p>Give sample request/response data for better test generation</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>Iterate & Refine</h3>
+                                <p>Review generated tests and ask AI to modify specific parts</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>Combine Tools</h3>
+                                <p>Use cURL for quick tests, Swagger for comprehensive coverage</p>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card" style="margin-top: 2rem; background: rgba(16, 185, 129, 0.1); border-color: var(--success);">
+                            <h3>🎯 Pro Tips</h3>
+                            <ul style="margin-left: 1.5rem;">
+                                <li>Start with simple prompts and add details iteratively</li>
+                                <li>Use "Test Cases Only" mode to add to existing suites</li>
+                                <li>Test cURL commands before converting to verify they work</li>
+                                <li>Use Playwright codegen for complex UI interactions</li>
+                                <li>Save generated tests and refine them manually if needed</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <div style="margin-top: 3rem; text-align: center;">
+                        <a href="installation.html" class="btn btn-primary">Get Started with TestFlow Pro →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="installation.html">Installation</a></li>
+                        <li><a href="architecture.html">Architecture</a></li>
+                        <li><a href="usage.html">Usage Guide</a></li>
+                        <li><a href="features.html">Features</a></li>
+                        <li><a href="ai-assistant.html">AI Assistant</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="https://www.youtube.com/watch?v=Jw-B24hmNhQ">Video Tutorials</a></li>
+                        <li><a href="#">API Reference</a></li>
+                        <li><a href="#">Examples</a></li>
+                        <li><a href="#">FAQ</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Community</h4>
+                    <ul>
+                        <li><a href="#">GitHub</a></li>
+                        <li><a href="#">Discussions</a></li>
+                        <li><a href="#">Contributing</a></li>
+                        <li><a href="#">License</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 TestFlow Pro. Built with ❤️ for test automation.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

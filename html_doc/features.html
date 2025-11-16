@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features - TestFlow Pro</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <a href="index.html" class="logo">🔍 TestFlow Pro</a>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="architecture.html">Architecture</a></li>
+                    <li><a href="installation.html">Installation</a></li>
+                    <li><a href="usage.html">Usage</a></li>
+                    <li><a href="features.html" class="active">Features</a></li>
+                    <li><a href="ai-assistant.html">AI Assistant</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero" style="padding: 3rem 0;">
+        <div class="container">
+            <h1>✨ Features</h1>
+            <p>Comprehensive feature set for modern test automation</p>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <div class="docs-layout">
+                <aside class="sidebar">
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#variable-store">Variable Store</a></li>
+                        <li><a href="#preprocess">PreProcess Functions</a></li>
+                        <li><a href="#assertions">Assertions</a></li>
+                        <li><a href="#data-driven">Data-Driven Testing</a></li>
+                        <li><a href="#ui-testing">UI Testing</a></li>
+                        <li><a href="#database">Database Integration</a></li>
+                        <li><a href="#import">Import Options</a></li>
+                        <li><a href="#ai-assistant">AI Assistant</a></li>
+                    </ul>
+                </aside>
+
+                <div class="content">
+                    <section id="overview">
+                        <h2>🎯 Feature Overview</h2>
+                        <p>TestFlow Pro provides a comprehensive set of features for API, UI, and database testing:</p>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <div class="feature-icon">📝</div>
+                                <h3>Keyword-Driven</h3>
+                                <p>JSON-based test authoring with simple keywords</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">🔗</div>
+                                <h3>Variable Chaining</h3>
+                                <p>Store and reuse values across test cases</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">🎲</div>
+                                <h3>Dynamic Data</h3>
+                                <p>Generate fake data with Faker.js</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">✔️</div>
+                                <h3>20+ Assertions</h3>
+                                <p>Comprehensive validation options</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">🔄</div>
+                                <h3>Data-Driven</h3>
+                                <p>Execute tests with multiple data sets</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">🎭</div>
+                                <h3>UI Automation</h3>
+                                <p>Playwright-powered browser testing</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="variable-store">
+                        <h2>💾 Variable Store & Chaining</h2>
+                        <p>Store response values and use them in subsequent requests for complex workflows:</p>
+                        
+                        <h3>Global Variables</h3>
+                        <p>Persist across all test cases in a suite:</p>
+                        <div class="code-block">
+                            <pre>{
+  "testData": [
+    {
+      "name": "Create User",
+      "method": "POST",
+      "endpoint": "/users",
+      "body": {
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
+      "store": {
+        "userId": "$.id",
+        "userEmail": "$.email"
+      }
+    },
+    {
+      "name": "Get User",
+      "method": "GET",
+      "endpoint": "/users/{{userId}}",
+      "assertions": [
+        {
+          "type": "equals",
+          "jsonPath": "$.email",
+          "expected": "{{userEmail}}"
+        }
+      ]
+    }
+  ]
+}</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Local Variables</h3>
+                        <p>Cleared after each test case:</p>
+                        <div class="code-block">
+                            <pre>{
+  "storeLocal": {
+    "tempToken": "$.token",
+    "sessionId": "$.session.id"
+  }
+}</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Cookie Storage</h3>
+                        <p>Store cookies from responses:</p>
+                        <div class="code-block">
+                            <pre>{
+  "storeCookie": {
+    "authCookie": "auth_token"
+  }
+}</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Variable Injection</h3>
+                        <p>Use stored variables anywhere in your tests:</p>
+                        <div class="code-block">
+                            <pre>{
+  "endpoint": "/users/{{userId}}/orders",
+  "headers": {
+    "Authorization": "Bearer {{authToken}}"
+  },
+  "body": {
+    "userId": "{{userId}}",
+    "timestamp": "{{currentTime}}"
+  }
+}</pre>
+                        </div>
+                    </section>
+
+                    <section id="preprocess">
+                        <h2>🔧 PreProcess Functions</h2>
+                        <p>Generate dynamic data before test execution:</p>
+                        
+                        <h3>Faker Functions</h3>
+                        <p>Generate realistic fake data:</p>
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h4>faker.email</h4>
+                                <div class="code-block">
+                                    <pre>{ "var": "email", "function": "faker.email" }</pre>
+                                </div>
+                                <p style="margin-top: 0.5rem; color: var(--text-muted);">Output: john.doe@example.com</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>faker.uuid</h4>
+                                <div class="code-block">
+                                    <pre>{ "var": "id", "function": "faker.uuid" }</pre>
+                                </div>
+                                <p style="margin-top: 0.5rem; color: var(--text-muted);">Output: 550e8400-e29b-41d4...</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>faker.name</h4>
+                                <div class="code-block">
+                                    <pre>{ "var": "name", "function": "faker.name" }</pre>
+                                </div>
+                                <p style="margin-top: 0.5rem; color: var(--text-muted);">Output: John Doe</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>faker.phone</h4>
+                                <div class="code-block">
+                                    <pre>{ "var": "phone", "function": "faker.phone" }</pre>
+                                </div>
+                                <p style="margin-top: 0.5rem; color: var(--text-muted);">Output: +1-555-123-4567</p>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Date/Time Functions</h3>
+                        <div class="code-block">
+                            <pre>{
+  "preProcess": [
+    {
+      "var": "timestamp",
+      "function": "date.now"
+    }
+  ]
+}</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Encryption Functions</h3>
+                        <div class="code-block">
+                            <pre>{
+  "preProcess": [
+    {
+      "var": "encryptedPassword",
+      "function": "encrypt",
+      "args": ["MySecretPassword123"]
+    }
+  ]
+}</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Database Queries</h3>
+                        <div class="code-block">
+                            <pre>{
+  "preProcess": [
+    {
+      "function": "dbQuery",
+      "args": ["SELECT id, name FROM users WHERE role = 'admin' LIMIT 1"],
+      "db": "userDb",
+      "mapTo": {
+        "adminId": "id",
+        "adminName": "name"
+      }
+    }
+  ]
+}</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Complete Example</h3>
+                        <div class="code-block">
+                            <pre>{
+  "name": "Create User with Dynamic Data",
+  "method": "POST",
+  "endpoint": "/users",
+  "preProcess": [
+    { "var": "randomName", "function": "faker.name" },
+    { "var": "randomEmail", "function": "faker.email" },
+    { "var": "randomPhone", "function": "faker.phone" },
+    { "var": "timestamp", "function": "date.now" }
+  ],
+  "body": {
+    "name": "{{randomName}}",
+    "email": "{{randomEmail}}",
+    "phone": "{{randomPhone}}",
+    "createdAt": "{{timestamp}}"
+  }
+}</pre>
+                        </div>
+                    </section>
+
+                    <section id="assertions">
+                        <h2>✅ Assertions</h2>
+                        <p>TestFlow Pro provides 20+ assertion types for comprehensive validation:</p>
+                        
+                        <h3>Basic Assertions</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Example</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>equals</strong></td>
+                                    <td>Strict equality</td>
+                                    <td><code>{ "type": "equals", "jsonPath": "$.id", "expected": 1 }</code></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>notEquals</strong></td>
+                                    <td>Inverse equality</td>
+                                    <td><code>{ "type": "notEquals", "jsonPath": "$.status", "expected": "deleted" }</code></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>contains</strong></td>
+                                    <td>Value contains expected</td>
+                                    <td><code>{ "type": "contains", "jsonPath": "$.name", "expected": "John" }</code></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>exists</strong></td>
+                                    <td>Path exists in response</td>
+                                    <td><code>{ "type": "exists", "jsonPath": "$.id" }</code></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>statusCode</strong></td>
+                                    <td>HTTP status code</td>
+                                    <td><code>{ "type": "statusCode", "expected": 200 }</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <h3 style="margin-top: 2rem;">String Assertions</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>startsWith</strong></td>
+                                    <td>String starts with value</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>endsWith</strong></td>
+                                    <td>String ends with value</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>regex</strong></td>
+                                    <td>Matches regex pattern</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>length</strong></td>
+                                    <td>String/array length</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <h3 style="margin-top: 2rem;">Numeric Assertions</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>greaterThan</strong></td>
+                                    <td>Value > expected</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>lessThan</strong></td>
+                                    <td>Value < expected</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>greaterThanOrEqual</strong></td>
+                                    <td>Value >= expected</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>lessThanOrEqual</strong></td>
+                                    <td>Value <= expected</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <h3 style="margin-top: 2rem;">Array Assertions</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>in</strong></td>
+                                    <td>Value is in array</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>notIn</strong></td>
+                                    <td>Value not in array</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>includesAll</strong></td>
+                                    <td>Array includes all values</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>size</strong></td>
+                                    <td>Array/object size</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>arrayObjectMatch</strong></td>
+                                    <td>Find object in array</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <h3 style="margin-top: 2rem;">Advanced Assertions</h3>
+                        <div class="code-block">
+                            <pre>{
+  "assertions": [
+    {
+      "type": "arrayObjectMatch",
+      "jsonPath": "$.users",
+      "searchKey": "email",
+      "searchValue": "john@example.com",
+      "assertions": [
+        { "type": "equals", "jsonPath": "$.role", "expected": "admin" },
+        { "type": "exists", "jsonPath": "$.id" }
+      ]
+    }
+  ]
+}</pre>
+                        </div>
+                    </section>
+
+                    <section id="data-driven">
+                        <h2>🔄 Data-Driven Testing</h2>
+                        <p>Execute tests with multiple data sets from various sources:</p>
+                        
+                        <h3>Inline Data</h3>
+                        <div class="code-block">
+                            <pre>{
+  "testData": [
+    {
+      "name": "Test User 1",
+      "method": "POST",
+      "endpoint": "/users",
+      "body": { "name": "John", "email": "john@example.com" }
+    },
+    {
+      "name": "Test User 2",
+      "method": "POST",
+      "endpoint": "/users",
+      "body": { "name": "Jane", "email": "jane@example.com" }
+    }
+  ]
+}</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">CSV Data</h3>
+                        <div class="code-block">
+                            <pre>{
+  "testCases": [
+    {
+      "name": "Create Users from CSV",
+      "type": "REST",
+      "parameterFile": "./data/users.csv",
+      "testData": [
+        {
+          "name": "Create User",
+          "method": "POST",
+          "endpoint": "/users",
+          "body": {
+            "name": "{{name}}",
+            "email": "{{email}}",
+            "age": "{{age}}"
+          }
+        }
+      ]
+    }
+  ]
+}</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">JSON Data</h3>
+                        <div class="code-block">
+                            <pre>{
+  "parameterFile": "./data/users.json",
+  "testData": [
+    {
+      "name": "Create User",
+      "method": "POST",
+      "endpoint": "/users",
+      "body": {
+        "name": "{{name}}",
+        "email": "{{email}}"
+      }
+    }
+  ]
+}</pre>
+                        </div>
+                    </section>
+
+                    <section id="ui-testing">
+                        <h2>🎭 UI Testing with Playwright</h2>
+                        <p>Powerful browser automation with multiple locator strategies:</p>
+                        
+                        <h3>Locator Strategies</h3>
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h4>CSS Selector</h4>
+                                <div class="code-block">
+                                    <pre>{ "strategy": "css", "value": "#username" }</pre>
+                                </div>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>XPath</h4>
+                                <div class="code-block">
+                                    <pre>{ "strategy": "xpath", "value": "//input[@id='username']" }</pre>
+                                </div>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>Text</h4>
+                                <div class="code-block">
+                                    <pre>{ "strategy": "text", "value": "Login" }</pre>
+                                </div>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>Placeholder</h4>
+                                <div class="code-block">
+                                    <pre>{ "strategy": "placeholder", "value": "Enter username" }</pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">UI Test Example</h3>
+                        <div class="code-block">
+                            <pre>{
+  "testCases": [
+    {
+      "name": "Login Test",
+      "type": "UI",
+      "testSteps": [
+        {
+          "keyword": "goto",
+          "value": "https://example.com/login"
+        },
+        {
+          "keyword": "type",
+          "locator": { "strategy": "css", "value": "#username" },
+          "value": "john@example.com"
+        },
+        {
+          "keyword": "type",
+          "locator": { "strategy": "css", "value": "#password" },
+          "value": "password123"
+        },
+        {
+          "keyword": "click",
+          "locator": { "strategy": "text", "value": "Login" }
+        },
+        {
+          "keyword": "assertVisible",
+          "locator": { "strategy": "text", "value": "Welcome" }
+        }
+      ]
+    }
+  ]
+}</pre>
+                        </div>
+                        
+                        <div class="screenshot" style="margin-top: 2rem;">
+                            <img src="assets/images/ui-test-steps.png" alt="UI Test Steps">
+                            <div style="padding: 1rem; background: var(--dark-light); text-align: center;">
+                                <strong>UI Test Steps Editor</strong>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="database">
+                        <h2>🗄️ Database Integration</h2>
+                        <p>Query databases directly in your tests:</p>
+                        
+                        <h3>Supported Databases</h3>
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h4>MySQL</h4>
+                                <p>Full MySQL support with connection pooling</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>ODBC</h4>
+                                <p>Connect to any ODBC-compliant database</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>DB2</h4>
+                                <p>IBM DB2 database support</p>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Configuration</h3>
+                        <div class="code-block">
+                            <pre># .env file
+DB_USERDB_TYPE=mysql
+DB_USERDB_HOST=localhost
+DB_USERDB_PORT=3306
+DB_USERDB_USER=root
+DB_USERDB_PASSWORD=secret
+DB_USERDB_NAME=testflow</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Usage in Tests</h3>
+                        <div class="code-block">
+                            <pre>{
+  "preProcess": [
+    {
+      "function": "dbQuery",
+      "args": ["SELECT id, name, email FROM users WHERE status = 'active' LIMIT 1"],
+      "db": "userDb",
+      "mapTo": {
+        "userId": "id",
+        "userName": "name",
+        "userEmail": "email"
+      }
+    }
+  ],
+  "endpoint": "/users/{{userId}}",
+  "assertions": [
+    {
+      "type": "equals",
+      "jsonPath": "$.name",
+      "expected": "{{userName}}"
+    }
+  ]
+}</pre>
+                        </div>
+                    </section>
+
+                    <section id="import">
+                        <h2>📦 Import Options</h2>
+                        <p>Convert tests from multiple formats:</p>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <div class="feature-icon">📋</div>
+                                <h3>cURL Import</h3>
+                                <p>Paste cURL commands and convert to test suites instantly</p>
+                                <ul style="margin-left: 1.5rem; margin-top: 1rem; color: var(--text-muted);">
+                                    <li>Test cURL before importing</li>
+                                    <li>Smart parsing of headers and body</li>
+                                    <li>Add to existing suites</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">📄</div>
+                                <h3>Swagger/OpenAPI</h3>
+                                <p>Import from Swagger specifications</p>
+                                <ul style="margin-left: 1.5rem; margin-top: 1rem; color: var(--text-muted);">
+                                    <li>URL, file, or paste JSON/YAML</li>
+                                    <li>Generate positive/negative scenarios</li>
+                                    <li>Include schema validation</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">📮</div>
+                                <h3>Postman Collections</h3>
+                                <p>Convert Postman Collection v2.1</p>
+                                <ul style="margin-left: 1.5rem; margin-top: 1rem; color: var(--text-muted);">
+                                    <li>Variables and scripts</li>
+                                    <li>Folder structure maintained</li>
+                                    <li>Environment variables</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">🟣</div>
+                                <h3>Bruno Collections</h3>
+                                <p>Import .bru files</p>
+                                <ul style="margin-left: 1.5rem; margin-top: 1rem; color: var(--text-muted);">
+                                    <li>File-based collections</li>
+                                    <li>Folder upload support</li>
+                                    <li>Environment file parsing</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="screenshot" style="margin-top: 2rem;">
+                            <img src="assets/images/ui-quick-test-builder.png" alt="Quick Test Builder">
+                            <div style="padding: 1rem; background: var(--dark-light); text-align: center;">
+                                <strong>Quick Test Builder with Import Options</strong>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="ai-assistant">
+                        <h2>🤖 AI-Powered Test Generation</h2>
+                        <p>Generate comprehensive test suites using natural language with the built-in AI assistant:</p>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h3>💬 Natural Language</h3>
+                                <p>Describe your test scenarios in plain English and let AI generate complete test suites</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>🔗 cURL Conversion</h3>
+                                <p>Paste cURL commands, test them, and convert to test suites instantly</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>📋 Swagger Import</h3>
+                                <p>Import OpenAPI specs and generate comprehensive test coverage automatically</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>🎭 UI Test Generation</h3>
+                                <p>Describe UI flows or use Playwright codegen to record browser interactions</p>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card" style="margin-top: 2rem;">
+                            <h3>Supported AI Providers</h3>
+                            <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                                <span class="badge badge-primary">GitHub Copilot</span>
+                                <span class="badge badge-primary">Ollama (Local)</span>
+                            </div>
+                            <p style="margin-top: 1rem; color: var(--text-muted);">Choose between cloud-based GitHub Copilot or run AI locally with Ollama for complete privacy</p>
+                        </div>
+                        
+                        <div class="screenshot" style="margin-top: 2rem;">
+                            <img src="assets/images/ai-chat-modal.png" alt="AI Chat Assistant">
+                            <div style="padding: 1rem; background: var(--dark-light); text-align: center;">
+                                <strong>AI Chat Assistant Interface</strong>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="additional">
+                        <h2>🎁 Additional Features</h2>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h3>🏷️ Tags & Filtering</h3>
+                                <p>Organize tests with tags and run specific subsets</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>⚡ Parallel Execution</h3>
+                                <p>Run multiple test suites simultaneously</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>📋 Schema Validation</h3>
+                                <p>Validate responses against JSON schemas</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>🔐 Authentication</h3>
+                                <p>Bearer tokens, cookies, custom headers</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>📊 Beautiful Reports</h3>
+                                <p>HTML and JSON reports with detailed insights</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>🚀 CI/CD Ready</h3>
+                                <p>GitHub Actions and Azure DevOps workflows</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div style="margin-top: 3rem; text-align: center;">
+                        <a href="installation.html" class="btn btn-primary">Get Started Now →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="installation.html">Installation</a></li>
+                        <li><a href="architecture.html">Architecture</a></li>
+                        <li><a href="usage.html">Usage Guide</a></li>
+                        <li><a href="features.html">Features</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="https://www.youtube.com/watch?v=Jw-B24hmNhQ">Video Tutorials</a></li>
+                        <li><a href="#">API Reference</a></li>
+                        <li><a href="#">Examples</a></li>
+                        <li><a href="#">FAQ</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Community</h4>
+                    <ul>
+                        <li><a href="#">GitHub</a></li>
+                        <li><a href="#">Discussions</a></li>
+                        <li><a href="#">Contributing</a></li>
+                        <li><a href="#">License</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 TestFlow Pro. Built with ❤️ for test automation.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

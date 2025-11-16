@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture - TestFlow Pro</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <a href="index.html" class="logo">🔍 TestFlow Pro</a>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="architecture.html" class="active">Architecture</a></li>
+                    <li><a href="installation.html">Installation</a></li>
+                    <li><a href="usage.html">Usage</a></li>
+                    <li><a href="features.html">Features</a></li>
+                    <li><a href="ai-assistant.html">AI Assistant</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero" style="padding: 3rem 0;">
+        <div class="container">
+            <h1>🏗️ Architecture Overview</h1>
+            <p>Understanding the modular, scalable architecture of TestFlow Pro</p>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <div class="docs-layout">
+                <aside class="sidebar">
+                    <ul>
+                        <li><a href="#overview">Overview</a></li>
+                        <li><a href="#diagram">Architecture Diagram</a></li>
+                        <li><a href="#layers">Architecture Layers</a></li>
+                        <li><a href="#frontend">Frontend Layer</a></li>
+                        <li><a href="#api">API Layer</a></li>
+                        <li><a href="#execution">Execution Engine</a></li>
+                        <li><a href="#core">Core Services</a></li>
+                        <li><a href="#utilities">Utilities</a></li>
+                        <li><a href="#flow">Execution Flow</a></li>
+                        <li><a href="#scalability">Scalability</a></li>
+                    </ul>
+                </aside>
+
+                <div class="content">
+                    <section id="overview">
+                        <h2>📐 Overview</h2>
+                        <p>TestFlow Pro is built with a modular, scalable architecture that separates concerns between test authoring, execution, and reporting. The framework follows a layered architecture pattern with clear separation of responsibilities.</p>
+                        
+                        <div class="feature-card" style="margin: 2rem 0;">
+                            <h3>Key Architectural Principles</h3>
+                            <ul style="margin-left: 1.5rem; color: var(--text-muted);">
+                                <li><strong>Separation of Concerns:</strong> Clear boundaries between UI, API, execution, and utilities</li>
+                                <li><strong>Modularity:</strong> Each component can be extended or replaced independently</li>
+                                <li><strong>Scalability:</strong> Parallel execution and efficient resource management</li>
+                                <li><strong>Extensibility:</strong> Plugin architecture for custom functions and parsers</li>
+                                <li><strong>Testability:</strong> Each layer can be tested independently</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section id="diagram">
+                        <h2>🎯 Architecture Diagram</h2>
+                        <p>The following diagram illustrates the high-level architecture and component interactions:</p>
+                        
+                        <div class="architecture-diagram">
+                            <img src="assets/images/architecture-diagrame.png" alt="TestFlow Pro Architecture">
+                        </div>
+                    </section>
+
+                    <section id="layers">
+                        <h2>📚 Architecture Layers</h2>
+                        <p>TestFlow Pro consists of six main architectural layers:</p>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <div class="feature-icon">🎨</div>
+                                <h3>Frontend Layer</h3>
+                                <p>React-based UI for visual test management and authoring</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">🔌</div>
+                                <h3>API Layer</h3>
+                                <p>RESTful endpoints for frontend-backend communication</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">⚙️</div>
+                                <h3>Execution Engine</h3>
+                                <p>Core test execution orchestration and management</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">🔧</div>
+                                <h3>Core Services</h3>
+                                <p>Variable store, assertions, preprocessing, validation</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">🛠️</div>
+                                <h3>Utilities</h3>
+                                <p>Parsers, loggers, reporters, environment management</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <div class="feature-icon">💾</div>
+                                <h3>Data Layer</h3>
+                                <p>Test suites, reports, configurations, databases</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="frontend">
+                        <h2>🎨 Frontend Layer</h2>
+                        <p>The user interface layer provides visual tools for test management built with modern web technologies.</p>
+                        
+                        <div class="feature-card">
+                            <h3>Technology Stack</h3>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;">
+                                <span class="badge badge-primary">React 18</span>
+                                <span class="badge badge-primary">Next.js 14</span>
+                                <span class="badge badge-primary">TypeScript</span>
+                                <span class="badge badge-primary">Tailwind CSS</span>
+                                <span class="badge badge-primary">shadcn/ui</span>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Components</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Component</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Dashboard</strong></td>
+                                    <td>Browse and manage test suites with grid/list views</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Test Suite Editor</strong></td>
+                                    <td>Create and edit test cases visually</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Import Tools</strong></td>
+                                    <td>Convert cURL, Swagger, Postman, Bruno to TestFlow format</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Results Viewer</strong></td>
+                                    <td>Analyze test execution results with detailed insights</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Environment Manager</strong></td>
+                                    <td>Edit .env files and manage configurations</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div class="screenshot" style="margin-top: 2rem;">
+                            <img src="assets/images/ui-dashboard-list-view.png" alt="Dashboard">
+                        </div>
+                    </section>
+
+                    <section id="api">
+                        <h2>🔌 API Layer</h2>
+                        <p>RESTful API endpoints facilitate communication between the frontend and backend systems.</p>
+                        
+                        <h3>Key Endpoints</h3>
+                        <div class="code-block">
+                            <pre>POST   /api/suites          // Create test suite
+GET    /api/suites          // List all suites
+GET    /api/suites/:id      // Get specific suite
+PUT    /api/suites/:id      // Update suite
+DELETE /api/suites/:id      // Delete suite
+POST   /api/run             // Execute tests
+GET    /api/results         // Get test results
+POST   /api/import/curl     // Import from cURL
+POST   /api/import/swagger  // Import from Swagger
+POST   /api/import/postman  // Import from Postman
+POST   /api/import/bruno    // Import from Bruno</pre>
+                        </div>
+                    </section>
+
+                    <section id="execution">
+                        <h2>⚙️ Execution Engine</h2>
+                        <p>The execution engine is the heart of TestFlow Pro, orchestrating test execution and managing the test lifecycle.</p>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h3>Test Runner</h3>
+                                <p><code>src/runner/TestRunner.ts</code></p>
+                                <ul style="margin-left: 1.5rem; margin-top: 0.5rem; color: var(--text-muted);">
+                                    <li>Orchestrates test execution</li>
+                                    <li>Manages parallel execution</li>
+                                    <li>Handles test filtering</li>
+                                    <li>Controls execution flow</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>Test Executor</h3>
+                                <p><code>src/executor.ts</code></p>
+                                <ul style="margin-left: 1.5rem; margin-top: 0.5rem; color: var(--text-muted);">
+                                    <li>Executes individual test cases</li>
+                                    <li>Manages test data iterations</li>
+                                    <li>Routes API/UI tests</li>
+                                    <li>Processes assertions</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>UI Test Runner</h3>
+                                <p><code>src/ui-test.ts</code></p>
+                                <ul style="margin-left: 1.5rem; margin-top: 0.5rem; color: var(--text-muted);">
+                                    <li>Playwright integration</li>
+                                    <li>Browser automation</li>
+                                    <li>Element interactions</li>
+                                    <li>Screenshot capture</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>API Test Runner</h3>
+                                <p>Within <code>executor.ts</code></p>
+                                <ul style="margin-left: 1.5rem; margin-top: 0.5rem; color: var(--text-muted);">
+                                    <li>HTTP request execution</li>
+                                    <li>SOAP request handling</li>
+                                    <li>Response validation</li>
+                                    <li>Schema validation</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="core">
+                        <h2>🔧 Core Services</h2>
+                        <p>Core services provide essential functionality used across the framework.</p>
+                        
+                        <div class="step">
+                            <h3>Variable Store</h3>
+                            <p><code>src/utils/variableStore.ts</code></p>
+                            <div class="code-block">
+                                <pre>// Global variables (persist across test cases)
+setVariable(key, value)
+getVariable(key)
+
+// Local variables (cleared after each test case)
+setLocalVariable(key, value)
+getLocalVariable(key)
+
+// Variable injection
+injectVariables("{{variableName}}")</pre>
+                            </div>
+                        </div>
+                        
+                        <div class="step">
+                            <h3>PreProcessor</h3>
+                            <p><code>src/preProcessor.ts</code></p>
+                            <p>Executes functions before test execution:</p>
+                            <ul style="margin-left: 1.5rem; color: var(--text-muted);">
+                                <li>Faker data generation (email, uuid, name, etc.)</li>
+                                <li>Encryption/decryption</li>
+                                <li>Database queries</li>
+                                <li>Custom functions</li>
+                                <li>Date/time utilities</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="step">
+                            <h3>Assertion Engine</h3>
+                            <p><code>src/utils/assertUtils.ts</code></p>
+                            <p>Validates test results with 20+ assertion types:</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;">
+                                <span class="badge badge-secondary">equals</span>
+                                <span class="badge badge-secondary">contains</span>
+                                <span class="badge badge-secondary">exists</span>
+                                <span class="badge badge-secondary">statusCode</span>
+                                <span class="badge badge-secondary">regex</span>
+                                <span class="badge badge-secondary">greaterThan</span>
+                                <span class="badge badge-secondary">lessThan</span>
+                                <span class="badge badge-secondary">arrayObjectMatch</span>
+                            </div>
+                        </div>
+                        
+                        <div class="step">
+                            <h3>Database Client</h3>
+                            <p><code>src/db/dbClient.ts</code></p>
+                            <p>Multi-database support with connection pooling:</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;">
+                                <span class="badge badge-success">MySQL</span>
+                                <span class="badge badge-success">ODBC</span>
+                                <span class="badge badge-success">DB2</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="utilities">
+                        <h2>🛠️ Utilities</h2>
+                        
+                        <h3>Parsers</h3>
+                        <p>Convert external formats to TestFlow format:</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parser</th>
+                                    <th>Input Format</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>cURL Parser</strong></td>
+                                    <td>cURL commands</td>
+                                    <td>Extract method, headers, body, URL</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Swagger Parser</strong></td>
+                                    <td>OpenAPI/Swagger</td>
+                                    <td>Generate positive/negative scenarios</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Postman Parser</strong></td>
+                                    <td>Postman v2.1</td>
+                                    <td>Convert collections with variables</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Bruno Parser</strong></td>
+                                    <td>.bru files</td>
+                                    <td>Import Bruno collections</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <h3 style="margin-top: 2rem;">Logger</h3>
+                        <p><code>src/utils/Logger.ts</code> - Structured logging with colors</p>
+                        <div class="code-block">
+                            <pre>Logger.info("Information message")
+Logger.success("Success message")
+Logger.warning("Warning message")
+Logger.error("Error message")
+Logger.section("Section Title")
+Logger.box("Title", "Content")</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Reporter</h3>
+                        <p><code>src/reporter.ts</code> - Test result collection and reporting</p>
+                        <ul style="margin-left: 1.5rem; color: var(--text-muted);">
+                            <li>JSON reports with detailed execution data</li>
+                            <li>HTML reports with beautiful styling</li>
+                            <li>Execution summaries and statistics</li>
+                            <li>Failure details and stack traces</li>
+                        </ul>
+                    </section>
+
+                    <section id="flow">
+                        <h2>🔄 Execution Flow</h2>
+                        <p>Understanding how tests flow through the system:</p>
+                        
+                        <div class="steps">
+                            <div class="step">
+                                <span class="step-number">1</span>
+                                <h3>Load Test Suite</h3>
+                                <p>Read JSON file from testSuites/ directory, parse and validate structure, load environment configuration</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">2</span>
+                                <h3>Apply Filters</h3>
+                                <p>Filter by tags (serviceName, suiteType), application name, and test type (API/UI)</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">3</span>
+                                <h3>Resolve Dependencies</h3>
+                                <p>Sort test cases by priority, resolve dependsOn relationships, detect circular dependencies</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">4</span>
+                                <h3>Execute Test Cases</h3>
+                                <p>Run in dependency order, skip disabled test cases, handle test failures gracefully</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">5</span>
+                                <h3>Process Test Data</h3>
+                                <p>Load parameter data (CSV/JSON/inline), inject parameters, execute for each parameter set</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">6</span>
+                                <h3>Run PreProcessors</h3>
+                                <p>Generate faker data, execute database queries, run custom functions, store variables</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">7</span>
+                                <h3>Execute Request</h3>
+                                <p>Inject variables into URL/headers/body, send HTTP/SOAP request, capture response</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">8</span>
+                                <h3>Validate Response</h3>
+                                <p>Run assertions, validate schema, store response variables for chaining</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">9</span>
+                                <h3>Generate Reports</h3>
+                                <p>Collect execution results, generate JSON reports, generate HTML reports</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="scalability">
+                        <h2>📊 Scalability Features</h2>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h3>Parallel Execution</h3>
+                                <div class="code-block">
+                                    <pre># Configure parallel threads
+PARALLEL_THREADS=4</pre>
+                                </div>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>Test Isolation</h3>
+                                <ul style="margin-left: 1.5rem; color: var(--text-muted);">
+                                    <li>Independent test execution</li>
+                                    <li>Local variables cleared after each test</li>
+                                    <li>No shared state between tests</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>Resource Management</h3>
+                                <ul style="margin-left: 1.5rem; color: var(--text-muted);">
+                                    <li>Browser instances managed by Playwright</li>
+                                    <li>Database connection pooling</li>
+                                    <li>HTTP connection reuse</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>Performance Optimization</h3>
+                                <ul style="margin-left: 1.5rem; color: var(--text-muted);">
+                                    <li>Environment variables cached</li>
+                                    <li>Test suites cached in memory</li>
+                                    <li>Lazy loading of resources</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card" style="margin-top: 2rem;">
+                            <h3>🔌 Extension Points</h3>
+                            <p>TestFlow Pro provides multiple extension points for customization:</p>
+                            <ul style="margin-left: 1.5rem; margin-top: 1rem; color: var(--text-muted);">
+                                <li><strong>Custom PreProcess Functions:</strong> Add your own data generation logic</li>
+                                <li><strong>Custom Test Steps (UI):</strong> Extend UI testing with custom keywords</li>
+                                <li><strong>Custom Assertions:</strong> Create domain-specific validation logic</li>
+                                <li><strong>Custom Parsers:</strong> Import from additional formats</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <div style="margin-top: 3rem; text-align: center;">
+                        <a href="installation.html" class="btn btn-primary">Next: Installation Guide →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="installation.html">Installation</a></li>
+                        <li><a href="architecture.html">Architecture</a></li>
+                        <li><a href="usage.html">Usage Guide</a></li>
+                        <li><a href="features.html">Features</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="https://www.youtube.com/watch?v=Jw-B24hmNhQ">Video Tutorials</a></li>
+                        <li><a href="#">API Reference</a></li>
+                        <li><a href="#">Examples</a></li>
+                        <li><a href="#">FAQ</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Community</h4>
+                    <ul>
+                        <li><a href="#">GitHub</a></li>
+                        <li><a href="#">Discussions</a></li>
+                        <li><a href="#">Contributing</a></li>
+                        <li><a href="#">License</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 TestFlow Pro. Built with ❤️ for test automation.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

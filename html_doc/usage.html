@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usage Guide - TestFlow Pro</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <a href="index.html" class="logo">🔍 TestFlow Pro</a>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="architecture.html">Architecture</a></li>
+                    <li><a href="installation.html">Installation</a></li>
+                    <li><a href="usage.html" class="active">Usage</a></li>
+                    <li><a href="features.html">Features</a></li>
+                    <li><a href="ai-assistant.html">AI Assistant</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero" style="padding: 3rem 0;">
+        <div class="container">
+            <h1>📚 Usage Guide</h1>
+            <p>Learn how to create, run, and manage tests with TestFlow Pro</p>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <div class="docs-layout">
+                <aside class="sidebar">
+                    <ul>
+                        <li><a href="#quick-start">Quick Start</a></li>
+                        <li><a href="#cli-usage">CLI Usage</a></li>
+                        <li><a href="#ui-dashboard">UI Dashboard</a></li>
+                        <li><a href="#creating-tests">Creating Tests</a></li>
+                        <li><a href="#running-tests">Running Tests</a></li>
+                        <li><a href="#filtering">Filtering Tests</a></li>
+                        <li><a href="#reports">Viewing Reports</a></li>
+                        <li><a href="#ci-cd">CI/CD Integration</a></li>
+                    </ul>
+                </aside>
+
+                <div class="content">
+                    <section id="quick-start">
+                        <h2>⚡ Quick Start</h2>
+                        <p>Get up and running with TestFlow Pro in 5 minutes:</p>
+                        
+                        <div class="steps">
+                            <div class="step">
+                                <span class="step-number">1</span>
+                                <h3>Create Your First Test Suite</h3>
+                                <p>Create a JSON file in the <code>testSuites/</code> directory:</p>
+                                <div class="code-block">
+                                    <pre>{
+  "id": "my-first-test",
+  "suiteName": "My First API Test",
+  "applicationName": "Sample API",
+  "type": "API",
+  "baseUrl": "https://jsonplaceholder.typicode.com",
+  "tags": [
+    { "serviceName": "@MyService" },
+    { "suiteType": "@smoke" }
+  ],
+  "testCases": [
+    {
+      "name": "Get User",
+      "type": "REST",
+      "testData": [
+        {
+          "name": "Fetch User 1",
+          "method": "GET",
+          "endpoint": "/users/1",
+          "assertions": [
+            { "type": "statusCode", "expected": 200 },
+            { "type": "exists", "jsonPath": "$.id" }
+          ]
+        }
+      ]
+    }
+  ]
+}</pre>
+                                </div>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">2</span>
+                                <h3>Run the Test</h3>
+                                <div class="code-block">
+                                    <pre>npx ts-node src/runner.ts --file="./testSuites/my-first-test.json"</pre>
+                                </div>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">3</span>
+                                <h3>View Results</h3>
+                                <div class="code-block">
+                                    <pre>npm run report:html</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="cli-usage">
+                        <h2>💻 CLI Usage</h2>
+                        <p>TestFlow Pro provides powerful command-line options for test execution:</p>
+                        
+                        <h3>Basic Execution</h3>
+                        <div class="code-block">
+                            <pre># Run all test suites
+npx ts-node src/runner.ts
+
+# Run specific test suite
+npx ts-node src/runner.ts --file="./testSuites/api-tests.json"</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Filter by Tags</h3>
+                        <div class="code-block">
+                            <pre># Run smoke tests
+npx ts-node src/runner.ts --suiteType="@smoke"
+
+# Run tests for specific service
+npx ts-node src/runner.ts --serviceName="@UserService"
+
+# Combine filters
+npx ts-node src/runner.ts --serviceName="@UserService" --suiteType="@smoke"</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Filter by Application</h3>
+                        <div class="code-block">
+                            <pre># Run tests for specific application
+npx ts-node src/runner.ts --applicationName="Bookstore Application"
+
+# Combine with test type
+npx ts-node src/runner.ts --applicationName="Bookstore" --testType="API"</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Filter by Test Type</h3>
+                        <div class="code-block">
+                            <pre># Run only API tests
+npx ts-node src/runner.ts --testType="API"
+
+# Run only UI tests
+npx ts-node src/runner.ts --testType="UI"</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Granular Execution</h3>
+                        <div class="code-block">
+                            <pre># Run specific test case
+npx ts-node src/runner.ts --target="suite-001:Suite Name > tc-001:Test Case Name"
+
+# Run specific test data
+npx ts-node src/runner.ts --target="suite-001:Suite Name > tc-001:Test Case > 0:Data Name"</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Environment Configuration</h3>
+                        <div class="code-block">
+                            <pre># Run with QA environment
+ENV=qa npx ts-node src/runner.ts
+
+# Run with Production environment
+ENV=prod npx ts-node src/runner.ts --suiteType="@smoke"</pre>
+                        </div>
+                    </section>
+
+                    <section id="ui-dashboard">
+                        <h2>🎨 UI Dashboard</h2>
+                        <p>Use the modern React-based dashboard for visual test management:</p>
+                        
+                        <h3>Starting the Dashboard</h3>
+                        <div class="code-block">
+                            <pre>cd frontend/TestEditor
+npm run dev</pre>
+                        </div>
+                        <p style="margin-top: 1rem;">Access at: <strong style="color: var(--primary);">http://localhost:3000</strong></p>
+                        
+                        <div class="screenshot" style="margin-top: 2rem;">
+                            <img src="assets/images/ui-dashboard-grid-view.png" alt="Dashboard Grid View">
+                            <div style="padding: 1rem; background: var(--dark-light); text-align: center;">
+                                <strong>Dashboard Grid View</strong>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Dashboard Features</h3>
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h4>📁 Application Sidebar</h4>
+                                <p>Organize tests by application with hierarchical folder structure</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>🔍 Search & Filter</h4>
+                                <p>Real-time search across suite names, tags, and test cases</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>📊 Grid/List Views</h4>
+                                <p>Switch between card-based grid and table-based list views</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>⚡ Quick Actions</h4>
+                                <p>Run, edit, clone, or delete test suites with one click</p>
+                            </div>
+                        </div>
+                        
+                        <div class="screenshot" style="margin-top: 2rem;">
+                            <img src="assets/images/ui-dashboard-list-view.png" alt="Dashboard List View">
+                            <div style="padding: 1rem; background: var(--dark-light); text-align: center;">
+                                <strong>Dashboard List View</strong>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="creating-tests">
+                        <h2>📝 Creating Tests</h2>
+                        
+                        <h3>Using the UI Editor</h3>
+                        <div class="steps">
+                            <div class="step">
+                                <span class="step-number">1</span>
+                                <h3>Click "+ New Suite"</h3>
+                                <p>Start creating a new test suite from the dashboard</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">2</span>
+                                <h3>Fill in General Information</h3>
+                                <p>Suite name, application, type (API/UI), base URL, and tags</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">3</span>
+                                <h3>Add Test Cases</h3>
+                                <p>Click "Add Test Case" and define test scenarios</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">4</span>
+                                <h3>Add Test Data</h3>
+                                <p>Define request details, assertions, and variable storage</p>
+                            </div>
+                            
+                            <div class="step">
+                                <span class="step-number">5</span>
+                                <h3>Save Suite</h3>
+                                <p>Save the test suite as a JSON file</p>
+                            </div>
+                        </div>
+                        
+                        <div class="screenshot" style="margin-top: 2rem;">
+                            <img src="assets/images/ui-test-suite-editor-general-tab.png" alt="Test Suite Editor">
+                            <div style="padding: 1rem; background: var(--dark-light); text-align: center;">
+                                <strong>Test Suite Editor - General Tab</strong>
+                            </div>
+                        </div>
+                        
+                        <div class="screenshot" style="margin-top: 2rem;">
+                            <img src="assets/images/ui-test-cases-tab.png" alt="Test Cases Tab">
+                            <div style="padding: 1rem; background: var(--dark-light); text-align: center;">
+                                <strong>Test Cases Tab</strong>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Importing Tests</h3>
+                        <p>TestFlow Pro supports importing from multiple formats:</p>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h4>📋 cURL Import</h4>
+                                <p>Paste cURL commands and convert to test suites</p>
+                                <div class="code-block" style="margin-top: 1rem;">
+                                    <pre>curl -X POST https://api.example.com/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"John"}'</pre>
+                                </div>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>📄 Swagger/OpenAPI</h4>
+                                <p>Import from Swagger specs (URL, file, or paste JSON/YAML)</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>📮 Postman Collections</h4>
+                                <p>Convert Postman Collection v2.1 format</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>🟣 Bruno Collections</h4>
+                                <p>Import .bru files and environment files</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="running-tests">
+                        <h2>▶️ Running Tests</h2>
+                        
+                        <h3>From CLI</h3>
+                        <div class="code-block">
+                            <pre># Run all tests
+npm test
+
+# Run specific suite
+npx ts-node src/runner.ts --file="./testSuites/suite.json"
+
+# Run with filters
+npx ts-node src/runner.ts --suiteType="@smoke"</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">From UI Dashboard</h3>
+                        <div class="steps">
+                            <div class="step">
+                                <h3>Single Suite Execution</h3>
+                                <p>Click the ▶️ Run button on any test suite card</p>
+                            </div>
+                            
+                            <div class="step">
+                                <h3>Monitor Progress</h3>
+                                <p>View real-time execution progress in the modal</p>
+                            </div>
+                            
+                            <div class="step">
+                                <h3>View Results</h3>
+                                <p>See detailed results when execution completes</p>
+                            </div>
+                        </div>
+                        
+                        <div class="screenshot" style="margin-top: 2rem;">
+                            <img src="assets/images/ui-run-testdata.png" alt="Running Tests">
+                            <div style="padding: 1rem; background: var(--dark-light); text-align: center;">
+                                <strong>Test Execution in Progress</strong>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Parallel Execution</h3>
+                        <p>Configure parallel threads for faster execution:</p>
+                        <div class="code-block">
+                            <pre># In .env file
+PARALLEL_THREADS=4
+
+# Or via environment variable
+PARALLEL_THREADS=8 npx ts-node src/runner.ts</pre>
+                        </div>
+                    </section>
+
+                    <section id="filtering">
+                        <h2>🏷️ Filtering Tests</h2>
+                        <p>TestFlow Pro provides multiple ways to filter and organize tests:</p>
+                        
+                        <h3>Tag-Based Filtering</h3>
+                        <div class="feature-card">
+                            <h4>Define Tags in Test Suite</h4>
+                            <div class="code-block">
+                                <pre>{
+  "tags": [
+    { "serviceName": "@UserService" },
+    { "suiteType": "@smoke" }
+  ]
+}</pre>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h4>Run by Tags</h4>
+                            <div class="code-block">
+                                <pre># Run smoke tests
+npx ts-node src/runner.ts --suiteType="@smoke"
+
+# Run specific service
+npx ts-node src/runner.ts --serviceName="@UserService"
+
+# Combine tags
+npx ts-node src/runner.ts --serviceName="@UserService" --suiteType="@regression"</pre>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Application-Based Filtering</h3>
+                        <div class="code-block">
+                            <pre># Run tests for specific application
+npx ts-node src/runner.ts --applicationName="Bookstore Application"
+
+# Combine with test type
+npx ts-node src/runner.ts --applicationName="Bookstore" --testType="API"</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Test Type Filtering</h3>
+                        <div class="code-block">
+                            <pre># Run only API tests
+npx ts-node src/runner.ts --testType="API"
+
+# Run only UI tests
+npx ts-node src/runner.ts --testType="UI"</pre>
+                        </div>
+                    </section>
+
+                    <section id="reports">
+                        <h2>📊 Viewing Reports</h2>
+                        
+                        <h3>JSON Reports</h3>
+                        <p>Detailed JSON reports are automatically generated in the <code>reports/</code> directory:</p>
+                        <div class="code-block">
+                            <pre># View latest report
+cat reports/result-*.json | jq
+
+# List all reports
+ls -la reports/</pre>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">HTML Reports</h3>
+                        <p>Generate beautiful HTML reports for easy sharing:</p>
+                        <div class="code-block">
+                            <pre># Generate HTML reports
+npm run report:html
+
+# Open in browser
+open reports/*.html</pre>
+                        </div>
+                        
+                        <div class="screenshot" style="margin-top: 2rem;">
+                            <img src="assets/images/test-result-dashboard.png" alt="Test Results">
+                            <div style="padding: 1rem; background: var(--dark-light); text-align: center;">
+                                <strong>HTML Test Results Dashboard</strong>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Report Contents</h3>
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h4>📈 Execution Summary</h4>
+                                <p>Total tests, passed, failed, duration, and pass rate</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>✅ Test Details</h4>
+                                <p>Individual test results with request/response data</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>❌ Failure Analysis</h4>
+                                <p>Detailed failure information with stack traces</p>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h4>⏱️ Performance Metrics</h4>
+                                <p>Response times and execution duration</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="ci-cd">
+                        <h2>🚀 CI/CD Integration</h2>
+                        <p>TestFlow Pro includes ready-to-use CI/CD workflows:</p>
+                        
+                        <h3>GitHub Actions</h3>
+                        <p>Three pre-configured workflows are available:</p>
+                        
+                        <div class="feature-card">
+                            <h4>1. Run Tests by Tags</h4>
+                            <p><code>.github/workflows/run-tests-by-tags.yml</code></p>
+                            <div class="code-block" style="margin-top: 1rem;">
+                                <pre># Manual trigger with inputs
+serviceName: "@UserService"
+suiteType: "@smoke"
+environment: "qa"</pre>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h4>2. Run Tests by Application</h4>
+                            <p><code>.github/workflows/run-tests-by-application.yml</code></p>
+                            <div class="code-block" style="margin-top: 1rem;">
+                                <pre># Manual trigger with inputs
+applicationName: "Bookstore Application"
+testType: "API"
+environment: "qa"</pre>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <h4>3. Run Tests Matrix</h4>
+                            <p><code>.github/workflows/run-tests-matrix.yml</code></p>
+                            <div class="code-block" style="margin-top: 1rem;">
+                                <pre># Matrix execution across environments
+environments: "dev,qa,prod"
+testTypes: "API,UI"
+tags: "@smoke,@regression"</pre>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin-top: 2rem;">Azure DevOps</h3>
+                        <p>Azure Pipelines are also supported with similar capabilities:</p>
+                        <ul style="margin-left: 1.5rem; color: var(--text-muted);">
+                            <li>Tag-based execution</li>
+                            <li>Application-based execution</li>
+                            <li>Multi-environment matrix</li>
+                            <li>Scheduled runs</li>
+                            <li>PR validation</li>
+                        </ul>
+                        
+                        <h3 style="margin-top: 2rem;">NPM Scripts for CI/CD</h3>
+                        <div class="code-block">
+                            <pre>{
+  "scripts": {
+    "test": "npx ts-node src/runner.ts",
+    "test:smoke": "npx ts-node src/runner.ts --suiteType=@smoke",
+    "test:regression": "npx ts-node src/runner.ts --suiteType=@regression",
+    "test:api": "npx ts-node src/runner.ts --testType=API",
+    "test:ui": "npx ts-node src/runner.ts --testType=UI",
+    "report:html": "npx ts-node src/generateHtmlReport.ts"
+  }
+}</pre>
+                        </div>
+                    </section>
+
+                    <div style="margin-top: 3rem; text-align: center;">
+                        <a href="features.html" class="btn btn-primary">Next: Explore Features →</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="installation.html">Installation</a></li>
+                        <li><a href="architecture.html">Architecture</a></li>
+                        <li><a href="usage.html">Usage Guide</a></li>
+                        <li><a href="features.html">Features</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="https://www.youtube.com/watch?v=Jw-B24hmNhQ">Video Tutorials</a></li>
+                        <li><a href="#">API Reference</a></li>
+                        <li><a href="#">Examples</a></li>
+                        <li><a href="#">FAQ</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Community</h4>
+                    <ul>
+                        <li><a href="#">GitHub</a></li>
+                        <li><a href="#">Discussions</a></li>
+                        <li><a href="#">Contributing</a></li>
+                        <li><a href="#">License</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 TestFlow Pro. Built with ❤️ for test automation.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
